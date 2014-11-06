@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Realtime timeline. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<div id="chart"></div>
+
+	<script type="text/javascript">
+		var timelineDiv = d3.select('#chart');
+		var timeline = sentio.realtime.timeline()
+			.height(100)
+			.width(600);
+
+		var random = d3.random.normal(0, 1);
+		var data = generateData(Date.now() - 1000*60, 60);
+
+		setInterval(function(){
+			data.shift();
+			data.push([ Date.now(), random() ]);
+
+			timelineDiv.datum(data).call(timeline);
+		}, 1000);
+
+		function generateData(start, samples){
+			var toReturn = [];
+			for(var i=0; i<samples; i++){
+				toReturn.push([start + i*1000, random()]);
+			}
+			return toReturn;
+		}
+
+	</script>
+
+</body>
+</html>
+

@@ -1,0 +1,32 @@
+{
+  "name": "sentio",
+  "version": "0.1.0",
+  "authors": [
+    "reblace <reblace@gmail.com>"
+  ],
+  "main": "sentio.js",
+  "scripts": [
+    "sentio.js"
+  ],
+  "license": "MIT",
+  "ignore": [
+    ".DS_Store",
+    ".git",
+    ".gitignore",
+    ".travis.yml",
+    ".bowerrc",
+    ".jshintrc",
+    ".csslintrc",
+    ".project",
+    "gulpfile.js",
+    "package.json",
+    "examples",
+    "node_modules",
+    "package.json",
+    "src",
+    "test"
+  ],
+  "dependencies": {
+    "d3": "~3.4.11"
+  }
+}

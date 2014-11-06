@@ -1,0 +1,11 @@
+{
+	"eqnull": true,
+	"undef": "true",
+	"strict": "true",
+
+	"globals": {
+		"console": true,
+		"d3": true,
+		"sentio": true
+	}
+}
