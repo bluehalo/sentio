@@ -28,7 +28,7 @@
 
 		setInterval(function(){
 			data.shift();
-			data.push([ Date.now(), (new Date()).getSeconds()]);
+			data.push([ Date.now(), Math.random() * 10]);
 
 			timeline.data(data);
 		}, 1000);
@@ -36,7 +36,7 @@
 		function generateData(start, samples){
 			var toReturn = [];
 			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, 0]);
+				toReturn.push([start + i*1000, Math.random() * 10]);
 			}
 			return toReturn;
 		}

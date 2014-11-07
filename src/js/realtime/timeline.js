@@ -130,7 +130,21 @@ function sentio_realtime_timeline() {
 		var now = new Date();
 
 		// Calculate the domain of the y axis
-		var yExtent = [0, 70];
+		var yExtent = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+		data.forEach(function(element, index){
+			var y = value.y(element);
+			var x = value.x(element);
+
+			if(x < now - delay  + duration.reveal) {
+				if(yExtent[0] > y) { yExtent[0] = y; }
+				if(yExtent[1] < y) { yExtent[1] = y; }
+			}
+		});
+
+		if(Number.POSITIVE_INFINITY === yExtent[0] && Number.NEGATIVE_INFINITY === yExtent[1]){ yExtent = [0, 10]; }
+		if(yExtent[0] >= yExtent[1]) { yExtent[1] = yExtent[0] + 1; }
+		yExtent[1] += (yExtent[1] - yExtent[0]) * 0.1;
+
 
 		// Update the domains of the scales
 		scale.x.domain([now - delay - interval, now - delay]);
@@ -146,7 +160,7 @@ function sentio_realtime_timeline() {
 
 		// Select and draw the y axis
 		element.g.yAxis
-			.transition().duration(duration.reveal).ease('linear')
+			.transition().duration(duration.animate)
 				.call(axis.y);
 
 		element.g.line.select('.line').transition().duration(duration.reveal).ease('linear')
@@ -169,36 +183,46 @@ function sentio_realtime_timeline() {
 	};
 
 	// Basic Getters/Setters
-	chart.width = function(value){
+	chart.width = function(v){
 		if(!arguments.length) { return width; }
-		width = value;
+		width = v;
 		return chart;
 	};
-	chart.height = function(value){
+	chart.height = function(v){
 		if(!arguments.length) { return height; }
-		height = value;
+		height = v;
 		return chart;
 	};
-	chart.xAxis = function(value){
+	chart.xAxis = function(v){
 		if(!arguments.length) { return axis.x; }
-		axis.x = value;
+		axis.x = v;
 		return chart;
 	};
-	chart.yAxis = function(value){
+	chart.yAxis = function(v){
 		if(!arguments.length) { return axis.y; }
-		axis.y = value;
+		axis.y = v;
 		return chart;
 	};
-	chart.xScale = function(value){
+	chart.xScale = function(v){
 		if(!arguments.length) { return scale.x; }
-		scale.x = value;
-		axis.x.scale(value);
+		scale.x = v;
+		axis.x.scale(v);
 		return chart;
 	};
-	chart.yScale = function(value){
+	chart.yScale = function(v){
 		if(!arguments.length) { return scale.y; }
-		scale.y = value;
-		axis.y.scale(value);
+		scale.y = v;
+		axis.y.scale(v);
+		return chart;
+	};
+	chart.xValue = function(v){
+		if(!arguments.length) { return v.x; }
+		value.x = v;
+		return chart;
+	};
+	chart.yValue = function(v){
+		if(!arguments.length) { return v.y; }
+		value.y = v;
 		return chart;
 	};
 
