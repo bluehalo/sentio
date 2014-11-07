@@ -45,7 +45,14 @@ function sentio_realtime_timeline() {
 	};
 
 	var element = {
-		g: undefined
+		svg: undefined,
+		g: {
+			container: undefined,
+			xAxis: undefined,
+			yAxis: undefined,
+			line: undefined
+		},
+		clipPath: undefined
 	};
 
 	// Line generator for the plot
@@ -57,46 +64,65 @@ function sentio_realtime_timeline() {
 		return scale.y(value.y(d, i));
 	});
 
+	var data = [];
 
 	// Chart create/init method
-	function chart(selection){
-		selection.each(function(data){
-			var now = Date.now();
+	function chart(selection){}
 
-			// Set up the scales
-			scale.x.range([0, width - margin.left - margin.right]);
-			scale.y.range([height - margin.top - margin.bottom, 0]);
+	// Perform all initial chart construction and setup
+	chart.init = function(container){
+		// Create the SVG element
+		element.svg = container.append('svg');
 
-			// Create a selection for the svg element
-			var svg = d3.select(this).selectAll('svg').data([data]);
+		// Add the defs and add the clip path definition
+		element.clipPath = element.svg.append('defs').append('clipPath').attr('id', id).append('rect');
 
-			// On first creation, build the chart structure
-			var svgEnter = svg.enter().append('svg');
+		// Append a container for everything
+		element.g.container = element.svg.append('g');
 
-			// Append the clip path
-			svgEnter.append('defs').append('clipPath').attr('id', id).append('rect')
-				.attr('width', width - margin.left - margin.right)
-				.attr('height', height - margin.top - margin.bottom);
+		// Append the path group (which will have the clip path and the line path
+		element.g.line = element.g.container.append('g').attr('clip-path', 'url(#' + id + ')');
+		element.g.line.append('path').attr('class', 'line');
 
-			// Now update the size of the svg pane
-			svg.attr('width', width).attr('height', height);
+		// Append groups for the axes
+		element.g.xAxis = element.g.container.append('g').attr('class', 'x axis');
+		element.g.yAxis = element.g.container.append('g').attr('class', 'y axis');
 
-			// Append a container for everything
-			var gEnter = svgEnter.append('g');
+		return chart;
+	};
 
-			// Append the path group (which will have the clip path and the line path
-			gEnter.append('g').attr('clip-path', 'url(#' + id + ')')
-				.append('path').attr('class', 'line');
+	// Update the chart data
+	chart.data = function(value){
+		if(!arguments.length) { return data; }
+		data = value;
+		element.g.line.datum(data);
+		return chart;
+	};
 
-			// Append groups for the axes
-			gEnter.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + scale.y.range()[0] + ')');
-			gEnter.append('g').attr('class', 'y axis');
+	chart.redraw = function(){
+		var now = Date.now();
 
-			// update the margins on the main draw group
-			element.g = svg.select('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+		// Set up the scales
+		scale.x.range([0, width - margin.left - margin.right]);
+		scale.y.range([height - margin.top - margin.bottom, 0]);
 
-		});
-	}
+		// Append the clip path
+		element.clipPath
+			.attr('width', width - margin.left - margin.right)
+			.attr('height', height - margin.top - margin.bottom);
+
+		// Now update the size of the svg pane
+		element.svg.attr('width', width).attr('height', height);
+
+		// Append groups for the axes
+		element.g.xAxis.attr('transform', 'translate(0,' + scale.y.range()[0] + ')');
+		element.g.yAxis.attr('class', 'y axis');
+
+		// update the margins on the main draw group
+		element.g.container.attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+		return chart;
+	};
 
 	function tick() {
 
@@ -106,24 +132,27 @@ function sentio_realtime_timeline() {
 		// Store the current time
 		var now = new Date();
 
+		// Calculate the domain of the y axis
+		var yExtent = [0, 70];
+
 		// Update the domains of the scales
 		scale.x.domain([now - delay - interval, now - delay]);
-		scale.y.domain([0, 70]);
+		scale.y.domain(yExtent);
 
 		// Select and draw the line
-		element.g.select('.line').attr('d', line).attr('transform', null);
+		element.g.line.select('.line').attr('d', line).attr('transform', null);
 
 		// Select and draw the x axis
-		element.g.select('.x.axis')
+		element.g.xAxis
 			.transition().duration(duration.reveal).ease('linear')
 				.call(axis.x);
 
 		// Select and draw the y axis
-		element.g.select('.y.axis')
+		element.g.yAxis
 			.transition().duration(duration.reveal).ease('linear')
 				.call(axis.y);
 
-		element.g.select('.line').transition().duration(duration.reveal).ease('linear')
+		element.g.line.select('.line').transition().duration(duration.reveal).ease('linear')
 			.attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')')
 			.each('end', tick);
 
@@ -142,14 +171,37 @@ function sentio_realtime_timeline() {
 		running = false;
 	};
 
+	// Basic Getters/Setters
 	chart.width = function(value){
-		if(null == value) { return width; }
+		if(!arguments.length) { return width; }
 		width = value;
 		return chart;
 	};
 	chart.height = function(value){
-		if(null == value) { return height; }
+		if(!arguments.length) { return height; }
 		height = value;
+		return chart;
+	};
+	chart.xAxis = function(value){
+		if(!arguments.length) { return axis.x; }
+		axis.x = value;
+		return chart;
+	};
+	chart.yAxis = function(value){
+		if(!arguments.length) { return axis.y; }
+		axis.y = value;
+		return chart;
+	};
+	chart.xScale = function(value){
+		if(!arguments.length) { return scale.x; }
+		scale.x = value;
+		axis.x.scale(value);
+		return chart;
+	};
+	chart.yScale = function(value){
+		if(!arguments.length) { return scale.y; }
+		scale.y = value;
+		axis.y.scale(value);
 		return chart;
 	};
 

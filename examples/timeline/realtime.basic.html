@@ -23,13 +23,14 @@
 
 		//var random = d3.random.normal(0, 1);
 		var data = generateData(Date.now() - 1000*80, 80);
+		timeline.init(timelineDiv).data(data).redraw();
+		timeline.start();
 
 		setInterval(function(){
 			data.shift();
 			data.push([ Date.now(), (new Date()).getSeconds()]);
 
-			timelineDiv.datum(data).call(timeline);
-			timeline.start();
+			timeline.data(data);
 		}, 1000);
 
 		function generateData(start, samples){
