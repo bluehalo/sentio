@@ -19,10 +19,13 @@
 		var timelineDiv = d3.select('#chart');
 		var timeline = sentio.realtime.timeline()
 			.height(100)
-			.width(600);
+			.width(600)
+			.interval(10000)
+			.yExtent([0, undefined])
+			.delay(3000);
 
 		//var random = d3.random.normal(0, 1);
-		var data = generateData(Date.now() - 1000*80, 80);
+		var data = generateData(Date.now() - 1000*15, 15);
 		timeline.init(timelineDiv).data(data).redraw();
 		timeline.start();
 

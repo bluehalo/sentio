@@ -29,6 +29,8 @@ function sentio_realtime_timeline() {
 		y: function(d, i) { return d[1]; }
 	};
 
+	var yExtent = [undefined, undefined];
+
 	// Default scales for x and y dimensions
 	var scale = {
 		x: d3.time.scale(),
@@ -129,26 +131,11 @@ function sentio_realtime_timeline() {
 		// Store the current time
 		var now = new Date();
 
-		// Calculate the domain of the y axis
-		var yExtent = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-		data.forEach(function(element, index){
-			var y = value.y(element);
-			var x = value.x(element);
-
-			if(x < now - delay  + duration.reveal) {
-				if(yExtent[0] > y) { yExtent[0] = y; }
-				if(yExtent[1] < y) { yExtent[1] = y; }
-			}
-		});
-
-		if(Number.POSITIVE_INFINITY === yExtent[0] && Number.NEGATIVE_INFINITY === yExtent[1]){ yExtent = [0, 10]; }
-		if(yExtent[0] >= yExtent[1]) { yExtent[1] = yExtent[0] + 1; }
-		yExtent[1] += (yExtent[1] - yExtent[0]) * 0.1;
-
+		var extent = getYExtent(now);
 
 		// Update the domains of the scales
 		scale.x.domain([now - delay - interval, now - delay]);
-		scale.y.domain(yExtent);
+		scale.y.domain(extent);
 
 		// Select and draw the line
 		element.g.line.select('.line').attr('d', line).attr('transform', null);
@@ -167,6 +154,31 @@ function sentio_realtime_timeline() {
 			.attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')')
 			.each('end', tick);
 
+	}
+
+	function getYExtent(now){
+		// Calculate the domain of the y axis
+		var nExtent = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+		data.forEach(function(element, index){
+			var y = value.y(element);
+			var x = value.x(element);
+
+			if(x < now - delay  + duration.reveal) {
+				if(nExtent[0] > y) { nExtent[0] = y; }
+				if(nExtent[1] < y) { nExtent[1] = y; }
+			}
+		});
+
+		if(Number.POSITIVE_INFINITY === nExtent[0] && Number.NEGATIVE_INFINITY === nExtent[1]){ nExtent = [0, 10]; }
+		if(nExtent[0] >= nExtent[1]) { nExtent[1] = nExtent[0] + 1; }
+		nExtent[1] += (nExtent[1] - nExtent[0]) * 0.1;
+
+		if(null != yExtent){
+			if(null != yExtent[0]) { nExtent[0] = yExtent[0]; }
+			if(null != yExtent[1]) { nExtent[1] = yExtent[1]; }
+		}
+
+		return nExtent;
 	}
 
 	chart.start = function(){
@@ -216,13 +228,28 @@ function sentio_realtime_timeline() {
 		return chart;
 	};
 	chart.xValue = function(v){
-		if(!arguments.length) { return v.x; }
+		if(!arguments.length) { return value.x; }
 		value.x = v;
 		return chart;
 	};
 	chart.yValue = function(v){
-		if(!arguments.length) { return v.y; }
+		if(!arguments.length) { return value.y; }
 		value.y = v;
+		return chart;
+	};
+	chart.interval = function(v){
+		if(!arguments.length) { return interval; }
+		interval = v;
+		return chart;
+	};
+	chart.delay = function(v){
+		if(!arguments.length) { return delay; }
+		delay = v;
+		return chart;
+	};
+	chart.yExtent = function(v){
+		if(!arguments.length) { return yExtent; }
+		yExtent = v;
 		return chart;
 	};
 
