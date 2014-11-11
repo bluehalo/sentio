@@ -4,6 +4,7 @@
 	"strict": "true",
 
 	"globals": {
+		"angular": true,
 		"console": true,
 		"d3": true,
 		"sentio": true

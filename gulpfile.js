@@ -14,7 +14,14 @@ gulp.task('watch', function(){
 gulp.task('build', ['js', 'css'] );
 
 gulp.task('js', function(){
-	return gulp.src('src/js/**/*.js')
+	return gulp.src([
+			'src/js/sentio.js',
+			'src/js/realtime/realtime.js',
+			'src/js/realtime/**/*.js',
+			'src/js/directives/realtime.js',
+			'src/js/directives/**/*.js',
+			'src/js/**/*.js'
+		])
 
 		// JS Hint
 		.pipe(plugins.jshint('.jshintrc'))

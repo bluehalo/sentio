@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html data-ng-app="demoapp">
+
+<head>
+	<title>Realtime timeline. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/angular/angular.js"></script>
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<script>
+		var app = angular.module("demoapp", ["sentio.realtime"]);
+		app.controller("DemoController", [ "$scope", function($scope) {
+			$scope.model = [];
+			$scope.interval = 30000;
+			$scope.delay = 5000;
+			$scope.yExtent = [0, undefined];
+
+			var update = function(){
+				$scope.model.push([Date.now(), Math.random()*10]);
+				while($scope.model.length > 71){
+					$scope.model.shift();
+				}
+				$scope.model = $scope.model.slice();
+				window.setTimeout(update, 500);
+			};
+			window.setTimeout(update);
+
+		}]);
+
+	</script>
+
+	<style>
+	</style>
+
+</head>
+<body ng-controller="DemoController">
+	<h1>Real-time timeline example</h1>
+	<p>AngularJS integrated D3 Real-time timeline example</p>
+	<div data-rt-timeline style="height:100px; width: 400px;"
+		data-model="model"
+		data-interval="interval"
+		data-delay="delay"
+		data-y-extent="yExtent"></div>
+</body>
+	
+</html>
+
