@@ -19,7 +19,6 @@
 			$scope.yExtent = [0, undefined];
 
 			var update = function(){
-				$scope.model = $scope.model.slice();
 				$scope.model.push([Date.now(), Math.random()*10]);
 				while($scope.model.length > 71){
 					$scope.model.shift();

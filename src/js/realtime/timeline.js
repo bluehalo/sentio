@@ -252,6 +252,11 @@ function sentio_realtime_timeline() {
 		yExtent = v;
 		return chart;
 	};
+	chart.duration = function(v){
+		if(!arguments.length) { return duration; }
+		duration = v;
+		return chart;
+	};
 
 	return chart;
 }

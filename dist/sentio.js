@@ -255,6 +255,11 @@ function sentio_realtime_timeline() {
 		yExtent = v;
 		return chart;
 	};
+	chart.duration = function(v){
+		if(!arguments.length) { return duration; }
+		duration = v;
+		return chart;
+	};
 
 	return chart;
 }
@@ -268,7 +273,8 @@ angular.module('sentio.realtime').directive('rtTimeline', function() {
 			model: '=',
 			interval: '=',
 			delay: '=',
-			yExtent: '='
+			yExtent: '=',
+			duration: '='
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -276,21 +282,35 @@ angular.module('sentio.realtime').directive('rtTimeline', function() {
 			var timeline = sentio.realtime.timeline();
 			timeline.init(timelineElement);
 
-			scope.$watch('model', function(n, o){
+			scope.$watchCollection('model', function(n, o){
+				if(null == o && null == n){ return; }
+
 				timeline.data(n).redraw();
 				timeline.start();
 			});
 
 			scope.$watch('interval', function(n, o){
+				if(null == o && null == n){ return; }
+
 				timeline.interval(n).redraw();
 			});
 
 			scope.$watch('delay', function(n, o){
+				if(null == o && null == n){ return; }
+
 				timeline.delay(n).redraw();
 			});
 
 			scope.$watch('yExtent', function(n, o){
+				if(null == o && null == n){ return; }
+
 				timeline.yExtent(n).redraw();
+			});
+
+			scope.$watch('duration', function(n, o){
+				if(null == o && null == n){ return; }
+
+				timeline.duration(n);
 			});
 
 		}
