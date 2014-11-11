@@ -12,21 +12,23 @@
 
 	<script>
 		var app = angular.module("demoapp", ["sentio.realtime"]);
-		app.controller("DemoController", [ "$scope", function($scope) {
+		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
 			$scope.model = [];
 			$scope.interval = 30000;
 			$scope.delay = 5000;
 			$scope.yExtent = [0, undefined];
 
 			var update = function(){
+				$scope.model = $scope.model.slice();
 				$scope.model.push([Date.now(), Math.random()*10]);
 				while($scope.model.length > 71){
 					$scope.model.shift();
 				}
-				$scope.model = $scope.model.slice();
-				window.setTimeout(update, 500);
+
+				console.log("Update, model.length: " + $scope.model.length);
+				$timeout(update, 500);
 			};
-			window.setTimeout(update);
+			$timeout(update);
 
 		}]);
 
