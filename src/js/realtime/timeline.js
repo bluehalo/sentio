@@ -40,7 +40,7 @@ function sentio_realtime_timeline() {
 	// Default Axis definitions
 	var axis = {
 		x: d3.svg.axis().scale(scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(scale.y).orient('left')
+		y: d3.svg.axis().scale(scale.y).orient('left').ticks(4)
 	};
 
 	var element = {
@@ -55,7 +55,7 @@ function sentio_realtime_timeline() {
 	};
 
 	// Line generator for the plot
-	var line = d3.svg.line();
+	var line = d3.svg.line().interpolate('basis');
 	line.x(function(d, i) {
 		return scale.x(value.x(d, i));
 	});

@@ -24,7 +24,6 @@
 					$scope.model.shift();
 				}
 
-				console.log("Update, model.length: " + $scope.model.length);
 				$timeout(update, 500);
 			};
 			$timeout(update);
@@ -40,11 +39,12 @@
 <body ng-controller="DemoController">
 	<h1>Real-time timeline example</h1>
 	<p>AngularJS integrated D3 Real-time timeline example</p>
-	<div data-rt-timeline style="height:100px; width: 400px;"
+	<div data-rt-timeline style="height:100px;"
 		data-model="model"
 		data-interval="interval"
 		data-delay="delay"
-		data-y-extent="yExtent"></div>
+		data-y-extent="yExtent"
+		data-resize-width=""></div>
 </body>
 	
 </html>

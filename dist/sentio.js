@@ -43,7 +43,7 @@ function sentio_realtime_timeline() {
 	// Default Axis definitions
 	var axis = {
 		x: d3.svg.axis().scale(scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(scale.y).orient('left')
+		y: d3.svg.axis().scale(scale.y).orient('left').ticks(4)
 	};
 
 	var element = {
@@ -58,7 +58,7 @@ function sentio_realtime_timeline() {
 	};
 
 	// Line generator for the plot
-	var line = d3.svg.line();
+	var line = d3.svg.line().interpolate('basis');
 	line.x(function(d, i) {
 		return scale.x(value.x(d, i));
 	});
@@ -264,7 +264,7 @@ function sentio_realtime_timeline() {
 	return chart;
 }
 angular.module('sentio.realtime', []);
-angular.module('sentio.realtime').directive('rtTimeline', function() {
+angular.module('sentio.realtime').directive('rtTimeline', function($document, $window, $timeout, $log) {
 	'use strict';
 
 	return {
@@ -274,7 +274,9 @@ angular.module('sentio.realtime').directive('rtTimeline', function() {
 			interval: '=',
 			delay: '=',
 			yExtent: '=',
-			duration: '='
+			duration: '=',
+			resizeWidth: '@',
+			resizeHeight: '@'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -313,6 +315,56 @@ angular.module('sentio.realtime').directive('rtTimeline', function() {
 				timeline.duration(n);
 			});
 
+			// Manage resizing the chart
+			var resizeWidth = (null != attrs.resizeWidth);
+			var resizeHeight = (null != attrs.resizeHeight);
+			var resizeTimer;
+			var window = angular.element($window);
+
+			var doResize = function() {
+
+				// Get the raw body element
+				var body = $document[0].body;
+
+				// Cache the old overflow style
+				var overflow = body.style.overflow;
+				body.style.overflow = 'hidden';
+
+				// Get the raw parent
+				var rawElement = element[0];
+				// Derive height/width of the parent (there are several ways to do this depending on the parent)
+				var parentWidth = rawElement.attributes.width | rawElement.style.width | rawElement.clientWidth;
+				var parentHeight = rawElement.attributes.height | rawElement.style.height | rawElement.clientHeight;
+
+				// Calculate the new width/height based on the parent and the resize size
+				var width = (resizeWidth)? parentWidth - attrs.resizeWidth : undefined;
+				var height = (resizeHeight)? parentHeight - attrs.resizeHeight : undefined;
+
+				// Reapply the old overflow setting
+				body.style.overflow = overflow;
+
+				console.log('resize rt.timeline height: ' + height + ' width: ' + width);
+
+				// Apply the new width and height
+				if(resizeWidth){ timeline.width(width); }
+				if(resizeHeight){ timeline.height(height); }
+
+				timeline.redraw();
+			};
+			var delayResize = function(){
+				if(undefined !== resizeTimer){
+					$timeout.cancel(resizeTimer);
+				}
+				resizeTimer = $timeout(doResize, 200);
+			};
+
+			if(resizeWidth || resizeHeight){
+				window.on('resize', delayResize);
+				delayResize();
+			}
+			scope.$on('$destroy', function () {
+				window.off('resize', delayResize);
+			});
 		}
 	};
 });
