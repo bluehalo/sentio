@@ -1,24 +1,32 @@
 /*! sentio Version: 0.1.0 */
 angular.module('sentio.realtime', []);
-angular.module('sentio.realtime').directive('rtTimeline', function($document, $window, $timeout, $log) {
+angular.module('sentio.realtime').directive('sentioRtTimeline', function($document, $window, $timeout, $log) {
 	'use strict';
 
 	return {
 		restrict : 'A',
 		scope : {
-			model: '=',
-			interval: '=',
-			delay: '=',
-			yExtent: '=',
-			duration: '=',
-			resizeWidth: '@',
-			resizeHeight: '@'
+			model: '=sentioModel',
+			interval: '=sentioInterval',
+			delay: '=sentioDelay',
+			yExtent: '=sentioYExtent',
+			duration: '=sentioDuration',
+			resizeWidth: '@sentioResizeWidth',
+			resizeHeight: '@sentioResizeHeight',
+			configure: '&sentioConfigureFn'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
 			var timelineElement = d3.select(element[0]);
 			var timeline = sentio.realtime.timeline();
+
 			timeline.init(timelineElement);
+
+			scope.$watch('configure', function(n, o){
+				if(null != scope.configure){
+					scope.configure({ timeline: timeline });
+				}
+			});
 
 			scope.$watchCollection('model', function(n, o){
 				if(null == o && null == n){ return; }

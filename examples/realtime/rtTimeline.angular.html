@@ -18,6 +18,24 @@
 			$scope.interval = 30000;
 			$scope.delay = 5000;
 			$scope.yExtent = [0, undefined];
+			$scope.configure = function(timeline){
+				// Set the xScale to be UTC
+				timeline.xScale(d3.time.scale.utc());
+
+				// Custom formatter
+				var customTimeFormat = d3.time.format.utc.multi([
+					[".%L", function(d) { return d.getMilliseconds(); }],
+					[":%S", function(d) { return d.getSeconds(); }],
+					["%H:%M", function(d) { return d.getMinutes(); }],
+					["%H", function(d) { return d.getHours(); }],
+					["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
+					["%b %d", function(d) { return d.getDate() != 1; }],
+					["%B", function(d) { return d.getMonth(); }],
+					["%Y", function() { return true; }]
+				]);
+				timeline.xAxis().tickFormat(customTimeFormat);
+			};
+
 
 			var update = function(){
 				$scope.model.push([Date.now(), Math.random()*10]);
@@ -40,12 +58,13 @@
 <body ng-controller="DemoController">
 	<h1>Real-time timeline example</h1>
 	<p>AngularJS integrated D3 Real-time timeline example</p>
-	<div data-rt-timeline style="height:100px;"
-		data-model="model"
-		data-interval="interval"
-		data-delay="delay"
-		data-y-extent="yExtent"
-		data-resize-width=""></div>
+	<div data-sentio-rt-timeline style="height:100px;"
+		data-sentio-model="model"
+		data-sentio-interval="interval"
+		data-sentio-delay="delay"
+		data-sentio-y-extent="yExtent"
+		data-sentio-resize-width=""
+		data-sentio-configure-fn="configure(timeline)"></div>
 </body>
 	
 </html>
