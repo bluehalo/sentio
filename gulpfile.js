@@ -11,16 +11,14 @@ gulp.task('watch', function(){
 	gulp.watch(['src/**/*', '!/src/lib/**/*'], ['build']);
 });
 
-gulp.task('build', ['js', 'css'] );
+gulp.task('build', ['js', 'js-angular', 'css'] );
 
 gulp.task('js', function(){
 	return gulp.src([
-			'src/js/sentio.js',
-			'src/js/realtime/realtime.js',
-			'src/js/realtime/**/*.js',
-			'src/js/support/angular/realtime.js',
-			'src/js/support/angular/**/*.js',
-			'src/js/**/*.js'
+			'src/js/sentio/sentio.js',
+			'src/js/sentio/realtime/realtime.js',
+			'src/js/sentio/realtime/**/*.js',
+			'src/js/sentio/**/*.js'
 		])
 
 		// JS Hint
@@ -42,6 +40,30 @@ gulp.task('js', function(){
 		.on('error', plugins.util.log);
 });
 
+gulp.task('js-angular', function(){
+	return gulp.src([
+			'src/js/support/angular/realtime.js',
+			'src/js/support/angular/**/*.js'
+		])
+
+		// JS Hint
+		.pipe(plugins.jshint('.jshintrc'))
+		.pipe(plugins.jshint.reporter('jshint-stylish'))
+
+		// Concatenate
+		.pipe(plugins.concat(p.name + '-angular.js'))
+		.pipe(plugins.insert.prepend(banner))
+		.pipe(gulp.dest('dist'))
+		.pipe(plugins.filesize())
+
+		// Uglify
+		.pipe(plugins.uglify())
+		.pipe(plugins.rename(p.name + '-angular.min.js'))
+		.pipe(plugins.insert.prepend(banner))
+		.pipe(gulp.dest('dist'))
+		.pipe(plugins.filesize())
+		.on('error', plugins.util.log);
+});
 
 gulp.task('css', function(){
 	return gulp.src('src/css/**/*.css')

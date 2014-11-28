@@ -55,7 +55,7 @@ function sentio_realtime_timeline() {
 	};
 
 	// Line generator for the plot
-	var line = d3.svg.line().interpolate('basis');
+	var line = d3.svg.line().interpolate('linear');
 	line.x(function(d, i) {
 		return scale.x(value.x(d, i));
 	});
@@ -225,6 +225,11 @@ function sentio_realtime_timeline() {
 		if(!arguments.length) { return scale.y; }
 		scale.y = v;
 		axis.y.scale(v);
+		return chart;
+	};
+	chart.interpolation = function(v){
+		if(!arguments.length) { return line.interpolate(); }
+		line.interpolate(v);
 		return chart;
 	};
 	chart.xValue = function(v){
