@@ -133,9 +133,8 @@ function sentio_realtime_timeline() {
 	};
 
 	function tick() {
-
-		// If not running, or if we're supposed to be efficient, let the loop die
-		if(!running || efficient.active){ return; }
+		// If not running, let the loop die
+		if(!running) return;
 
 		// Store the current time
 		var now = new Date();
@@ -149,6 +148,14 @@ function sentio_realtime_timeline() {
 		// Select and draw the line
 		element.g.line.select('.line').attr('d', line).attr('transform', null);
 
+		if(null == efficient || !efficient.active){
+			normalTick(now);
+		} else {
+			efficientTick(now);
+		}
+	}
+
+	function normalTick(now) {
 		// Select and draw the x axis
 		element.g.xAxis
 			.transition().duration(duration.reveal).ease('linear')
@@ -162,25 +169,9 @@ function sentio_realtime_timeline() {
 		element.g.line.select('.line').transition().duration(duration.reveal).ease('linear')
 			.attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')')
 			.each('end', tick);
-
 	}
 
-	function efficientTick() {
-		// If not running, let the loop die
-		if(!running || null == efficient || !efficient.active){ return; }
-
-		// Store the current time
-		var now = new Date();
-
-		var extent = getYExtent(now);
-
-		// Update the domains of the scales
-		scale.x.domain([now - delay - interval, now - delay]);
-		scale.y.domain(extent);
-
-		// Select and draw the line
-		element.g.line.select('.line').attr('d', line).attr('transform', null);
-
+	function efficientTick(now) {
 		// Select and draw the x axis
 		element.g.xAxis.call(axis.x).call(axis.x);
 
@@ -190,7 +181,7 @@ function sentio_realtime_timeline() {
 		element.g.line.select('.line').attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')');
 
 		// Schedule the next update
-		window.setTimeout(efficientTick, 1000/efficient.fps);
+		window.setTimeout(tick, 1000/efficient.fps);
 	}
 
 	function getYExtent(now){
@@ -222,7 +213,7 @@ function sentio_realtime_timeline() {
 		if(running){ return; }
 
 		running = true;
-		if(null != efficient && efficient.active) { efficientTick(); } else { tick(); }
+		tick();
 	};
 
 	chart.stop = function(){
@@ -307,7 +298,6 @@ function sentio_realtime_timeline() {
 	chart.efficient = function(v){
 		if(!arguments.length) { return efficient; }
 		efficient = v;
-		chart.restart();
 		return chart;
 	};
 
