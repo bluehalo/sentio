@@ -9,6 +9,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			delay: '=sentioDelay',
 			yExtent: '=sentioYExtent',
 			duration: '=sentioDuration',
+			efficient: '=sentioEfficient',
 			resizeWidth: '@sentioResizeWidth',
 			resizeHeight: '@sentioResizeHeight',
 			configure: '&sentioConfigureFn'
@@ -45,7 +46,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				timeline.delay(n).redraw();
 			});
 
-			scope.$watch('yExtent', function(n, o){
+			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
 				timeline.yExtent(n).redraw();
@@ -55,7 +56,13 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				if(null == o && null == n){ return; }
 
 				timeline.duration(n);
-			});
+			}, true);
+
+			scope.$watch('efficient', function(n, o){
+				if(null == o && null == n){ return; }
+
+				timeline.efficient(n);
+			}, true);
 
 			// Manage resizing the chart
 			var resizeWidth = (null != attrs.sentioResizeWidth);
