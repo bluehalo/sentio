@@ -60,8 +60,8 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			});
 
 			// Manage resizing the chart
-			var resizeWidth = (null != attrs.resizeWidth);
-			var resizeHeight = (null != attrs.resizeHeight);
+			var resizeWidth = (null != attrs.sentioResizeWidth);
+			var resizeHeight = (null != attrs.sentioResizeHeight);
 			var resizeTimer;
 			var window = angular.element($window);
 
@@ -81,8 +81,8 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				var parentHeight = rawElement.attributes.height | rawElement.style.height | rawElement.clientHeight;
 
 				// Calculate the new width/height based on the parent and the resize size
-				var width = (resizeWidth)? parentWidth - attrs.resizeWidth : undefined;
-				var height = (resizeHeight)? parentHeight - attrs.resizeHeight : undefined;
+				var width = (resizeWidth)? parentWidth - attrs.sentioResizeWidth : undefined;
+				var height = (resizeHeight)? parentHeight - attrs.sentioResizeHeight : undefined;
 
 				// Reapply the old overflow setting
 				body.style.overflow = overflow;
