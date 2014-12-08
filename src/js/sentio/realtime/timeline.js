@@ -16,12 +16,17 @@ function sentio_realtime_timeline() {
 
 	// Duration of the transition, also this is the minimum buffer time
 	var duration = {
-		reveal: 750,
+		reveal: 300,
 		animate: 300
 	};
 
 	// Is the timeline running?
 	var running = false;
+
+	// Transition used for normal mode
+	var transition = d3.select({}).transition()
+		.duration(duration.reveal)
+		.ease('linear');
 
 	// Is the timeline running in efficient mode?
 	var efficient = {
@@ -139,11 +144,8 @@ function sentio_realtime_timeline() {
 		var extent = getYExtent(now);
 
 		// Update the domains of the scales
-		scale.x.domain([now - delay - interval, now - delay]);
+		scale.x.domain([now - delay - interval - duration.reveal, now - delay - duration.reveal]);
 		scale.y.domain(extent);
-
-		// Select and draw the line
-		element.g.line.select('.line').attr('d', line).attr('transform', null);
 
 		if(null == efficient || !efficient.active){
 			normalTick(now);
@@ -153,22 +155,27 @@ function sentio_realtime_timeline() {
 	}
 
 	function normalTick(now) {
-		// Select and draw the x axis
-		element.g.xAxis
-			.transition().duration(duration.reveal).ease('linear')
-				.call(axis.x);
+		transition = transition.each(function(){
 
-		// Select and draw the y axis
-		element.g.yAxis
-			.transition().duration(duration.animate)
-				.call(axis.y);
+			// Select and draw the line
+			element.g.line.select('.line').attr('d', line).attr('transform', null);
 
-		element.g.line.select('.line').transition().duration(duration.reveal).ease('linear')
-			.attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')')
-			.each('end', tick);
+			// Select and draw the x axis
+			element.g.xAxis.call(axis.x);
+
+			// Select and draw the y axis
+			element.g.yAxis.call(axis.y);
+
+			element.g.line.select('.line').transition()
+				.attr('transform', 'translate(' + scale.x(now - delay - interval - 2*duration.reveal) + ')');
+
+		}).transition().each('start', tick);
 	}
 
 	function efficientTick(now) {
+		// Select and draw the line
+		element.g.line.select('.line').attr('d', line).attr('transform', null);
+
 		// Select and draw the x axis
 		element.g.xAxis.call(axis.x).call(axis.x);
 
@@ -290,6 +297,7 @@ function sentio_realtime_timeline() {
 	chart.duration = function(v){
 		if(!arguments.length) { return duration; }
 		duration = v;
+		transition.duration(duration);
 		return chart;
 	};
 	chart.efficient = function(v){
