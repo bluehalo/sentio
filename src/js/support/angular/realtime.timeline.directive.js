@@ -19,6 +19,18 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			var timelineElement = d3.select(element[0]);
 			var timeline = sentio.realtime.timeline();
 
+			// Extract the height and width of the chart
+			var width = element[0].style.width;
+			if(null != width && '' !== width) { 
+				width = parseFloat(width.substring(0, width.length-2));
+				if(null != width && !Number.isNaN(width)) { timeline.width(width); }
+			}
+			var height = element[0].style.height;
+			if(null != height && '' !== height) {
+				height = parseFloat(height.substring(0, height.length-2));
+				if(null != height && !Number.isNaN(height)) { timeline.height(height); }
+			}
+
 			timeline.init(timelineElement);
 
 			scope.$watch('configure', function(n, o){

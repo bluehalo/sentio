@@ -57,7 +57,7 @@
 			};
 
 			$scope.$watch('mode', function(n,o){
-				$scope.efficient.active = (n.value === 'efficient');
+				$scope.efficient.enabled = (n.value === 'efficient');
 			});
 
 			var update = function(){
