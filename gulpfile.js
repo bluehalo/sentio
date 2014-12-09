@@ -18,6 +18,8 @@ gulp.task('js', function(){
 			'src/js/sentio/sentio.js',
 			'src/js/sentio/realtime/realtime.js',
 			'src/js/sentio/realtime/**/*.js',
+			'src/js/sentio/timeline/timeline.js',
+			'src/js/sentio/timeline/**/*.js',
 			'src/js/sentio/**/*.js'
 		])
 
