@@ -44,6 +44,7 @@ gulp.task('js', function(){
 
 gulp.task('js-angular', function(){
 	return gulp.src([
+			'src/js/support/angular/sentio.js',
 			'src/js/support/angular/realtime.js',
 			'src/js/support/angular/**/*.js'
 		])

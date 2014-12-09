@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html data-ng-app="demoapp">
+
+<head>
+	<title>Static timeline. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/angular/angular.js"></script>
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+	<script src="../../dist/sentio-angular.js" charset="utf-8"></script>
+
+	<script>
+		var app = angular.module("demoapp", ["sentio"]);
+		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
+
+			$scope.model = [];
+
+			$scope.yExtent = [0, undefined];
+
+			$scope.generateData = function(start, samples) {
+				var toReturn = [];
+				for(var i=0; i<samples; i++){
+					toReturn.push([start + i*1000, Math.random() * 10]);
+				}
+				return toReturn;
+			};
+
+			$scope.updateData = function() {
+				$scope.model = $scope.generateData(Date.now() - 1000*100, 100);
+			}
+
+			$scope.filter = function(filterState){
+				console.log(filterState);
+			};
+
+			$scope.model = $scope.generateData(Date.now() - 1000*100, 100);
+
+		}]);
+
+	</script>
+
+	<style>
+	</style>
+
+</head>
+<body ng-controller="DemoController">
+	<h1>Static timeline example</h1>
+	<p>AngularJS integrated D3 static timeline example</p>
+	<div data-sentio-timeline style="height:100px;"
+		data-sentio-model="model"
+		data-sentio-y-extent="yExtent"
+		data-sentio-resize-width=""
+		data-sentio-filter-fn="filter(filterState)"></div>
+
+	<button data-ng-click="updateData()">Update Data</button>
+</body>
+	
+</html>
+
