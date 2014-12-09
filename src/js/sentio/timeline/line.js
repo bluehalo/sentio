@@ -53,7 +53,8 @@ function sentio_timeline_line() {
 	// Brush filter
 	var filter = {
 		enabled: false,
-		brush: d3.svg.brush()
+		brush: d3.svg.brush(),
+		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
 	};
 
 	var element = {
@@ -185,21 +186,21 @@ function sentio_timeline_line() {
 		var min = (isEmpty)? undefined : filter.brush.extent()[0].getTime();
 		var max = (isEmpty)? undefined : filter.brush.extent()[1].getTime();
 
-		//scope.trigger("filterstart", [ isEmpty, min, max ]);
+		filter.dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
 		var isEmpty = filter.brush.empty();
 		var min = (isEmpty)? undefined : filter.brush.extent()[0].getTime();
 		var max = (isEmpty)? undefined : filter.brush.extent()[1].getTime();
 
-		//scope.trigger("filter", [ isEmpty, min, max ]);
+		filter.dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
 		var isEmpty = filter.brush.empty();
 		var min = (isEmpty)? undefined : filter.brush.extent()[0].getTime();
 		var max = (isEmpty)? undefined : filter.brush.extent()[1].getTime();
 
-		//scope.trigger("filterend", [ isEmpty, min, max ]);
+		filter.dispatch.filterend([isEmpty, min, max]);
 	}
 
 	// Basic Getters/Setters
@@ -267,7 +268,7 @@ function sentio_timeline_line() {
 		return chart;
 	};
 	chart.filter = function(v){
-		if(!arguments.length) { return filter.enabled; }
+		if(!arguments.length) { return filter.dispatch; }
 		filter.enabled = v;
 		return chart;
 	};

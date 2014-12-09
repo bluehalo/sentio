@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Realtime timeline. Basic Example.</title>
+	<title>Static timeline with filter. Basic Example.</title>
 
 	<link rel="stylesheet" href="../../dist/sentio.css" />
 
@@ -23,6 +23,11 @@
 			.width(600)
 			.filter(true)
 			.yExtent([0, undefined]);
+
+		timeline.filter()
+				.on('filter', function(val) { console.log(val); })
+				.on('filterstart', function(val) { console.log(val); })
+				.on('filterend', function(val) { console.log(val); });
 
 		//var random = d3.random.normal(0, 1);
 		var data = generateData(Date.now() - 1000*15, 15);
