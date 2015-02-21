@@ -60,7 +60,9 @@ gulp.task('js-angular', function(){
 		.pipe(plugins.filesize())
 
 		// Uglify
-		.pipe(plugins.uglify())
+		.pipe(plugins.uglify({
+			mangle: false
+		}))
 		.pipe(plugins.rename(p.name + '-angular.min.js'))
 		.pipe(plugins.insert.prepend(banner))
 		.pipe(gulp.dest('dist'))
