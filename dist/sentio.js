@@ -1,4 +1,4 @@
-/*! sentio Version: 0.2.2 */
+/*! sentio Version: 0.2.3 */
 var sentio = {};
 var sentio_realtime = sentio.realtime = {};
 sentio.realtime.timeline = sentio_realtime_timeline;
@@ -424,14 +424,14 @@ function sentio_timeline_line() {
 	};
 
 	// Update the chart data
-	chart.data = function(value){
+	chart.data = function(value) {
 		if(!arguments.length) { return data; }
 		data = value;
 		element.g.plot.datum(data);
 		return chart;
 	};
 
-	chart.redraw = function(){
+	chart.redraw = function() {
 		// Set up the scales
 		scale.x.range([0, width - margin.left - margin.right]);
 		scale.y.range([height - margin.top - margin.bottom, 0]);
@@ -475,7 +475,7 @@ function sentio_timeline_line() {
 	};
 
 
-	function getExtent(accessorFn, configuredExtent, defaultExtent){
+	function getExtent(accessorFn, configuredExtent, defaultExtent) {
 		// Calculate the domain
 		var nExtent = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
 		data.forEach(function(element, index){
@@ -518,72 +518,77 @@ function sentio_timeline_line() {
 	}
 
 	// Basic Getters/Setters
-	chart.width = function(v){
+	chart.width = function(v) {
 		if(!arguments.length) { return width; }
 		width = v;
 		return chart;
 	};
-	chart.height = function(v){
+	chart.height = function(v) {
 		if(!arguments.length) { return height; }
 		height = v;
 		return chart;
 	};
-	chart.xAxis = function(v){
+	chart.xAxis = function(v) {
 		if(!arguments.length) { return axis.x; }
 		axis.x = v;
 		return chart;
 	};
-	chart.yAxis = function(v){
+	chart.yAxis = function(v) {
 		if(!arguments.length) { return axis.y; }
 		axis.y = v;
 		return chart;
 	};
-	chart.xScale = function(v){
+	chart.xScale = function(v) {
 		if(!arguments.length) { return scale.x; }
 		scale.x = v;
 		axis.x.scale(v);
 		return chart;
 	};
-	chart.yScale = function(v){
+	chart.yScale = function(v) {
 		if(!arguments.length) { return scale.y; }
 		scale.y = v;
 		axis.y.scale(v);
 		return chart;
 	};
-	chart.interpolation = function(v){
+	chart.interpolation = function(v) {
 		if(!arguments.length) { return line.interpolate(); }
 		line.interpolate(v);
 		area.interpolate(v);
 		return chart;
 	};
-	chart.xValue = function(v){
+	chart.xValue = function(v) {
 		if(!arguments.length) { return value.x; }
 		value.x = v;
 		return chart;
 	};
-	chart.yValue = function(v){
+	chart.yValue = function(v) {
 		if(!arguments.length) { return value.y; }
 		value.y = v;
 		return chart;
 	};
-	chart.xExtent = function(v){
+	chart.xExtent = function(v) {
 		if(!arguments.length) { return xExtent; }
 		xExtent = v;
 		return chart;
 	};
-	chart.yExtent = function(v){
+	chart.yExtent = function(v) {
 		if(!arguments.length) { return yExtent; }
 		yExtent = v;
 		return chart;
 	};
-	chart.duration = function(v){
+	chart.duration = function(v) {
 		if(!arguments.length) { return duration; }
 		duration = v;
 		return chart;
 	};
-	chart.filter = function(v){
+	chart.filter = function(v) {
 		if(!arguments.length) { return filter.dispatch; }
 		filter.enabled = v;
+		return chart;
+	};
+	chart.margin = function(v) {
+		if(!arguments.length) { return margin; }
+		margin = v;
 		return chart;
 	};
 
