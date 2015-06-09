@@ -5,6 +5,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 		restrict : 'A',
 		scope : {
 			model: '=sentioModel',
+			markers: '=sentioMarkers',
 			interval: '=sentioInterval',
 			delay: '=sentioDelay',
 			yExtent: '=sentioYExtent',
@@ -44,6 +45,12 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 
 				timeline.data(n).redraw();
 				timeline.start();
+			});
+			
+			scope.$watchCollection('markers', function(n, o){
+				if(null == o && null == n){ return; }
+
+				timeline.markers(n);
 			});
 
 			scope.$watch('interval', function(n, o){

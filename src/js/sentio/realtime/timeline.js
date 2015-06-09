@@ -19,6 +19,12 @@ function sentio_realtime_timeline() {
 		reveal: 300,
 		animate: 300
 	};
+	
+	/**
+	 * Callback function for hovers over the markers. Invokes this function
+	 * with the d[2] data from the marker payload
+	 */
+	var markerHoverCallback = null;
 
 	// Is the timeline running?
 	var running = false;
@@ -60,7 +66,8 @@ function sentio_realtime_timeline() {
 			container: undefined,
 			xAxis: undefined,
 			yAxis: undefined,
-			line: undefined
+			line: undefined,
+			markers: undefined
 		},
 		clipPath: undefined
 	};
@@ -74,7 +81,7 @@ function sentio_realtime_timeline() {
 		return scale.y(value.y(d, i));
 	});
 
-	var data = [];
+	var data = [], markers = [];
 
 	// Chart create/init method
 	function chart(selection){}
@@ -93,7 +100,9 @@ function sentio_realtime_timeline() {
 		// Append the path group (which will have the clip path and the line path
 		element.g.line = element.g.container.append('g').attr('clip-path', 'url(#' + id + ')');
 		element.g.line.append('path').attr('class', 'line');
-
+		
+		element.g.markers = element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#' + id + ')');
+		
 		// Append groups for the axes
 		element.g.xAxis = element.g.container.append('g').attr('class', 'x axis');
 		element.g.yAxis = element.g.container.append('g').attr('class', 'y axis');
@@ -106,6 +115,83 @@ function sentio_realtime_timeline() {
 		if(!arguments.length) { return data; }
 		data = value;
 		element.g.line.datum(data);
+		return chart;
+	};
+	
+	/**
+	 * Accepts the hovered element and conditionally invokes
+	 * the marker hover callback if both the function and data
+	 * are non-null
+	 */
+	function invokeMarkerCallback(d) {
+		// fire an event with the payload from d[2]
+		if(null != d[2] && null != markerHoverCallback) {
+			markerHoverCallback(d[2]);
+		}
+	}
+	
+	/**
+	 * Draws the appropriate marker lines, whether
+	 * coming from enter or update of data
+	 */
+	function drawMarkerLines(selection) {
+		selection
+			.attr("x1", function(d) {
+				return scale.x(d[0]);
+			})
+			.attr("x2", function(d) {
+				return scale.x(d[0]);
+			})
+			.attr("y1", scale.y.range()[1])
+			.attr("y2", scale.y.range()[0])
+			.on('mouseover', invokeMarkerCallback);
+	}
+	
+	/**
+	 * Draws the appropriate marker text, whether
+	 * coming from enter or update of data
+	 */
+	function drawMarkerText(selection) {
+		
+		var ySize = scale.y.range()[0] - scale.y.range()[1];
+		ySize = ySize * 0.2;
+		
+		selection
+			.attr("x", function(d) {
+				return scale.x(d[0]);
+			})
+			.attr("y", ySize)
+			.text(function(d) { return d[1]; })
+			.on('mouseover', invokeMarkerCallback);
+	}
+	
+	chart.markers = function(value) {
+		if(!arguments.length) { return markers; }
+		markers = value;
+		
+		if(markers.length === 0) {
+			return chart;
+		}
+		
+		// add data to the container of markers
+		var markData = element.g.markers
+		  .selectAll('.marker')
+		    .data(markers)
+		    .enter();
+		
+		/*
+		 * markerGroup is a collection of the line
+		 * and label for a particular marker
+		 */
+		var markerGroup = markData.append('g')
+		    .attr('class', 'marker');
+		
+		// Add the line to the marker group
+		drawMarkerLines(markerGroup.append('line') );
+		
+		// Text can show on hover or always
+		drawMarkerText( markerGroup.append('text') );
+		
 		return chart;
 	};
 
@@ -153,36 +239,61 @@ function sentio_realtime_timeline() {
 			efficientTick(now);
 		}
 	}
+	
+	function executeTick(now) {
+		// Select and draw the x axis
+		element.g.xAxis.call(axis.x);
+		
+		// Select and draw the y axis
+		element.g.yAxis.call(axis.y);
+		
+		var translate = scale.x(now - delay - interval - 2*duration.reveal);
+		
+		tickLine(translate);
+		tickMarkers(translate);
+	}
+	
+	function tickLine(translate) {
+		// Select and draw the line
+		element.g.line.select('.line').attr('d', line).attr('transform', null);
+		element.g.line.select('.line').transition()
+			.attr('transform', 'translate(' + translate + ')');
+	}
+	
+	function tickMarkers(translate) {
+		element.g.markers
+			.selectAll('.marker')
+			.attr('transform', null)
+			// if any marker is outside the X-window, mark it for deletion
+			.attr('delete', function(d) {
+				return scale.x(d) < 0;
+			});
+		
+		// Fade out and remove markers with lines outside of range
+		element.g.markers.selectAll('[delete=true]')
+			.attr('opacity', 1)
+			.transition(500)
+			.attr('opacity', 0)
+			.remove();
+		
+		drawMarkerLines( element.g.markers.selectAll('line') );
+		drawMarkerText( element.g.markers.selectAll('text') );
+		
+		element.g.markers
+			.selectAll('.marker')
+			.transition()
+			.attr('transform', 'translate(' + translate + ')');
+		
+	}
 
 	function normalTick(now) {
 		transition = transition.each(function(){
-
-			// Select and draw the line
-			element.g.line.select('.line').attr('d', line).attr('transform', null);
-
-			// Select and draw the x axis
-			element.g.xAxis.call(axis.x);
-
-			// Select and draw the y axis
-			element.g.yAxis.call(axis.y);
-
-			element.g.line.select('.line').transition()
-				.attr('transform', 'translate(' + scale.x(now - delay - interval - 2*duration.reveal) + ')');
-
+			executeTick(now);
 		}).transition().each('start', tick);
 	}
 
 	function efficientTick(now) {
-		// Select and draw the line
-		element.g.line.select('.line').attr('d', line).attr('transform', null);
-
-		// Select and draw the x axis
-		element.g.xAxis.call(axis.x).call(axis.x);
-
-		// Select and draw the y axis
-		element.g.yAxis.call(axis.y);
-
-		element.g.line.select('.line').attr('transform', 'translate(-' + scale.x(now - delay - interval + duration.reveal) + ')');
+		executeTick(now);
 
 		// Schedule the next update
 		window.setTimeout(tick, 1000/efficient.fps);
@@ -303,6 +414,12 @@ function sentio_realtime_timeline() {
 	chart.efficient = function(v){
 		if(!arguments.length) { return efficient; }
 		efficient = v;
+		return chart;
+	};
+
+	chart.markerHover = function(f){
+		if(!arguments.length) { return markerHoverCallback; }
+		markerHoverCallback = f;
 		return chart;
 	};
 

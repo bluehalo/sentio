@@ -9,6 +9,15 @@ svg {
 	stroke-width: 1.5px;
 }
 
+.marker line {
+	stroke: #F00;
+	stroke-width: 1;
+}
+
+.marker text {
+	font-weight: bold;
+}
+
 .area {
 	fill: #eee;
 	stroke: none;
