@@ -1,4 +1,4 @@
-/*! sentio Version: 0.2.3 */
+/*! sentio Version: 0.2.4 */
 var sentio = {};
 var sentio_realtime = sentio.realtime = {};
 sentio.realtime.timeline = sentio_realtime_timeline;
