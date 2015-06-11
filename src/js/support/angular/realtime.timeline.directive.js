@@ -6,6 +6,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 		scope : {
 			model: '=sentioModel',
 			markers: '=sentioMarkers',
+			markerHover: '=sentioMarkerHover',
 			interval: '=sentioInterval',
 			delay: '=sentioDelay',
 			yExtent: '=sentioYExtent',
@@ -33,6 +34,11 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			}
 
 			timeline.init(timelineElement);
+
+			// setup the marker callback method if one was provided
+			if(null != scope.markerHover) {
+				timeline.markerHover( scope.markerHover );
+			}
 
 			scope.$watch('configure', function(n, o){
 				if(null != scope.configure){
