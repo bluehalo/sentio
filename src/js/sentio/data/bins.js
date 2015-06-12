@@ -23,7 +23,7 @@ function sentio_data_bins(config) {
 	var data = [];
 
 	// The default getValue function
-	var getValue = function(d) { return d; };
+	var valueFn = function(d) { return d; };
 
 
 	/**
@@ -55,7 +55,9 @@ function sentio_data_bins(config) {
 		}
 
 		// if we emptied the array, add an element for the lwm
-		data.push([bins.lwm, []]);
+		if(data.length === 0) {
+			data.push([bins.lwm, []]);
+		}
 
 		// fill in any missing values from the lowest bin to the lwm
 		for(var i=data[0][0] - bins.size; i >= bins.lwm; i -= bins.size) {
@@ -70,18 +72,22 @@ function sentio_data_bins(config) {
 
 	function addData(dataToAdd) {
 		dataToAdd.forEach(function(element) {
-			var i = getIndex(getValue(element));
+			var i = getIndex(valueFn(element));
 			if(i >= 0 && i < data.length) {
 				(data[i][1]).push(element);
 			}
 		});
 	}
 
-	function clearData() {
-		// Iterate through all the bins and clear them
-		data.forEach(function(bin) {
-			bin[1] = 0;
-		});
+	function clearData(destroy) {
+		if(destroy) {
+			data.length = 0;
+		} else {
+			// Iterate through all the bins and clear them
+			data.forEach(function(bin) {
+				bin[1].length = 0;
+			});
+		}
 	}
 
 	function getData() {
@@ -99,7 +105,10 @@ function sentio_data_bins(config) {
 		var oldData = getData();
 
 		// Clear the state
-		clearData();
+		clearData(true);
+
+		// Update the state of the array
+		updateState();
 
 		// Load the data according to the new settings
 		addData(oldData);
@@ -121,7 +130,7 @@ function sentio_data_bins(config) {
 	/*
 	 * Resets the layout with the new data
 	 */
-	layout.setData = function(data) {
+	layout.set = function(data) {
 		clearData();
 		addData(data);
 		return layout;
@@ -130,7 +139,7 @@ function sentio_data_bins(config) {
 	/*
 	 * Clears the data currently in the bin layout
 	 */
-	layout.clearData = function() {
+	layout.clear = function() {
 		clearData();
 		return layout;
 	};
@@ -138,7 +147,7 @@ function sentio_data_bins(config) {
 	/*
 	 * Add an array of data objects to the bins
 	 */
-	layout.addData = function(dataToAdd) {
+	layout.add = function(dataToAdd) {
 		addData(dataToAdd);
 		return layout;
 	};
@@ -155,10 +164,18 @@ function sentio_data_bins(config) {
 	 */
 	layout.lwm = function(v) {
 		if(!arguments.length) { return bins.lwm; }
-		bins.lwm = v;
+
+		var oldLwm = bins.lwm;
+		bins.lwm = Number(v);
 
 		calculateHwm();
-		updateState();
+
+		if((oldLwm - bins.lwm) % bins.size !== 0) {
+			// the difference between watermarks is not a multiple of the bin size, so we need to reset
+			resetData();
+		} else {
+			updateState();
+		}
 
 		return layout;
 	};
@@ -166,9 +183,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the value accessor function
 	 */
-	layout.getValue = function(v) {
-		if(!arguments.length) { return getValue; }
-		getValue = v;
+	layout.value = function(v) {
+		if(!arguments.length) { return valueFn; }
+		valueFn = v;
 
 		return layout;
 	};
@@ -176,9 +193,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the bin size
 	 */
-	layout.binSize = function(v) {
+	layout.size = function(v) {
 		if(!arguments.length) { return bins.size; }
-		bins.size = v;
+		bins.size = Number(v);
 
 		return layout;
 	};
@@ -186,9 +203,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the bin count
 	 */
-	layout.binCount = function(v) {
+	layout.count = function(v) {
 		if(!arguments.length) { return bins.count; }
-		bins.count = v;
+		bins.count = Number(v);
 
 		return layout;
 	};

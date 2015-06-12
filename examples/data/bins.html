@@ -13,8 +13,13 @@
 
 </head>
 <body>
-	<input type="text" id="valueInput"/>
-	<button onClick="addValue()">Add Value</button>
+	<input type="text" id="countInput" value="5" /><button onClick="setCount()">Set Bin Count</button><br/>
+	<input type="text" id="sizeInput" value="10" /><button onClick="setSize()">Set Bin Size</button><br/>
+	<input type="text" id="lwmInput" value="100" /><button onClick="setLwm()">Low Watermark</button><br/>
+	<input type="text" id="valueInput"/><button onClick="addValue()">Add Value</button><br/>
+	<button onClick="clear()">Clear</button><br/>
+	<br/>
+
 	<div id="chart"></div>
 
 	<script type="text/javascript">
@@ -22,20 +27,47 @@
 			count: 5,
 			size: 10,
 			lwm: 100
-		}).getValue(function(d) { return d; });
+		}).value(function(d) { return d; });
 
 		// draw divs for each bin
 		function redraw() {
 			var chart = d3.select('#chart');
 			var join = chart.selectAll('div').data(layout.bins(), function(d) { return d[0]; } );
-			join.enter().append('div');
+			join.enter().append('div').attr('background-color', 'light-gray');
 			join.text(function(d) { return d[0] + " : " + d[1].length; } );
 			join.exit().remove();
 		}
 
 		function addValue() {
 			var value = document.getElementById('valueInput').value;
-			layout.addData([value]);
+			layout.add([value]);
+
+			redraw();
+		}
+
+		function setCount() {
+			var value = document.getElementById('countInput').value;
+			layout.count(value).reset();
+
+			redraw();
+		}
+
+		function setSize() {
+			var value = document.getElementById('sizeInput').value;
+			layout.size(value).reset();
+
+			redraw();
+		}
+
+		function setLwm() {
+			var value = document.getElementById('lwmInput').value;
+			layout.lwm(value);
+
+			redraw();
+		}
+
+		function clear() {
+			layout.clear();
 			redraw();
 		}
 
