@@ -16,6 +16,8 @@ gulp.task('build', ['js', 'js-angular', 'css'] );
 gulp.task('js', function(){
 	return gulp.src([
 			'src/js/sentio/sentio.js',
+			'src/js/sentio/data/data.js',
+			'src/js/sentio/data/**/*.js',
 			'src/js/sentio/realtime/realtime.js',
 			'src/js/sentio/realtime/**/*.js',
 			'src/js/sentio/timeline/timeline.js',

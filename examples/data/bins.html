@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Bins layout example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<input type="text" id="valueInput"/>
+	<button onClick="addValue()">Add Value</button>
+	<div id="chart"></div>
+
+	<script type="text/javascript">
+		var layout = sentio.data.bins({
+			count: 5,
+			size: 10,
+			lwm: 100
+		}).getValue(function(d) { return d; });
+
+		// draw divs for each bin
+		function redraw() {
+			var chart = d3.select('#chart');
+			var join = chart.selectAll('div').data(layout.bins(), function(d) { return d[0]; } );
+			join.enter().append('div');
+			join.text(function(d) { return d[0] + " : " + d[1].length; } );
+			join.exit().remove();
+		}
+
+		function addValue() {
+			var value = document.getElementById('valueInput').value;
+			layout.addData([value]);
+			redraw();
+		}
+
+		redraw();
+
+	</script>
+
+</body>
+</html>
+
