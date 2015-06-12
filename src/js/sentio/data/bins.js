@@ -198,8 +198,15 @@ function sentio_data_bins(config) {
 	 */
 	layout.size = function(v) {
 		if(!arguments.length) { return bins.size; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin size must be a positive integer');
+		}
+
 		bins.size = Number(v);
 
+		calculateHwm();
+		resetData();
 		return layout;
 	};
 
@@ -208,8 +215,14 @@ function sentio_data_bins(config) {
 	 */
 	layout.count = function(v) {
 		if(!arguments.length) { return bins.count; }
-		bins.count = Number(v);
+		if(Number(v) < 1) {
+			throw new Error('Bin count must be a positive integer');
+		}
 
+		bins.count = Math.floor(Number(v));
+
+		calculateHwm();
+		updateState();
 		return layout;
 	};
 
