@@ -123,5 +123,5 @@ gulp.task('css', function(){
 
 gulp.task('test', function () {
 	return gulp.src('test/runner.html')
-		.pipe(plugins.mochaPhantomjs({ reporter: 'spec' }));
+		.pipe(plugins.mochaPhantomjs());
 });

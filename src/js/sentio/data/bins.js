@@ -50,7 +50,7 @@ function sentio_data_bins(config) {
 		}
 
 		// drop stuff above the hwm
-		while(data.length > 0 && data[data.length - 1][0] > bins.hwm) {
+		while(data.length > 0 && data[data.length - 1][0] >= bins.hwm) {
 			data.pop();
 		}
 
@@ -116,6 +116,9 @@ function sentio_data_bins(config) {
 
 	// create/init method
 	function layout(binConfig) {
+		if(null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
+			throw new Error('You must provide an initial size, count, and lwm');
+		}
 		bins = binConfig;
 
 		calculateHwm();
