@@ -25,8 +25,25 @@ function sentio_data_bins(config) {
 	// The data (an array of object containers)
 	var data = [];
 
-	// The default getValue function
+	// The default key function
+	var keyFn = function(d) { return d; };
+
+	// The default value function
 	var valueFn = function(d) { return d; };
+
+	// The default function for updating a bin given a new value
+	var updateBinFn = function(bin, d) { return bin[1].push(d); };
+
+	// The default get data function for extracting the original data from the data structure
+	var getDataFn = function(bins) {
+		var d = [];
+		bins.forEach(function(bin){
+			bin[1].forEach(function(element){
+				d.push(element);
+			});
+		});
+		return d;
+	};
 
 
 	/**
@@ -75,40 +92,23 @@ function sentio_data_bins(config) {
 
 	function addData(dataToAdd) {
 		dataToAdd.forEach(function(element) {
-			var i = getIndex(valueFn(element));
+			var i = getIndex(keyFn(element));
 			if(i >= 0 && i < data.length) {
-				(data[i][1]).push(element);
+				updateBinFn(data[i], valueFn(element));
 			}
 		});
 	}
 
-	function clearData(destroy) {
-		if(destroy) {
-			data.length = 0;
-		} else {
-			// Iterate through all the bins and clear them
-			data.forEach(function(bin) {
-				bin[1].length = 0;
-			});
-		}
-	}
-
-	function getData() {
-		var d = [];
-		data.forEach(function(bin){
-			bin[1].forEach(function(element){
-				d.push(element);
-			});
-		});
-		return d;
+	function clearData() {
+		data.length = 0;
 	}
 
 	function resetData() {
 		// Store the data in a side array
-		var oldData = getData();
+		var oldData = getDataFn(data);
 
 		// Clear the state
-		clearData(true);
+		clearData();
 
 		// Update the state of the array
 		updateState();
@@ -138,6 +138,7 @@ function sentio_data_bins(config) {
 	 */
 	layout.set = function(data) {
 		clearData();
+		updateState();
 		addData(data);
 		return layout;
 	};
@@ -147,6 +148,7 @@ function sentio_data_bins(config) {
 	 */
 	layout.clear = function() {
 		clearData();
+		updateState();
 		return layout;
 	};
 
@@ -156,13 +158,6 @@ function sentio_data_bins(config) {
 	layout.add = function(dataToAdd) {
 		addData(dataToAdd);
 		return layout;
-	};
-
-	/*
-	 * Reset the whole layout (need to call this after changing bin count, size, accessor, etc)
-	 */
-	layout.reset = function() {
-		resetData();
 	};
 
 	/*
@@ -187,12 +182,29 @@ function sentio_data_bins(config) {
 	};
 
 	/*
-	 * Get/Set the value accessor function
+	 * Get/Set the key function used to determine the key value for indexing into the bins
 	 */
-	layout.value = function(v) {
+	layout.keyFn = function(v) {
+		if(!arguments.length) { return keyFn; }
+		keyFn = v;
+		return layout;
+	};
+
+	/*
+	 * Get/Set the value function for determining what value is added to the bin
+	 */
+	layout.valueFn = function(v) {
 		if(!arguments.length) { return valueFn; }
 		valueFn = v;
+		return layout;
+	};
 
+	/*
+	 * Update bin function for determining how to update the state of a bin when a new value is added to it
+	 */
+	layout.updateBinFn = function(v) {
+		if(!arguments.length) { return updateBinFn; }
+		updateBinFn = v;
 		return layout;
 	};
 

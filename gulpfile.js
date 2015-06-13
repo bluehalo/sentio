@@ -11,10 +11,13 @@ var src = {
 		'src/js/sentio/sentio.js',
 		'src/js/sentio/data/data.js',
 		'src/js/sentio/data/**/*.js',
+
 		'src/js/sentio/realtime/realtime.js',
 		'src/js/sentio/realtime/**/*.js',
+
 		'src/js/sentio/timeline/timeline.js',
 		'src/js/sentio/timeline/**/*.js',
+
 		'src/js/sentio/**/*.js'
 	],
 	angular: [
@@ -30,7 +33,7 @@ var src = {
 
 gulp.task('default', ['build']);
 
-gulp.task('watch', function(){
+gulp.task('watch', ['build'], function(){
 	gulp.watch(['test/**/*', 'src/**/*', '!/src/lib/**/*'], ['build']);
 });
 
