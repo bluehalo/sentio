@@ -22,6 +22,9 @@ function sentio_data_bins(config) {
 	// The data (an array of object containers)
 	var data = [];
 
+	// The default function for creating the seed value for a bin
+	var seedFn = function() { return []; };
+
 	// The default key function
 	var keyFn = function(d) { return d; };
 
@@ -29,18 +32,7 @@ function sentio_data_bins(config) {
 	var valueFn = function(d) { return d; };
 
 	// The default function for updating a bin given a new value
-	var updateBinFn = function(bin, d) { return bin[1].push(d); };
-
-	// The default get data function for extracting the original data from the data structure
-	var getDataFn = function(bins) {
-		var d = [];
-		bins.forEach(function(bin){
-			bin[1].forEach(function(element){
-				d.push(element);
-			});
-		});
-		return d;
-	};
+	var updateBinFn = function(bin, d) { bin[1].push(d); };
 
 
 	/**
@@ -73,17 +65,17 @@ function sentio_data_bins(config) {
 
 		// if we emptied the array, add an element for the lwm
 		if(data.length === 0) {
-			data.push([bins.lwm, []]);
+			data.push([bins.lwm, seedFn()]);
 		}
 
 		// fill in any missing values from the lowest bin to the lwm
 		for(var i=data[0][0] - bins.size; i >= bins.lwm; i -= bins.size) {
-			data.unshift([i, []]);
+			data.unshift([i, seedFn()]);
 		}
 
 		// pad above the hwm
 		while(data[data.length - 1][0] < bins.hwm - bins.size) {
-			data.push([data[data.length-1][0] + bins.size, []]);
+			data.push([data[data.length-1][0] + bins.size, seedFn()]);
 		}
 	}
 
@@ -100,26 +92,18 @@ function sentio_data_bins(config) {
 		data.length = 0;
 	}
 
-	function resetData() {
-		// Store the data in a side array
-		var oldData = getDataFn(data);
-
-		// Clear the state
-		clearData();
-
-		// Update the state of the array
-		updateState();
-
-		// Load the data according to the new settings
-		addData(oldData);
-	}
-
 	// create/init method
 	function layout(binConfig) {
 		if(null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
-			throw new Error('You must provide an initial size, count, and lwm');
+			throw new Error('You must provide an initial size, count, lwm, and seed');
 		}
-		bins = binConfig;
+		bins.size = binConfig.size;
+		bins.count = binConfig.count;
+		bins.lwm = binConfig.lwm;
+		if(null != binConfig.seed) { bins.seed = binConfig.seed; }
+		if(null != binConfig.keyFn) { keyFn = binConfig.keyFn; }
+		if(null != binConfig.valueFn) { valueFn = binConfig.valueFn; }
+		if(null != binConfig.updateBinFn) { updateBinFn = binConfig.updateBinFn; }
 
 		calculateHwm();
 		updateState();
@@ -170,10 +154,10 @@ function sentio_data_bins(config) {
 
 		if((oldLwm - bins.lwm) % bins.size !== 0) {
 			// the difference between watermarks is not a multiple of the bin size, so we need to reset
-			resetData();
-		} else {
-			updateState();
+			clearData();
 		}
+
+		updateState();
 
 		return layout;
 	};
@@ -184,6 +168,10 @@ function sentio_data_bins(config) {
 	layout.keyFn = function(v) {
 		if(!arguments.length) { return keyFn; }
 		keyFn = v;
+
+		clearData();
+		updateState();
+
 		return layout;
 	};
 
@@ -193,15 +181,36 @@ function sentio_data_bins(config) {
 	layout.valueFn = function(v) {
 		if(!arguments.length) { return valueFn; }
 		valueFn = v;
+
+		clearData();
+		updateState();
+
 		return layout;
 	};
 
 	/*
-	 * Update bin function for determining how to update the state of a bin when a new value is added to it
+	 * Get/Set the Update bin function for determining how to update the state of a bin when a new value is added to it
 	 */
 	layout.updateBinFn = function(v) {
 		if(!arguments.length) { return updateBinFn; }
 		updateBinFn = v;
+
+		clearData();
+		updateState();
+
+		return layout;
+	};
+
+	/*
+	 * Get/Set the seedFn for populating 
+	 */
+	layout.seedFn = function(v) {
+		if(!arguments.length) { return seedFn; }
+		seedFn = v;
+
+		clearData();
+		updateState();
+
 		return layout;
 	};
 
@@ -215,10 +224,13 @@ function sentio_data_bins(config) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
-		bins.size = Number(v);
+		if(Number(v) !== bins.size) {
+			bins.size = Number(v);
+			calculateHwm();
+			clearData();
+			updateState();
+		}
 
-		calculateHwm();
-		resetData();
 		return layout;
 	};
 
@@ -227,14 +239,17 @@ function sentio_data_bins(config) {
 	 */
 	layout.count = function(v) {
 		if(!arguments.length) { return bins.count; }
+
 		if(Number(v) < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
-		bins.count = Math.floor(Number(v));
+		if(Number(v) !== bins.count) {
+			bins.count = Math.floor(Number(v));
+			calculateHwm();
+			updateState();
+		}
 
-		calculateHwm();
-		updateState();
 		return layout;
 	};
 

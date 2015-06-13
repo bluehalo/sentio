@@ -219,13 +219,13 @@ describe('Bin Layout', function() {
 				bins.length.should.equal(5);
 			});
 
-			it('should establish the right data in the bins', function() {
+			it('should clear the data', function() {
 				bins[0][0].should.equal(15);
-				bins[0][1].length.should.equal(4);
+				bins[0][1].length.should.equal(0);
 				bins[1][0].should.equal(25);
 				bins[1][1].length.should.equal(0);
 				bins[2][0].should.equal(35);
-				bins[2][1].length.should.equal(1);
+				bins[2][1].length.should.equal(0);
 				bins[3][0].should.equal(45);
 				bins[3][1].length.should.equal(0);
 				bins[4][0].should.equal(55);
@@ -322,9 +322,9 @@ describe('Bin Layout', function() {
 				layout.lwm().should.equal(0);
 			});
 
-			it('should reset the data', function() {
+			it('should clear the data', function() {
 				bins[0][0].should.equal(0);
-				bins[0][1].length.should.equal(5);
+				bins[0][1].length.should.equal(0);
 				bins[1][0].should.equal(3);
 				bins[1][1].length.should.equal(0);
 				bins[2][0].should.equal(6);
@@ -351,9 +351,9 @@ describe('Bin Layout', function() {
 				layout.lwm().should.equal(0);
 			});
 
-			it('should reset the data', function() {
+			it('should clear the data', function() {
 				bins[0][0].should.equal(0);
-				bins[0][1].length.should.equal(3);
+				bins[0][1].length.should.equal(0);
 				bins[1][0].should.equal(3);
 				bins[1][1].length.should.equal(0);
 				bins[2][0].should.equal(6);
@@ -406,4 +406,36 @@ describe('Bin Layout', function() {
 
 		});
 	});
+
+	describe('Custom bin aggregation', function() {
+
+		context('when summing values', function() {
+			var layout = sentio.data.bins({
+				count: 3,
+				size: 10,
+				lwm: 0
+			});
+
+			layout.keyFn(function(d) { return d.key; });
+			layout.valueFn(function(d) { return d.value; });
+			layout.updateBinFn(function(bin, d) { bin[1] += d; });
+			layout.seedFn(function() { return 0; });
+
+			layout.add([ {key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
+
+			it('should aggregate properly', function() {
+				var bins = layout.bins();
+				bins.length.should.equal(3);
+				bins[0][1].should.equal(7);
+				bins[1][1].should.equal(0);
+				bins[2][1].should.equal(4);
+			});
+
+			it('should empty on reset', function() {
+				layout.size(10);
+			});
+
+		});
+	});
+
 });
