@@ -418,7 +418,7 @@ describe('Bin Layout', function() {
 			layout.updateBinFn(function(bin, d) { bin[1] += d; });
 			layout.seedFn(function() { return 0; });
 
-			layout.add([ {key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
+			layout.add([{key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
 
 			it('should aggregate properly', function() {
 				var bins = layout.bins();

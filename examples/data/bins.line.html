@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Static timeline with filter. Basic Example.</title>
+	<title>Static timeline with filter. Using bins as the data structure.</title>
 
 	<link rel="stylesheet" href="../../dist/sentio.css" />
 
@@ -14,7 +14,7 @@
 </head>
 <body>
 	<div id="chart"></div>
-	<button onclick="updateData()">Update Data</button>
+	<button onclick="addData()">Add Data</button>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -29,22 +29,30 @@
 			.on('filterstart', function(val) { console.log(val); })
 			.on('filterend', function(val) { console.log(val); });
 
-		var data = generateData(Date.now() - 1000*15, 15);
-		timeline.init(timelineDiv).data(data).redraw();
+		var layout = sentio.data.bins({
+				count: 300,
+				size: 1000,
+				lwm: Date.now() - 1000*301
+			})
+			.updateBinFn(function(bin, d) { bin[1] += d; })
+			.seedFn(function() { return 0; });
 
-		function generateData(start, samples){
+		timeline
+			.xValue(function(d) { return d[0]; })
+			.yValue(function(d) { return d[1]; })
+			.init(timelineDiv).data(layout.bins()).redraw();
+
+		function generateData(range, samples) {
 			var toReturn = [];
 			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+				toReturn.push(range[0] + Math.random() * (range[1] - range[0]));
 			}
 			return toReturn;
 		}
 
-		function updateData(){
-			data.forEach(function(element){
-				element[1] = Math.random() * 10;
-			});
-			timeline.data(data).redraw();
+		function addData() {
+			layout.add(generateData([layout.lwm(), layout.hwm()], 10));
+			timeline.redraw();
 		}
 
 	</script>

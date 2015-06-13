@@ -166,6 +166,13 @@ function sentio_data_bins(config) {
 	};
 
 	/*
+	 * Get the high water mark
+	 */
+	layout.hwm = function() {
+		return bins.hwm;
+	};
+
+	/*
 	 * Get/Set the key function used to determine the key value for indexing into the bins
 	 */
 	layout.keyFn = function(v) {
