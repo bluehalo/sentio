@@ -327,7 +327,6 @@ function sentio_controller_rtBins(config) {
 		if(_playing === true) {
 			// need to update the lwm
 			_model.lwm(_calculateLwm());
-
 			window.setTimeout(_update, _model.size());
 		}
 	}
@@ -377,11 +376,12 @@ function sentio_controller_rtBins(config) {
 	/*
 	 * Get the model bins
 	 */
-	controller.bins = function(v) {
-		if(!arguments.length) { return _model.bins(); }
-		_model.bins(v);
+	controller.model = function() {
+		return _model;
+	};
 
-		return controller;
+	controller.bins = function() {
+		return _model.bins();
 	};
 
 	controller.play = function() {
@@ -397,19 +397,12 @@ function sentio_controller_rtBins(config) {
 	controller.add = function(v) {
 		_model.add(v);
 		return controller;
-	}
+	};
 
 	controller.clear = function() {
 		_model.clear();
 		return controller;
-	}
-
-	controller.binSize = function(v) {
-		if(!arguments.length) { return _model.bins(); }
-		_model.bins(v);
-
-		return controller;
-	}
+	};
 
 	controller.binSize = function(v) {
 		if(!arguments.length) { return _config.binSize; }
@@ -420,10 +413,10 @@ function sentio_controller_rtBins(config) {
 
 		_config.binSize = v;
 		_model.size(v);
-		_model.lwm(_calculateLwm())
+		_model.lwm(_calculateLwm());
 
 		return controller;
-	}
+	};
 
 	controller.binCount = function(v) {
 		if(!arguments.length) { return _config.binCount; }
@@ -434,10 +427,10 @@ function sentio_controller_rtBins(config) {
 
 		_config.binCount = v;
 		_model.count(v + 2);
-		_model.lwm(_calculateLwm())
+		_model.lwm(_calculateLwm());
 
 		return controller;
-	}
+	};
 
 	// Initialize the layout
 	controller(config);
