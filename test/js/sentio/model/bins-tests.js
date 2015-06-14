@@ -413,10 +413,11 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.getKey(function(d) { return d.key; });
-			layout.getValue(function(d) { return d.value; });
-			layout.updateBin(function(bin, d) { bin[1] += d; });
-			layout.createSeed(function() { return 0; });
+			layout
+				.getKey(function(d) { return d.key; })
+				.getValue(function(d) { return d.value; })
+				.updateBin(function(bin, d) { bin[1] += d; })
+				.createSeed(function() { return 0; });
 
 			layout.add([{key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
 
@@ -431,6 +432,66 @@ describe('Bin Layout', function() {
 			it('should empty on reset', function() {
 				layout.size(10);
 			});
+
+		});
+	});
+
+	describe('Clearing the model', function() {
+
+		context('when the model is binning values', function() {
+			var layout = sentio.model.bins({
+				count: 3,
+				size: 1,
+				lwm: 0
+			});
+
+			layout.add([0, 1, 2, 3]);
+
+			it('should result in empty arrays', function() {
+				var bins = layout.bins();
+
+				bins[0][1].length.should.equal(1);
+				bins[1][1].length.should.equal(1);
+				bins[2][1].length.should.equal(1);
+
+				layout.clear();
+
+				bins.length.should.equal(3);
+				bins[0][1].length.should.equal(0);
+				bins[1][1].length.should.equal(0);
+				bins[2][1].length.should.equal(0);
+			});
+
+		});
+
+		context('when the model is summing values', function() {
+			var layout = sentio.model.bins({
+				count: 3,
+				size: 1,
+				lwm: 0
+			});
+
+			layout
+				.updateBin(function(bin, d) { bin[1] += 1; })
+				.createSeed(function() { return 0; });
+
+			layout.add([0, 1, 2, 3]);
+
+			it('should result in 0 values', function() {
+				var bins = layout.bins();
+
+				bins[0][1].should.equal(1);
+				bins[1][1].should.equal(1);
+				bins[2][1].should.equal(1);
+
+				layout.clear();
+
+				bins.length.should.equal(3);
+				bins[0][1].should.equal(0);
+				bins[1][1].should.equal(0);
+				bins[2][1].should.equal(0);
+			});
+
 
 		});
 	});

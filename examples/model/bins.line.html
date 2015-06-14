@@ -29,14 +29,13 @@
 			.on('filterstart', function(val) { console.log(val); })
 			.on('filterend', function(val) { console.log(val); });
 
-		var layout = sentio.data.bins({
+		var layout = sentio.model.bins({
 				count: 300,
 				size: 1000,
 				lwm: Date.now() - 1000*301
 			})
-			.valueFn(function(d) { return 1; })
-			.updateBinFn(function(bin, d) { bin[1] += d; })
-			.seedFn(function() { return 0; });
+			.updateBin(function(bin, d) { bin[1] += 1; })
+			.createSeed(function() { return 0; });
 
 		timeline
 			.xValue(function(d) { return d[0]; })
