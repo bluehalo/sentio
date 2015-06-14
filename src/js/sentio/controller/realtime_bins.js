@@ -11,14 +11,14 @@ function sentio_controller_rtBins(config) {
 	 * Private variables
 	 */
 	var _config = {
-		delay: 0
+		delay: 0,
+		binSize: 0,
+		binCount: 0
 	};
 
 	// The bins
 	var _model;
-
-	var _playing = true;
-
+	var _playing;
 
 	/**
 	 * Private Functions
@@ -38,19 +38,20 @@ function sentio_controller_rtBins(config) {
 	}
 
 	function _update() {
-		// need to update the lwm
-		_model.lwm(_calculateLwm());
-
 		if(_playing === true) {
+			// need to update the lwm
+			_model.lwm(_calculateLwm());
+
 			window.setTimeout(_update, _model.size());
 		}
 	}
 
 	function _play() {
-		_playing = true;
-
-		// Start the update loop
-		_update();
+		if(!_playing) {
+			// Start the update loop
+			_playing = true;
+			_update();
+		}
 	}
 
 	function _pause() {
@@ -114,6 +115,41 @@ function sentio_controller_rtBins(config) {
 
 	controller.clear = function() {
 		_model.clear();
+		return controller;
+	}
+
+	controller.binSize = function(v) {
+		if(!arguments.length) { return _model.bins(); }
+		_model.bins(v);
+
+		return controller;
+	}
+
+	controller.binSize = function(v) {
+		if(!arguments.length) { return _config.binSize; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin size must be a positive integer');
+		}
+
+		_config.binSize = v;
+		_model.size(v);
+		_model.lwm(_calculateLwm())
+
+		return controller;
+	}
+
+	controller.binCount = function(v) {
+		if(!arguments.length) { return _config.binCount; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin count must be a positive integer');
+		}
+
+		_config.binCount = v;
+		_model.count(v + 2);
+		_model.lwm(_calculateLwm())
+
 		return controller;
 	}
 

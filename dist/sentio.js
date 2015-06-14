@@ -11,7 +11,7 @@ function sentio_model_bins(config) {
 	 */
 	// Configuration
 	var _config = {
-		// The number of bins in our layout
+		// The number of bins in our model
 		count: 1,
 
 		// The size of a bin in key value units
@@ -101,8 +101,8 @@ function sentio_model_bins(config) {
 	/*
 	 * Constructor/initialization method
 	 */
-	function layout(binConfig) {
-		if(null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
+	function model(binConfig) {
+		if(null == binConfig || null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
 			throw new Error('You must provide an initial size, count, and lwm');
 		}
 		_config.size = binConfig.size;
@@ -124,36 +124,36 @@ function sentio_model_bins(config) {
 	 */
 
 	/*
-	 * Resets the layout with the new data
+	 * Resets the model with the new data
 	 */
-	layout.set = function(data) {
+	model.set = function(data) {
 		clearData();
 		updateState();
 		addData(data);
-		return layout;
+		return model;
 	};
 
 	/*
-	 * Clears the data currently in the bin layout
+	 * Clears the data currently in the bin model
 	 */
-	layout.clear = function() {
+	model.clear = function() {
 		clearData();
 		updateState();
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Add an array of data objects to the bins
 	 */
-	layout.add = function(dataToAdd) {
+	model.add = function(dataToAdd) {
 		addData(dataToAdd);
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the low water mark value
 	 */
-	layout.lwm = function(v) {
+	model.lwm = function(v) {
 		if(!arguments.length) { return _config.lwm; }
 
 		var oldLwm = _config.lwm;
@@ -168,72 +168,72 @@ function sentio_model_bins(config) {
 
 		updateState();
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get the high water mark
 	 */
-	layout.hwm = function() {
+	model.hwm = function() {
 		return _config.hwm;
 	};
 
 	/*
 	 * Get/Set the key function used to determine the key value for indexing into the bins
 	 */
-	layout.getKey = function(v) {
+	model.getKey = function(v) {
 		if(!arguments.length) { return _fn.getKey; }
 		_fn.getKey = v;
 
 		clearData();
 		updateState();
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the value function for determining what value is added to the bin
 	 */
-	layout.getValue = function(v) {
+	model.getValue = function(v) {
 		if(!arguments.length) { return _fn.getValue; }
 		_fn.getValue = v;
 
 		clearData();
 		updateState();
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the Update bin function for determining how to update the state of a bin when a new value is added to it
 	 */
-	layout.updateBin = function(v) {
+	model.updateBin = function(v) {
 		if(!arguments.length) { return _fn.updateBin; }
 		_fn.updateBin = v;
 
 		clearData();
 		updateState();
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the seedFn for populating 
 	 */
-	layout.createSeed = function(v) {
+	model.createSeed = function(v) {
 		if(!arguments.length) { return _fn.createSeed; }
 		_fn.createSeed = v;
 
 		clearData();
 		updateState();
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the bin size
 	 */
-	layout.size = function(v) {
+	model.size = function(v) {
 		if(!arguments.length) { return _config.size; }
 
 		if(Number(v) < 1) {
@@ -248,13 +248,13 @@ function sentio_model_bins(config) {
 			updateState();
 		}
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Get/Set the bin count
 	 */
-	layout.count = function(v) {
+	model.count = function(v) {
 		if(!arguments.length) { return _config.count; }
 
 		if(Number(v) < 1) {
@@ -268,44 +268,104 @@ function sentio_model_bins(config) {
 			updateState();
 		}
 
-		return layout;
+		return model;
 	};
 
 	/*
 	 * Accessor for the bins of data
 	 */
-	layout.bins = function() {
+	model.bins = function() {
 		return _data;
 	};
 
-	// Initialize the layout
-	layout(config);
+	// Initialize the model
+	model(config);
 
-	return layout;
+	return model;
 }
 var sentio_controller = sentio.controller = {};
-sentio.controller.realtime = sentio_controller_realtime;
+sentio.controller.rtBins = sentio_controller_rtBins;
 
-function sentio_controller_realtime(config) {
+/*
+ * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
+ * Every time binSize elapses, updates the lwm to keep the bins shifting.
+ */
+function sentio_controller_rtBins(config) {
 	'use strict';
 
 	/**
 	 * Private variables
 	 */
-	// Configuration
-	var _config = {};
+	var _config = {
+		delay: 0,
+		binSize: 0,
+		binCount: 0
+	};
 
 	// The bins
-	var bins;
-
+	var _model;
+	var _playing;
 
 	/**
 	 * Private Functions
 	 */
 
+	function _calculateLwm() {
+		// Assume the hwm is now plus two binSize
+		var hwm = Date.now() + 2*_model.size();
+
+		// Trunc the hwm down to a round value based on the binSize
+		hwm = Math.floor(hwm/_model.size()) * _model.size();
+
+		// Derive the lwm from the hwm
+		var lwm = hwm - _model.size() * _model.count();
+
+		return lwm;
+	}
+
+	function _update() {
+		if(_playing === true) {
+			// need to update the lwm
+			_model.lwm(_calculateLwm());
+
+			window.setTimeout(_update, _model.size());
+		}
+	}
+
+	function _play() {
+		if(!_playing) {
+			// Start the update loop
+			_playing = true;
+			_update();
+		}
+	}
+
+	function _pause() {
+		// Setting playing to false will pause the update loop
+		_playing = false;
+	}
+
 	// create/init method
-	function layout(realtimeConfig) {
-		
+	function controller(rtConfig) {
+		if(null == rtConfig || null == rtConfig.binCount || null == rtConfig.binSize) {
+			throw new Error('You must provide an initial binSize and binCount');
+		}
+
+		_config.binSize = rtConfig.binSize;
+		_config.binCount = rtConfig.binCount;
+
+		if(null != rtConfig.delay) {
+			_config.delay = rtConfig.delay;
+		}
+
+		_model = sentio.model.bins({
+			size: _config.binSize,
+			count: _config.binCount + 2,
+			lwm: 0
+		});
+		_model.lwm(_calculateLwm());
+
+		_play();
 	}
 
 
@@ -315,19 +375,74 @@ function sentio_controller_realtime(config) {
 	 */
 
 	/*
-	 * Get/Set the bins
+	 * Get the model bins
 	 */
-	layout.bins = function(v) {
-		if(!arguments.length) { return bins.bins(); }
-		bins.bins(v);
+	controller.bins = function(v) {
+		if(!arguments.length) { return _model.bins(); }
+		_model.bins(v);
 
-		return layout;
+		return controller;
 	};
 
-	// Initialize the layout
-	layout(config);
+	controller.play = function() {
+		_play();
+		return controller;
+	};
 
-	return layout;
+	controller.pause = function() {
+		_pause();
+		return controller;
+	};
+
+	controller.add = function(v) {
+		_model.add(v);
+		return controller;
+	}
+
+	controller.clear = function() {
+		_model.clear();
+		return controller;
+	}
+
+	controller.binSize = function(v) {
+		if(!arguments.length) { return _model.bins(); }
+		_model.bins(v);
+
+		return controller;
+	}
+
+	controller.binSize = function(v) {
+		if(!arguments.length) { return _config.binSize; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin size must be a positive integer');
+		}
+
+		_config.binSize = v;
+		_model.size(v);
+		_model.lwm(_calculateLwm())
+
+		return controller;
+	}
+
+	controller.binCount = function(v) {
+		if(!arguments.length) { return _config.binCount; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin count must be a positive integer');
+		}
+
+		_config.binCount = v;
+		_model.count(v + 2);
+		_model.lwm(_calculateLwm())
+
+		return controller;
+	}
+
+	// Initialize the layout
+	controller(config);
+
+	return controller;
 }
 var sentio_timeline = sentio.timeline = {};
 sentio.timeline.line = sentio_timeline_line;
