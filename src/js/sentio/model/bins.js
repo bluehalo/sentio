@@ -1,13 +1,13 @@
-sentio.data.bins = sentio_data_bins;
+sentio.model.bins = sentio_model_bins;
 
-function sentio_data_bins(config) {
+function sentio_model_bins(config) {
 	'use strict';
 
 	/**
 	 * Private variables
 	 */
 	// Configuration
-	var bins = {
+	var _config = {
 		// The number of bins in our layout
 		count: 1,
 
@@ -19,20 +19,22 @@ function sentio_data_bins(config) {
 		hwm: undefined
 	};
 
+	var _fn = {
+		// The default function for creating the seed value for a bin
+		createSeed: function() { return []; },
+
+		// The default key function
+		getKey: function(d) { return d; },
+
+		// The default value function
+		getValue: function(d) { return d; },
+
+		// The default function for updating a bin given a new value
+		updateBin: function(bin, d) { bin[1].push(d); }
+	};
+
 	// The data (an array of object containers)
-	var data = [];
-
-	// The default function for creating the seed value for a bin
-	var seedFn = function() { return []; };
-
-	// The default key function
-	var keyFn = function(d) { return d; };
-
-	// The default value function
-	var valueFn = function(d) { return d; };
-
-	// The default function for updating a bin given a new value
-	var updateBinFn = function(bin, d) { bin[1].push(d); };
+	var _data = [];
 
 
 	/**
@@ -41,69 +43,73 @@ function sentio_data_bins(config) {
 
 	// Get the index given the value
 	function getIndex(v) {
-		if(null == bins.size || null == bins.lwm) {
+		if(null == _config.size || null == _config.lwm) {
 			return 0;
 		}
 
-		return Math.floor((v - bins.lwm)/bins.size);
+		return Math.floor((v - _config.lwm)/_config.size);
 	}
 
 	function calculateHwm() {
-		bins.hwm = bins.lwm + (bins.count * bins.size);
+		_config.hwm = _config.lwm + (_config.count * _config.size);
 	}
 
 	function updateState() {
 		// drop stuff below the lwm
-		while(data.length > 0 && data[0][0] < bins.lwm) {
-			data.shift();
+		while(_data.length > 0 && _data[0][0] < _config.lwm) {
+			_data.shift();
 		}
 
 		// drop stuff above the hwm
-		while(data.length > 0 && data[data.length - 1][0] >= bins.hwm) {
-			data.pop();
+		while(_data.length > 0 && _data[_data.length - 1][0] >= _config.hwm) {
+			_data.pop();
 		}
 
 		// if we emptied the array, add an element for the lwm
-		if(data.length === 0) {
-			data.push([bins.lwm, seedFn()]);
+		if(_data.length === 0) {
+			_data.push([_config.lwm, _fn.createSeed()]);
 		}
 
 		// fill in any missing values from the lowest bin to the lwm
-		for(var i=data[0][0] - bins.size; i >= bins.lwm; i -= bins.size) {
-			data.unshift([i, seedFn()]);
+		for(var i=_data[0][0] - _config.size; i >= _config.lwm; i -= _config.size) {
+			_data.unshift([i, _fn.createSeed()]);
 		}
 
 		// pad above the hwm
-		while(data[data.length - 1][0] < bins.hwm - bins.size) {
-			data.push([data[data.length-1][0] + bins.size, seedFn()]);
+		while(_data[_data.length - 1][0] < _config.hwm - _config.size) {
+			_data.push([_data[_data.length-1][0] + _config.size, _fn.createSeed()]);
 		}
 	}
 
 	function addData(dataToAdd) {
 		dataToAdd.forEach(function(element) {
-			var i = getIndex(keyFn(element));
-			if(i >= 0 && i < data.length) {
-				updateBinFn(data[i], valueFn(element));
+			var i = getIndex(_fn.getKey(element));
+			if(i >= 0 && i < _data.length) {
+				_fn.updateBin(_data[i], _fn.getValue(element));
 			}
 		});
 	}
 
 	function clearData() {
-		data.length = 0;
+		_data.length = 0;
 	}
 
-	// create/init method
+
+	/*
+	 * Constructor/initialization method
+	 */
 	function layout(binConfig) {
 		if(null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
-			throw new Error('You must provide an initial size, count, lwm, and seed');
+			throw new Error('You must provide an initial size, count, and lwm');
 		}
-		bins.size = binConfig.size;
-		bins.count = binConfig.count;
-		bins.lwm = binConfig.lwm;
-		if(null != binConfig.seed) { bins.seed = binConfig.seed; }
-		if(null != binConfig.keyFn) { keyFn = binConfig.keyFn; }
-		if(null != binConfig.valueFn) { valueFn = binConfig.valueFn; }
-		if(null != binConfig.updateBinFn) { updateBinFn = binConfig.updateBinFn; }
+		_config.size = binConfig.size;
+		_config.count = binConfig.count;
+		_config.lwm = binConfig.lwm;
+
+		if(null != binConfig.createSeed) { _fn.createSeed = binConfig.createSeed; }
+		if(null != binConfig.getKey) { _fn.getKey = binConfig.getKey; }
+		if(null != binConfig.getValue) { _fn.getValue = binConfig.getValue; }
+		if(null != binConfig.updateBin) { _fn.updateBin = binConfig.updateBin; }
 
 		calculateHwm();
 		updateState();
@@ -145,14 +151,14 @@ function sentio_data_bins(config) {
 	 * Get/Set the low water mark value
 	 */
 	layout.lwm = function(v) {
-		if(!arguments.length) { return bins.lwm; }
+		if(!arguments.length) { return _config.lwm; }
 
-		var oldLwm = bins.lwm;
-		bins.lwm = Number(v);
+		var oldLwm = _config.lwm;
+		_config.lwm = Number(v);
 
 		calculateHwm();
 
-		if((oldLwm - bins.lwm) % bins.size !== 0) {
+		if((oldLwm - _config.lwm) % _config.size !== 0) {
 			// the difference between watermarks is not a multiple of the bin size, so we need to reset
 			clearData();
 		}
@@ -166,15 +172,15 @@ function sentio_data_bins(config) {
 	 * Get the high water mark
 	 */
 	layout.hwm = function() {
-		return bins.hwm;
+		return _config.hwm;
 	};
 
 	/*
 	 * Get/Set the key function used to determine the key value for indexing into the bins
 	 */
-	layout.keyFn = function(v) {
-		if(!arguments.length) { return keyFn; }
-		keyFn = v;
+	layout.getKey = function(v) {
+		if(!arguments.length) { return _fn.getKey; }
+		_fn.getKey = v;
 
 		clearData();
 		updateState();
@@ -185,9 +191,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the value function for determining what value is added to the bin
 	 */
-	layout.valueFn = function(v) {
-		if(!arguments.length) { return valueFn; }
-		valueFn = v;
+	layout.getValue = function(v) {
+		if(!arguments.length) { return _fn.getValue; }
+		_fn.getValue = v;
 
 		clearData();
 		updateState();
@@ -198,9 +204,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the Update bin function for determining how to update the state of a bin when a new value is added to it
 	 */
-	layout.updateBinFn = function(v) {
-		if(!arguments.length) { return updateBinFn; }
-		updateBinFn = v;
+	layout.updateBin = function(v) {
+		if(!arguments.length) { return _fn.updateBin; }
+		_fn.updateBin = v;
 
 		clearData();
 		updateState();
@@ -211,9 +217,9 @@ function sentio_data_bins(config) {
 	/*
 	 * Get/Set the seedFn for populating 
 	 */
-	layout.seedFn = function(v) {
-		if(!arguments.length) { return seedFn; }
-		seedFn = v;
+	layout.createSeed = function(v) {
+		if(!arguments.length) { return _fn.createSeed; }
+		_fn.createSeed = v;
 
 		clearData();
 		updateState();
@@ -225,14 +231,15 @@ function sentio_data_bins(config) {
 	 * Get/Set the bin size
 	 */
 	layout.size = function(v) {
-		if(!arguments.length) { return bins.size; }
+		if(!arguments.length) { return _config.size; }
 
 		if(Number(v) < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
-		if(Number(v) !== bins.size) {
-			bins.size = Number(v);
+		// Only change stuff if the size actually changes
+		if(Number(v) !== _config.size) {
+			_config.size = Number(v);
 			calculateHwm();
 			clearData();
 			updateState();
@@ -245,14 +252,15 @@ function sentio_data_bins(config) {
 	 * Get/Set the bin count
 	 */
 	layout.count = function(v) {
-		if(!arguments.length) { return bins.count; }
+		if(!arguments.length) { return _config.count; }
 
 		if(Number(v) < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
-		if(Number(v) !== bins.count) {
-			bins.count = Math.floor(Number(v));
+		// Only change stuff if the count actually changes
+		if(Number(v) !== _config.count) {
+			_config.count = Math.floor(Number(v));
 			calculateHwm();
 			updateState();
 		}
@@ -264,7 +272,7 @@ function sentio_data_bins(config) {
 	 * Accessor for the bins of data
 	 */
 	layout.bins = function() {
-		return data;
+		return _data;
 	};
 
 	// Initialize the layout

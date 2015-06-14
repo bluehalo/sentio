@@ -34,6 +34,7 @@
 				size: 1000,
 				lwm: Date.now() - 1000*301
 			})
+			.valueFn(function(d) { return 1; })
 			.updateBinFn(function(bin, d) { bin[1] += d; })
 			.seedFn(function() { return 0; });
 

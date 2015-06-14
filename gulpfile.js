@@ -9,14 +9,18 @@ var banner = '/*! ' + p.name + ' Version: ' + p.version + ' */\n';
 var src = {
 	js: [
 		'src/js/sentio/sentio.js',
-		'src/js/sentio/data/data.js',
-		'src/js/sentio/data/**/*.js',
 
-		'src/js/sentio/realtime/realtime.js',
-		'src/js/sentio/realtime/**/*.js',
+		'src/js/sentio/model/model.js',
+		'src/js/sentio/model/**/*.js',
+
+		'src/js/sentio/controller/controller.js',
+		'src/js/sentio/controller/**/*.js',
 
 		'src/js/sentio/timeline/timeline.js',
 		'src/js/sentio/timeline/**/*.js',
+
+		'src/js/sentio/realtime/realtime.js',
+		'src/js/sentio/realtime/**/*.js',
 
 		'src/js/sentio/**/*.js'
 	],

@@ -1,0 +1,1 @@
+var sentio_controller = sentio.controller = {};

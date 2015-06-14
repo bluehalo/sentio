@@ -10,7 +10,7 @@ describe('Bin Layout', function() {
 		context('when complete', function() {
 			it('should not throw an error', function() {
 				(function() {
-					sentio.data.bins({
+					sentio.model.bins({
 						count: 10,
 						size: 1,
 						lwm: 0
@@ -19,7 +19,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should have the right initial structure', function() {
-				var layout = sentio.data.bins({
+				var layout = sentio.model.bins({
 					count: 3,
 					size: 2,
 					lwm: 1
@@ -42,7 +42,7 @@ describe('Bin Layout', function() {
 		context('when incomplete', function() {
 			it('should throw an error', function() {
 				(function() {
-					sentio.data.bins({
+					sentio.model.bins({
 						size: 1,
 						lwm: 0
 					});
@@ -54,7 +54,7 @@ describe('Bin Layout', function() {
 
 	describe('Adding Data', function() {
 		context('when adding data within bounds', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 30
@@ -82,7 +82,7 @@ describe('Bin Layout', function() {
 
 		context('when adding data out of bounds', function() {
 			it('should not get added', function() {
-				var layout = sentio.data.bins({
+				var layout = sentio.model.bins({
 					count: 5,
 					size: 10,
 					lwm: 30
@@ -111,7 +111,7 @@ describe('Bin Layout', function() {
 
 	describe('Modifying LWM', function() {
 		context('when increasing the lwm', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -143,7 +143,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when decreasing the lwm', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -173,7 +173,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when not changing the lwm', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -202,7 +202,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when setting the lwm such that a reset is necessary', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -233,7 +233,7 @@ describe('Bin Layout', function() {
 
 	describe('Modifying Bin Count', function() {
 		context('when increasing the bin count', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -248,7 +248,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when decreasing the bin count', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 10,
 				size: 10,
 				lwm: 0
@@ -264,7 +264,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when not changing the bin count', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -280,7 +280,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when sending an invalid value', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -301,7 +301,7 @@ describe('Bin Layout', function() {
 
 	describe('Modifying Bin Size', function() {
 		context('when increasing the bin size', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 3,
 				size: 1,
 				lwm: 0
@@ -330,7 +330,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when decreasing the bin size', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 3,
 				size: 10,
 				lwm: 0
@@ -359,7 +359,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when not changing the bin size', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 3,
 				size: 1,
 				lwm: 0
@@ -385,7 +385,7 @@ describe('Bin Layout', function() {
 		});
 
 		context('when sending an invalid value', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 5,
 				size: 10,
 				lwm: 0
@@ -407,16 +407,16 @@ describe('Bin Layout', function() {
 	describe('Custom bin aggregation', function() {
 
 		context('when summing values', function() {
-			var layout = sentio.data.bins({
+			var layout = sentio.model.bins({
 				count: 3,
 				size: 10,
 				lwm: 0
 			});
 
-			layout.keyFn(function(d) { return d.key; });
-			layout.valueFn(function(d) { return d.value; });
-			layout.updateBinFn(function(bin, d) { bin[1] += d; });
-			layout.seedFn(function() { return 0; });
+			layout.getKey(function(d) { return d.key; });
+			layout.getValue(function(d) { return d.value; });
+			layout.updateBin(function(bin, d) { bin[1] += d; });
+			layout.createSeed(function() { return 0; });
 
 			layout.add([{key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
 
