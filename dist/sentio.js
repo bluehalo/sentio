@@ -304,7 +304,7 @@ function sentio_controller_rtBins(config) {
 
 	// The bins
 	var _model;
-	var _playing;
+	var _running;
 
 	/**
 	 * Private Functions
@@ -324,24 +324,24 @@ function sentio_controller_rtBins(config) {
 	}
 
 	function _update() {
-		if(_playing === true) {
+		if(_running === true) {
 			// need to update the lwm
 			_model.lwm(_calculateLwm());
 			window.setTimeout(_update, _model.size());
 		}
 	}
 
-	function _play() {
-		if(!_playing) {
+	function _start() {
+		if(!_running) {
 			// Start the update loop
-			_playing = true;
+			_running = true;
 			_update();
 		}
 	}
 
-	function _pause() {
-		// Setting playing to false will pause the update loop
-		_playing = false;
+	function _stop() {
+		// Setting running to false will stop the update loop
+		_running = false;
 	}
 
 	// create/init method
@@ -364,7 +364,7 @@ function sentio_controller_rtBins(config) {
 		});
 		_model.lwm(_calculateLwm());
 
-		_play();
+		_start();
 	}
 
 
@@ -384,13 +384,13 @@ function sentio_controller_rtBins(config) {
 		return _model.bins();
 	};
 
-	controller.play = function() {
-		_play();
+	controller.start = function() {
+		_start();
 		return controller;
 	};
 
-	controller.pause = function() {
-		_pause();
+	controller.stop = function() {
+		_stop();
 		return controller;
 	};
 
