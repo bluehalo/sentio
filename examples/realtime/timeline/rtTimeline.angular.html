@@ -25,6 +25,11 @@
 			$scope.mode = $scope.modes[0];
 
 			$scope.model = [];
+			
+			$scope.hoverText = '';
+			
+			$scope.markerLabel = '';
+			$scope.markers = [];
 
 			$scope.efficient = {
 				enabled: false,
@@ -69,6 +74,20 @@
 				$timeout(update, 500);
 			};
 			$timeout(update);
+			
+			$scope.addMarker = function() {
+				var now = Date.now();
+				$scope.markers.push([now, $scope.markerLabel, { id: now, text: $scope.markerLabel }]);
+				$scope.markerLabel = '';
+			};
+			
+			/**
+			 * Method invoked when a marker is hovered over
+			 */
+			$scope.markerHover = function(payload) {
+				console.log('Hover Payload: ' + JSON.stringify(payload));
+				$scope.hoverText = JSON.stringify(payload);
+			};
 
 		}]);
 
@@ -83,6 +102,8 @@
 	<p>AngularJS integrated D3 Real-time timeline example</p>
 	<div data-sentio-rt-timeline style="height:100px;"
 		data-sentio-model="model"
+		data-sentio-markers="markers"
+		data-sentio-marker-hover="markerHover"
 		data-sentio-interval="interval"
 		data-sentio-delay="delay"
 		data-sentio-efficient="efficient"
@@ -101,6 +122,16 @@
 	<div data-ng-show="mode.value === 'efficient'">
 		<label for="fps">FPS: </label>
 		<input id="fps" type="text" data-ng-model="efficient.fps" placeholder="fps"/>
+	</div>
+	
+	<div>
+		<button data-ng-click="addMarker()">Add Marker</button>
+		<input id="markerLabel" type="text" data-ng-model="markerLabel" placeholder="Marker Label"/>
+	</div>
+	
+	<div data-ng-show="hoverText != null && hoverText != ''">
+		<label>Hover Payload</label>
+		<input type="text" data-ng-model="hoverText" />
 	</div>
 
 </body>

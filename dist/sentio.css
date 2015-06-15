@@ -1,4 +1,4 @@
-/*! sentio Version: 0.2.3 */
+/*! sentio Version: 0.2.4 */
 svg {
 	font: 10px sans-serif;
 }
@@ -7,6 +7,15 @@ svg {
 	fill: none;
 	stroke: #000;
 	stroke-width: 1.5px;
+}
+
+.marker line {
+	stroke: #F00;
+	stroke-width: 1;
+}
+
+.marker text {
+	font-weight: bold;
 }
 
 .area {
