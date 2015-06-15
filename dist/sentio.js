@@ -394,6 +394,10 @@ function sentio_controller_rtBins(config) {
 		return controller;
 	};
 
+	controller.running = function() {
+		return _running;
+	};
+
 	controller.add = function(v) {
 		_model.add(v);
 		return controller;
