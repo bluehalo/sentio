@@ -1,4 +1,4 @@
-/*! sentio Version: 0.2.3 */
+/*! sentio Version: 0.2.4 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio.realtime').directive('sentioRtTimeline', function($document, $window, $timeout, $log) {
@@ -8,6 +8,8 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 		restrict : 'A',
 		scope : {
 			model: '=sentioModel',
+			markers: '=sentioMarkers',
+			markerHover: '=sentioMarkerHover',
 			interval: '=sentioInterval',
 			delay: '=sentioDelay',
 			yExtent: '=sentioYExtent',
@@ -36,6 +38,11 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 
 			timeline.init(timelineElement);
 
+			// setup the marker callback method if one was provided
+			if(null != scope.markerHover) {
+				timeline.markerHover( scope.markerHover );
+			}
+
 			scope.$watch('configure', function(n, o){
 				if(null != scope.configure){
 					scope.configure({ timeline: timeline });
@@ -47,6 +54,12 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 
 				timeline.data(n).redraw();
 				timeline.start();
+			});
+			
+			scope.$watchCollection('markers', function(n, o){
+				if(null == o && null == n){ return; }
+
+				timeline.markers(n);
 			});
 
 			scope.$watch('interval', function(n, o){
