@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Realtime timeline. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<div id="chart"></div>
+
+	<script type="text/javascript">
+		var timelineDiv = d3.select('#chart');
+		var timeline = sentio.realtime.timeline()
+			.height(100)
+			.width(600)
+			.interval(60000)
+			.yExtent([0, undefined])
+			.interpolation('basis')
+			.delay(0);
+
+		var controller = sentio.controller.rtBins({
+			binCount: 60,
+			binSize: 1000
+		});
+		controller.model()
+			.getKey(function(d) { return d[0]; } )
+			.getValue(function(d) { return d[1]; } )
+			.updateBin(function(bin, d) { bin[1] += d; })
+			.createSeed(function() { return 0; });
+
+		timeline.init(timelineDiv).data(controller.bins()).redraw();
+		timeline.start();
+
+		function doSetCount() {
+			var value = document.getElementById('countInput').value;
+			controller.binCount(value);
+		}
+
+		function doSetSize() {
+			var value = document.getElementById('sizeInput').value;
+			controller.binSize(value);
+		}
+
+		function doSetDelay() {
+			var value = document.getElementById('lwmInput').value;
+			controller.delay(value);
+		}
+
+		function doPlay() {
+			controller.play();
+		}
+
+		function doPause() {
+			controller.pause();
+		}
+
+		function doClear() {
+			controller.clear();
+		}
+
+		function update() {
+			controller.add([[ Date.now(), Math.random() * 10]]);
+			window.setTimeout(update, 1000);
+		}
+
+		update();
+
+	</script>
+
+</body>
+</html>
+

@@ -8,6 +8,13 @@
 		"console": true,
 		"d3": true,
 		"sentio": true,
-		"window": true
+		"window": true,
+		"before": true,
+		"after": true,
+		"beforeEach": true,
+		"afterEach": true,
+		"describe": true,
+		"context": true,
+		"it": true
 	}
 }
