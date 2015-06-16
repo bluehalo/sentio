@@ -16,6 +16,7 @@
 		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
 
 			$scope.model = [];
+			$scope.markers = [];
 
 			$scope.yExtent = [0, undefined];
 
@@ -27,8 +28,20 @@
 				return toReturn;
 			};
 
+			$scope.generateMarkers = function(start, samples) {
+				
+				$scope.markers = [];
+				
+				var toReturn = [];
+				for(var i=0; i < samples; i++){
+					toReturn.push([start + (i * 1000 * Math.random() * 10), null, { id: 'marker-' + i }]);
+				}
+				return toReturn;
+			};
+
 			$scope.updateData = function() {
 				$scope.model = $scope.generateData(Date.now() - 1000*100, 100);
+				$scope.markers = $scope.generateMarkers(Date.now() - 1000*100, 25);
 			}
 
 			$scope.filter = function(filterState){
@@ -36,6 +49,8 @@
 			};
 
 			$scope.model = $scope.generateData(Date.now() - 1000*100, 100);
+			
+			$scope.markers = $scope.generateMarkers(Date.now() - 1000*100, 25);
 
 		}]);
 
@@ -50,6 +65,7 @@
 	<p>AngularJS integrated D3 static timeline example</p>
 	<div data-sentio-timeline style="height:250px;"
 		data-sentio-model="model"
+		data-sentio-markers="markers"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
 		data-sentio-filter-fn="filter(filterState)"></div>
