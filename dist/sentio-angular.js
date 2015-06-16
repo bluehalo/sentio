@@ -142,6 +142,9 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			scope.$on('$destroy', function () {
 				window.off('resize', delayResize);
 			});
+			scope.$on('$destroy', function() {
+				timeline.stop();
+			});
 		}
 	};
 });

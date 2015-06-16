@@ -26,17 +26,17 @@
 			.delay(3000)
 			.efficient({ enabled: true, fps: 2 });
 
-		//var random = d3.random.normal(0, 1);
 		var data = generateData(Date.now() - 1000*15, 15);
 		timeline.init(timelineDiv).data(data).redraw();
 		timeline.start();
+		timeline.data(data);
 
-		setInterval(function(){
+		function addData() {
 			data.shift();
 			data.push([ Date.now(), Math.random() * 10]);
-
-			timeline.data(data);
-		}, 1000);
+			window.setTimeout(addData, 1000);
+		}
+		addData();
 
 		function generateData(start, samples){
 			var toReturn = [];

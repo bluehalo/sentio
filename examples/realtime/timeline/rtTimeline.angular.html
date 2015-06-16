@@ -25,9 +25,7 @@
 			$scope.mode = $scope.modes[0];
 
 			$scope.model = [];
-			
 			$scope.hoverText = '';
-			
 			$scope.markerLabel = '';
 			$scope.markers = [];
 
@@ -73,14 +71,14 @@
 
 				$timeout(update, 500);
 			};
-			$timeout(update);
-			
+			update();
+
 			$scope.addMarker = function() {
 				var now = Date.now();
 				$scope.markers.push([now, $scope.markerLabel, { id: now, text: $scope.markerLabel }]);
 				$scope.markerLabel = '';
 			};
-			
+
 			/**
 			 * Method invoked when a marker is hovered over
 			 */
