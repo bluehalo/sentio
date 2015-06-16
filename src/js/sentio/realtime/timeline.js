@@ -240,23 +240,25 @@ function sentio_realtime_timeline() {
 		}
 	}
 	
-	function executeTick(now) {
+	function tickAxis() {
 		// Select and draw the x axis
 		element.g.xAxis.call(axis.x);
 		
 		// Select and draw the y axis
 		element.g.yAxis.call(axis.y);
-		
-		var translate = scale.x(now - delay - interval - 2*duration.reveal);
-		
-		tickLine(translate);
-		tickMarkers(translate);
 	}
 	
 	function tickLine(translate) {
 		// Select and draw the line
 		element.g.line.select('.line').attr('d', line).attr('transform', null);
 		element.g.line.select('.line').transition()
+			.attr('transform', 'translate(' + translate + ')');
+	}
+	
+	function efficientTickLine(translate) {
+		// Select and draw the line
+		element.g.line.select('.line').attr('d', line).attr('transform', null);
+		element.g.line.select('.line')
 			.attr('transform', 'translate(' + translate + ')');
 	}
 	
@@ -285,15 +287,46 @@ function sentio_realtime_timeline() {
 			.attr('transform', 'translate(' + translate + ')');
 		
 	}
+	
+	function efficientTickMarkers(translate) {
+		element.g.markers
+			.selectAll('.marker')
+			.attr('transform', null)
+			// if any marker is outside the X-window, mark it for deletion
+			.attr('delete', function(d) {
+				return scale.x(d[0]) < 0;
+			});
+		
+		// Fade out and remove markers with lines outside of range
+		element.g.markers.selectAll('[delete=true]')
+			.remove();
+		
+		drawMarkerLines( element.g.markers.selectAll('line') );
+		drawMarkerText( element.g.markers.selectAll('text') );
+		
+		element.g.markers
+			.selectAll('.marker')
+			.attr('transform', 'translate(' + translate + ')');
+	}
 
 	function normalTick(now) {
 		transition = transition.each(function(){
-			executeTick(now);
+			tickAxis();
+			
+			var translate = scale.x(now - delay - interval - 2*duration.reveal);
+			
+			tickLine(translate);
+			tickMarkers(translate);
 		}).transition().each('start', tick);
 	}
 
 	function efficientTick(now) {
-		executeTick(now);
+		tickAxis();
+		
+		var translate = '-' + scale.x(now - delay - interval + duration.reveal);
+		
+		efficientTickLine(translate);
+		efficientTickMarkers(translate);
 
 		// Schedule the next update
 		window.setTimeout(tick, 1000/efficient.fps);
