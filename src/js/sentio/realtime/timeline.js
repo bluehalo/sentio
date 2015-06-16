@@ -266,7 +266,7 @@ function sentio_realtime_timeline() {
 			.attr('transform', null)
 			// if any marker is outside the X-window, mark it for deletion
 			.attr('delete', function(d) {
-				return scale.x(d) < 0;
+				return scale.x(d[0]) < 0;
 			});
 		
 		// Fade out and remove markers with lines outside of range
