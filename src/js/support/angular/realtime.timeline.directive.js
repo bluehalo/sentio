@@ -56,7 +56,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			scope.$watchCollection('markers', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.markers(n);
+				timeline.markers(n).redraw();
 			});
 
 			scope.$watch('interval', function(n, o){

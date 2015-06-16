@@ -5,6 +5,7 @@ angular.module('sentio').directive('sentioTimeline', function($document, $window
 		restrict : 'A',
 		scope : {
 			model: '=sentioModel',
+			markers: '=sentioMarkers',
 			yExtent: '=sentioYExtent',
 			xExtent: '=sentioXExtent',
 			duration: '=sentioDuration',
@@ -55,6 +56,12 @@ angular.module('sentio').directive('sentioTimeline', function($document, $window
 				if(null == o && null == n){ return; }
 
 				timeline.data(n).redraw();
+			});
+			
+			scope.$watchCollection('markers', function(n, o){
+				if(null == o && null == n){ return; }
+
+				timeline.markers(n).redraw();
 			});
 
 			scope.$watchCollection('yExtent', function(n, o){
