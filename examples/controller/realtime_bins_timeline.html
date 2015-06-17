@@ -14,6 +14,8 @@
 </head>
 <body>
 	<div id="chart"></div>
+	<button onClick="doPlay()">Play</button><br/>
+	<button onClick="doPause()">Pause</button><br/>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -54,11 +56,13 @@
 		}
 
 		function doPlay() {
-			controller.play();
+			controller.start();
+			timeline.start();
 		}
 
 		function doPause() {
-			controller.pause();
+			controller.stop();
+			timeline.stop();
 		}
 
 		function doClear() {
