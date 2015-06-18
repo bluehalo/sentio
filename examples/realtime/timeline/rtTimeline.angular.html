@@ -64,7 +64,8 @@
 			});
 
 			var update = function(){
-				$scope.model.push([Date.now(), Math.random()*10]);
+				var now = Math.floor(Date.now() / 1000)*1000;
+				$scope.model.push([now, (now%10000)/1000]);
 				while($scope.model.length > 71) {
 					$scope.model.shift();
 				}
@@ -73,7 +74,7 @@
 					$scope.markers.shift();
 				}
 
-				$timeout(update, 500);
+				$timeout(update, 1000);
 			};
 			update();
 
