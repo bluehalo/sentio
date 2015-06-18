@@ -30,8 +30,9 @@ function sentio_realtime_timeline() {
 	var _firstTime = true;
 
 	// Transition used for normal mode
-	var _transition;
-
+	var _transition = d3.select({}).transition()
+		.duration(_duration.reveal)
+		.ease('linear');
 
 	// Is the timeline running in efficient mode?
 	var _efficient = {
@@ -185,35 +186,26 @@ function sentio_realtime_timeline() {
 		var now = new Date();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain([now - _delay - _interval, now - _delay - _duration.reveal]);
+		_scale.x.domain([now - _delay - _interval - _duration.reveal, now - _delay - _duration.reveal]);
 
 		// Update the y domain (based on configuration and data)
 		_scale.y.domain(getYExtent(now));
 
 		// Either tick efficiently or normally
 		var efficient = !(null == _efficient || !_efficient.enabled);
-		if(_firstTime) {
-			_firstTime = false;
-			efficient = true;
-			_transition = d3.select({}).transition()
-				.duration(_duration.reveal)
-				.ease('linear');
-		}
 
 		if(efficient) {
-			var translate = '-' + _scale.x(now - _delay - _interval);
 			tickAxes(efficient);
-			tickLine(translate, efficient);
-			tickMarkers(translate, efficient);
+			tickLine(efficient);
+			//tickMarkers(efficient);
 
 			// Schedule the next update
 			window.setTimeout(tick, 1000/_efficient.fps);
 		} else {
 			_transition = _transition.each(function(){
-				var translate = _scale.x(now - _delay - _interval);
 				tickAxes(efficient);
-				tickLine(translate, efficient, now);
-				tickMarkers(translate, efficient);
+				tickLine(efficient);
+				//tickMarkers(efficient);
 			}).transition().each('start', tick);
 		}
 	}
@@ -228,20 +220,23 @@ function sentio_realtime_timeline() {
 		}
 	}
 
-	function tickLine(translate, efficient, now) {
+	function tickLine(efficient) {
 		// Select and draw the line
 		var path = _element.g.line.select('.line').attr('d', _line);
 
 		// If we are not in efficient mode, reset the transform and apply a transition
-		if(!efficient) {
-			path = path.attr('transform', 'translate(' + _scale.x(now - _delay - _interval + _duration.reveal) + ')').transition().duration(_transition.duration());
+		if(efficient) {
+			path
+				.attr('transform', 'translate(-' + _scale.x(_scale.x.domain()[0]) + ')');
+		} else {
+			path
+				.attr('transform', 'translate(' + _scale.x(_scale.x.domain()[0].getTime() + _duration.reveal) + ')')
+				.transition()
+				.attr('transform', 'translate(' + _scale.x(_scale.x.domain()[0]) + ')');
 		}
-
-		// Set the final transform state
-		path.attr('transform', 'translate(' + translate + ')');
 	}
 
-	function tickMarkers(translate, efficient) {
+	function tickMarkers(efficient) {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
@@ -328,7 +323,6 @@ function sentio_realtime_timeline() {
 	chart.start = function(){
 		if(_running){ return; }
 		_running = true;
-		_firstTime = true;
 
 		tick();
 	};
@@ -423,7 +417,6 @@ function sentio_realtime_timeline() {
 	};
 	chart.efficient = function(v){
 		if(!arguments.length) { return _efficient; }
-		_firstTime = true;
 		_efficient = v;
 		return chart;
 	};
