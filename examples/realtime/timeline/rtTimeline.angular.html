@@ -22,7 +22,7 @@
 
 			$scope.fps = 32;
 
-			$scope.interval = 30000;
+			$scope.interval = 300000;
 			$scope.delay = 0;
 			$scope.yExtent = [0, undefined];
 
@@ -108,10 +108,10 @@
 	</div>
 	
 	<div>
-		<button data-ng-click="addMarker()">Add Marker</button>
 		<input id="markerLabel" type="text" data-ng-model="markerLabel" placeholder="Marker Label"/>
+		<button data-ng-click="addMarker()">Add Marker</button>
 	</div>
-	
+
 	<div data-ng-show="hoverText != null && hoverText != ''">
 		<label>Hover Payload</label>
 		<input type="text" data-ng-model="hoverText" />

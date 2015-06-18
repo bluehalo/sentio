@@ -852,8 +852,8 @@ function sentio_realtime_timeline() {
 	'use strict';
 
 	// Layout properties
-	var _id = 'rt_timeline_clip_' + Date.now();
-	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
+	var _id = 'rt_timeline_' + Date.now();
+	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
 	var _height = 100, _width = 600;
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
@@ -870,7 +870,6 @@ function sentio_realtime_timeline() {
 
 	// Is the timeline running?
 	var _running = false;
-	var _firstTime = true;
 
 	// Is the timeline running in efficient mode?
 	var _fps = 32;
@@ -912,7 +911,8 @@ function sentio_realtime_timeline() {
 			line: undefined,
 			markers: undefined
 		},
-		clipPath: undefined
+		plotClipPath: undefined,
+		markerClipPath: undefined
 	};
 
 	// Line generator for the plot
@@ -935,20 +935,21 @@ function sentio_realtime_timeline() {
 		_element.svg = container.append('svg');
 
 		// Add the defs and add the clip path definition
-		_element.clipPath = _element.svg.append('defs').append('clipPath').attr('id', _id).append('rect');
+		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g');
 
 		// Append a container for the plot (space inside the axes)
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append the line path group and add the line path
 		_element.g.line = _element.g.plot.append('g');
 		_element.g.line.append('path').attr('class', 'line');
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.plot.append('g').attr('class', 'markers');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -992,14 +993,18 @@ function sentio_realtime_timeline() {
 		_scale.y.range([_height - _margin.top - _margin.bottom, 0]);
 
 		// Append the clip path
-		_element.clipPath
+		_element.plotClipPath
 			.attr('width', _width - _margin.left - _margin.right)
 			.attr('height', _height - _margin.top - _margin.bottom);
+		_element.markerClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', _width - _margin.left - _margin.right)
+			.attr('height', _height - _margin.bottom);
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
 
-		// Append groups for the axes
+		// Update the positions of the axes
 		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
 		_element.g.yAxis.attr('class', 'y axis');
 
@@ -1069,7 +1074,8 @@ function sentio_realtime_timeline() {
 			.attr('y2', function(d) { return _scale.y.range()[0]; });
 
 		textEnter
-			.attr('y', 0)
+			.attr('dy', '0em')
+			.attr('y', -3)
 			.attr('text-anchor', 'middle')
 			.text(function(d) { return d[1]; });
 
