@@ -16,7 +16,7 @@ function sentio_realtime_timeline() {
 
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
-	 * with the d[2] data from the marker payload
+	 * with the data from the marker payload
 	 */
 	var _markerHoverCallback = null;
 
@@ -193,8 +193,12 @@ function sentio_realtime_timeline() {
 	}
 
 	function tickAxes() {
-		_element.g.xAxis.call(_axis.x);
-		_element.g.yAxis.call(_axis.y);
+		if(null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
+		}
+		if(null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
+		}
 	}
 
 	function tickLine() {
@@ -318,13 +322,17 @@ function sentio_realtime_timeline() {
 	chart.xScale = function(v){
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
-		_axis.x.scale(v);
+		if(null != _axis.x) {
+			_axis.x.scale(v);
+		}
 		return chart;
 	};
 	chart.yScale = function(v){
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
-		_axis.y.scale(v);
+		if(null != _axis.y) {
+			_axis.y.scale(v);
+		}
 		return chart;
 	};
 	chart.interpolation = function(v){
@@ -372,9 +380,14 @@ function sentio_realtime_timeline() {
 		_fps = v;
 		return chart;
 	};
-	chart.markerHover = function(f){
+	chart.markerHover = function(v){
 		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = f;
+		_markerHoverCallback = v;
+		return chart;
+	};
+	chart.margin = function(v){
+		if(!arguments.length) { return _margin; }
+		_margin = v;
 		return chart;
 	};
 
