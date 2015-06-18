@@ -24,7 +24,7 @@
 			.yExtent([0, undefined])
 			.interpolation('basis')
 			.delay(3000)
-			.efficient({ enabled: true, fps: 2 });
+			.fps(2);
 
 		var data = generateData(Date.now() - 1000*15, 15);
 		timeline.init(timelineDiv).data(data).redraw();

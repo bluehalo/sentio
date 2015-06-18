@@ -14,11 +14,6 @@ function sentio_realtime_timeline() {
 	// Interval of the timeline, this is the amount of time being displayed by the timeline
 	var _interval = 60000;
 
-	// Duration of the transition, also this is the minimum buffer time
-	var _duration = {
-		reveal: 500
-	};
-
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
 	 * with the d[2] data from the marker payload
@@ -29,16 +24,8 @@ function sentio_realtime_timeline() {
 	var _running = false;
 	var _firstTime = true;
 
-	// Transition used for normal mode
-	var _transition = d3.select({}).transition()
-		.duration(_duration.reveal)
-		.ease('linear');
-
 	// Is the timeline running in efficient mode?
-	var _efficient = {
-		enabled: false,
-		fps: 10
-	};
+	var _fps = 32;
 
 	// Default accessors for the dimensions of the data
 	var _value = {
@@ -186,54 +173,28 @@ function sentio_realtime_timeline() {
 		var now = new Date();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain([now - _delay - _interval - _duration.reveal, now - _delay - _duration.reveal]);
+		_scale.x.domain([now - _delay - _interval, now - _delay]);
 
 		// Update the y domain (based on configuration and data)
 		_scale.y.domain(getYExtent(now));
 
-		// Either tick efficiently or normally
-		var efficient = !(null == _efficient || !_efficient.enabled);
+		// Update the plot elements
+		tickAxes();
+		tickLine();
+		tickMarkers();
 
-		if(efficient) {
-			tickAxes(efficient);
-			tickLine(efficient);
-			//tickMarkers(efficient);
-
-			// Schedule the next update
-			window.setTimeout(tick, 1000/_efficient.fps);
-		} else {
-			_transition = _transition.each(function(){
-				tickAxes(efficient);
-				tickLine(efficient);
-				//tickMarkers(efficient);
-			}).transition().each('start', tick);
-		}
+		// Schedule the next update
+		window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
 	}
 
-	function tickAxes(efficient) {
-		if(efficient) {
-			_element.g.xAxis.call(_axis.x);
-			_element.g.yAxis.call(_axis.y);
-		} else {
-			_element.g.xAxis.transition().call(_axis.x);
-			_element.g.yAxis.transition().call(_axis.y);
-		}
+	function tickAxes() {
+		_element.g.xAxis.call(_axis.x);
+		_element.g.yAxis.call(_axis.y);
 	}
 
-	function tickLine(efficient) {
+	function tickLine() {
 		// Select and draw the line
 		var path = _element.g.line.select('.line').attr('d', _line);
-
-		// If we are not in efficient mode, reset the transform and apply a transition
-		if(efficient) {
-			path
-				.attr('transform', 'translate(-' + _scale.x(_scale.x.domain()[0]) + ')');
-		} else {
-			path
-				.attr('transform', 'translate(' + _scale.x(_scale.x.domain()[0].getTime() + _duration.reveal) + ')')
-				.transition()
-				.attr('transform', 'translate(' + _scale.x(_scale.x.domain()[0]) + ')');
-		}
 	}
 
 	function tickMarkers(efficient) {
@@ -242,7 +203,7 @@ function sentio_realtime_timeline() {
 			.selectAll('.marker')
 			.data(_markers, function(d) { 
 				return _markerValue.x(d); 
-			} );
+			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
@@ -272,26 +233,17 @@ function sentio_realtime_timeline() {
 		textUpdate
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
-		if(efficient) {
-			markerJoin.attr('transform', 'translate(' + translate + ')');
-		} else {
-			markerJoin
-				.attr('transform', null)
-				.transition()
-				.attr('transform', 'translate(' + translate + ')');
-		}
-
 		// Exit
 		var markerExit = markerJoin.exit();
 
-		if(efficient) {
-			markerExit.remove();
-		} else {
+		if(_fps < 20 && _fps > 0) {
 			markerExit
 				.attr('opacity', 1)
-				.transition().duration(_duration.reveal/2)
+				.transition().duration(500/_fps)
 				.attr('opacity', 0.1)
 				.remove();
+		} else {
+			markerExit.remove();
 		}
 	}
 
@@ -302,7 +254,7 @@ function sentio_realtime_timeline() {
 			var y = _value.y(element);
 			var x = _value.x(element);
 
-			if(x < now - _delay  + _duration.reveal) {
+			if(x < now - _delay && x > now - _delay - _interval) {
 				if(nExtent[0] > y) { nExtent[0] = y; }
 				if(nExtent[1] < y) { nExtent[1] = y; }
 			}
@@ -409,15 +361,9 @@ function sentio_realtime_timeline() {
 		_yExtent = v;
 		return chart;
 	};
-	chart.duration = function(v){
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		_transition.duration(_duration.reveal);
-		return chart;
-	};
-	chart.efficient = function(v){
-		if(!arguments.length) { return _efficient; }
-		_efficient = v;
+	chart.fps = function(v){
+		if(!arguments.length) { return _fps; }
+		_fps = v;
 		return chart;
 	};
 	chart.markerHover = function(f){

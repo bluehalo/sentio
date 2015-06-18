@@ -15,24 +15,12 @@
 		var app = angular.module("demoapp", ["sentio.realtime"]);
 		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
 
-			$scope.modes = [{
-				name: 'Normal',
-				value: 'normal'
-			}, {
-				name: 'Efficient',
-				value: 'efficient'
-			}];
-			$scope.mode = $scope.modes[0];
-
 			$scope.model = [];
 			$scope.hoverText = '';
 			$scope.markerLabel = '';
 			$scope.markers = [];
 
-			$scope.efficient = {
-				enabled: false,
-				fps: 2
-			};
+			$scope.fps = 32;
 
 			$scope.interval = 30000;
 			$scope.delay = 0;
@@ -59,10 +47,6 @@
 				timeline.xAxis().tickFormat(customTimeFormat);
 			};
 
-			$scope.$watch('mode', function(n,o){
-				$scope.efficient.enabled = (n.value === 'efficient');
-			});
-
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
 				$scope.model.push([now, (now%10000)/1000]);
@@ -70,19 +54,13 @@
 					$scope.model.shift();
 				}
 
-				while($scope.markers.length > 0 && $scope.markers[0][0] < Date.now() - $scope.interval) {
+				while($scope.markers.length > 0 && $scope.markers[0][0] < Date.now() - $scope.interval - $scope.delay) {
 					$scope.markers.shift();
 				}
 
 				$timeout(update, 1000);
 			};
 			update();
-
-			function shiftMarker() {
-				if($scope.markers.length > 0) {
-					$scope.markers.shift();
-				}
-			}
 
 			$scope.addMarker = function() {
 				var now = Date.now();
@@ -115,7 +93,7 @@
 		data-sentio-marker-hover="markerHover"
 		data-sentio-interval="interval"
 		data-sentio-delay="delay"
-		data-sentio-efficient="efficient"
+		data-sentio-fps="fps"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
 		data-sentio-configure-fn="configure(timeline)"></div>
@@ -124,13 +102,9 @@
 	<input type="text" data-ng-model="delay" placeholder="delay"/>
 	<br/>
 
-	<label>Efficient Mode?</label>
-	<select data-ng-model="mode" data-ng-options="mode as mode.name for mode in modes">
-	</select>
-
-	<div data-ng-show="mode.value === 'efficient'">
+	<div>
 		<label for="fps">FPS: </label>
-		<input id="fps" type="text" data-ng-model="efficient.fps" placeholder="fps"/>
+		<input id="fps" type="text" data-ng-model="fps" placeholder="fps"/>
 	</div>
 	
 	<div>
