@@ -31,11 +31,11 @@
 
 			$scope.efficient = {
 				enabled: false,
-				fps: 10
+				fps: 2
 			};
 
 			$scope.interval = 30000;
-			$scope.delay = 5000;
+			$scope.delay = 0;
 			$scope.yExtent = [0, undefined];
 
 			var timelineReference;
@@ -64,18 +64,29 @@
 			});
 
 			var update = function(){
-				$scope.model.push([Date.now(), Math.random()*10]);
-				while($scope.model.length > 71){
+				var now = Math.floor(Date.now() / 1000)*1000;
+				$scope.model.push([now, (now%10000)/1000]);
+				while($scope.model.length > 71) {
 					$scope.model.shift();
 				}
 
-				$timeout(update, 500);
+				while($scope.markers.length > 0 && $scope.markers[0][0] < Date.now() - $scope.interval) {
+					$scope.markers.shift();
+				}
+
+				$timeout(update, 1000);
 			};
 			update();
 
+			function shiftMarker() {
+				if($scope.markers.length > 0) {
+					$scope.markers.shift();
+				}
+			}
+
 			$scope.addMarker = function() {
 				var now = Date.now();
-				$scope.markers.push([now, $scope.markerLabel, { id: now, text: $scope.markerLabel }]);
+				$scope.markers.push([now, $scope.markerLabel]);
 				$scope.markerLabel = '';
 			};
 
@@ -95,7 +106,7 @@
 	</style>
 
 </head>
-<body ng-controller="DemoController">
+<body data-ng-controller="DemoController">
 	<h1>Real-time timeline example</h1>
 	<p>AngularJS integrated D3 Real-time timeline example</p>
 	<div data-sentio-rt-timeline style="height:100px;"
