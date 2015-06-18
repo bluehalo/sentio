@@ -242,10 +242,14 @@ function sentio_realtime_timeline() {
 	
 	function tickAxis() {
 		// Select and draw the x axis
-		element.g.xAxis.call(axis.x);
-		
+		if(null != element.g.xAxis && null != axis.x) {
+			element.g.xAxis.call(axis.x);
+		}
+
 		// Select and draw the y axis
-		element.g.yAxis.call(axis.y);
+		if(null != element.g.yAxis && null != axis.y) {
+			element.g.yAxis.call(axis.y);
+		}
 	}
 	
 	function tickLine(translate) {
@@ -399,13 +403,17 @@ function sentio_realtime_timeline() {
 	chart.xScale = function(v){
 		if(!arguments.length) { return scale.x; }
 		scale.x = v;
-		axis.x.scale(v);
+		if(null != axis.x) {
+			axis.x.scale(v);
+		}
 		return chart;
 	};
 	chart.yScale = function(v){
 		if(!arguments.length) { return scale.y; }
 		scale.y = v;
-		axis.y.scale(v);
+		if(null != axis.y) {
+			axis.y.scale(v);
+		}
 		return chart;
 	};
 	chart.interpolation = function(v){
@@ -449,10 +457,14 @@ function sentio_realtime_timeline() {
 		efficient = v;
 		return chart;
 	};
-
 	chart.markerHover = function(f){
 		if(!arguments.length) { return markerHoverCallback; }
 		markerHoverCallback = f;
+		return chart;
+	};
+	chart.margin = function(v){
+		if(!arguments.length) { return margin; }
+		margin = v;
 		return chart;
 	};
 
