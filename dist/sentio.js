@@ -979,9 +979,9 @@ function sentio_realtime_timeline() {
 	 * are non-null
 	 */
 	function invokeMarkerCallback(d) {
-		// fire an event with the payload from d[2]
-		if(null != d[2] && null != _markerHoverCallback) {
-			_markerHoverCallback(d[2]);
+		// fire an event with the payload
+		if(null != _markerHoverCallback) {
+			_markerHoverCallback(d);
 		}
 	}
 

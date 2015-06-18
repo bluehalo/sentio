@@ -50,7 +50,7 @@
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
 				$scope.model.push([now, (now%10000)/1000]);
-				while($scope.model.length > 71) {
+				while($scope.model.length > 301) {
 					$scope.model.shift();
 				}
 
