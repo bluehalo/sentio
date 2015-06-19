@@ -1,4 +1,4 @@
-/*! sentio Version: 0.2.5 */
+/*! sentio Version: 0.3.0 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -864,8 +864,8 @@ function sentio_realtime_timeline() {
 	'use strict';
 	
 	// Layout properties
-	var _id = 'rt_timeline_clip_' + Date.now();
-	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
+	var _id = 'rt_timeline_' + Date.now();
+	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
 	var _height = 100, _width = 600;
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
@@ -874,30 +874,17 @@ function sentio_realtime_timeline() {
 	// Interval of the timeline, this is the amount of time being displayed by the timeline
 	var _interval = 60000;
 
-	// Duration of the transition, also this is the minimum buffer time
-	var _duration = {
-		reveal: 500
-	};
-
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
-	 * with the d[2] data from the marker payload
+	 * with the data from the marker payload
 	 */
 	var _markerHoverCallback = null;
 
 	// Is the timeline running?
 	var _running = false;
-	var _firstTime = true;
-
-	// Transition used for normal mode
-	var _transition;
-
 
 	// Is the timeline running in efficient mode?
-	var _efficient = {
-		enabled: false,
-		fps: 10
-	};
+	var _fps = 32;
 
 	// Default accessors for the dimensions of the data
 	var _value = {
@@ -936,7 +923,8 @@ function sentio_realtime_timeline() {
 			line: undefined,
 			markers: undefined
 		},
-		clipPath: undefined
+		plotClipPath: undefined,
+		markerClipPath: undefined
 	};
 
 	// Line generator for the plot
@@ -959,20 +947,21 @@ function sentio_realtime_timeline() {
 		_element.svg = container.append('svg');
 
 		// Add the defs and add the clip path definition
-		_element.clipPath = _element.svg.append('defs').append('clipPath').attr('id', _id).append('rect');
+		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g');
 
 		// Append a container for the plot (space inside the axes)
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append the line path group and add the line path
 		_element.g.line = _element.g.plot.append('g');
 		_element.g.line.append('path').attr('class', 'line');
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.plot.append('g').attr('class', 'markers');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -1002,9 +991,9 @@ function sentio_realtime_timeline() {
 	 * are non-null
 	 */
 	function invokeMarkerCallback(d) {
-		// fire an event with the payload from d[2]
-		if(null != d[2] && null != _markerHoverCallback) {
-			_markerHoverCallback(d[2]);
+		// fire an event with the payload
+		if(null != _markerHoverCallback) {
+			_markerHoverCallback(d);
 		}
 	}
 
@@ -1016,14 +1005,18 @@ function sentio_realtime_timeline() {
 		_scale.y.range([_height - _margin.top - _margin.bottom, 0]);
 
 		// Append the clip path
-		_element.clipPath
+		_element.plotClipPath
 			.attr('width', _width - _margin.left - _margin.right)
 			.attr('height', _height - _margin.top - _margin.bottom);
+		_element.markerClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', _width - _margin.left - _margin.right)
+			.attr('height', _height - _margin.bottom);
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
 
-		// Append groups for the axes
+		// Update the positions of the axes
 		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
 		_element.g.yAxis.attr('class', 'y axis');
 
@@ -1045,77 +1038,41 @@ function sentio_realtime_timeline() {
 		var now = new Date();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain([now - _delay - _interval, now - _delay - _duration.reveal]);
+		_scale.x.domain([now - _delay - _interval, now - _delay]);
 
 		// Update the y domain (based on configuration and data)
 		_scale.y.domain(getYExtent(now));
 
-		// Either tick efficiently or normally
-		var efficient = !(null == _efficient || !_efficient.enabled);
-		if(_firstTime) {
-			_firstTime = false;
-			efficient = true;
-			_transition = d3.select({}).transition()
-				.duration(_duration.reveal)
-				.ease('linear');
+		// Update the plot elements
+		tickAxes();
+		tickLine();
+		tickMarkers();
+
+		// Schedule the next update
+		window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
+	}
+
+	function tickAxes() {
+		if(null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
 		}
-
-		if(efficient) {
-			var translate = '-' + _scale.x(now - _delay - _interval);
-			tickAxes(efficient);
-			tickLine(translate, efficient);
-			tickMarkers(translate, efficient);
-
-			// Schedule the next update
-			window.setTimeout(tick, 1000/_efficient.fps);
-		} else {
-			_transition = _transition.each(function(){
-				var translate = _scale.x(now - _delay - _interval);
-				tickAxes(efficient);
-				tickLine(translate, efficient, now);
-				tickMarkers(translate, efficient);
-			}).transition().each('start', tick);
+		if(null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
 		}
 	}
 
-	function tickAxes(efficient) {
-		if(efficient) {
-			if(null != _axis.x) {
-				_element.g.xAxis.call(_axis.x);
-			}
-			if(null != _axis.y) {
-				_element.g.yAxis.call(_axis.y);
-			}
-		} else {
-			if(null != _axis.x) {
-				_element.g.xAxis.transition().call(_axis.x);
-			}
-			if(null != _axis.y) {
-				_element.g.yAxis.transition().call(_axis.y);
-			}
-		}
-	}
-
-	function tickLine(translate, efficient, now) {
+	function tickLine() {
 		// Select and draw the line
 		var path = _element.g.line.select('.line').attr('d', _line);
-
-		// If we are not in efficient mode, reset the transform and apply a transition
-		if(!efficient) {
-			path = path.attr('transform', 'translate(' + _scale.x(now - _delay - _interval + _duration.reveal) + ')').transition().duration(_transition.duration());
-		}
-
-		// Set the final transform state
-		path.attr('transform', 'translate(' + translate + ')');
 	}
 
-	function tickMarkers(translate, efficient) {
+	function tickMarkers(efficient) {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
 			.data(_markers, function(d) { 
 				return _markerValue.x(d); 
-			} );
+			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
@@ -1133,7 +1090,8 @@ function sentio_realtime_timeline() {
 			.attr('y2', function(d) { return _scale.y.range()[0]; });
 
 		textEnter
-			.attr('y', 0)
+			.attr('dy', '0em')
+			.attr('y', -3)
 			.attr('text-anchor', 'middle')
 			.text(function(d) { return d[1]; });
 
@@ -1145,26 +1103,17 @@ function sentio_realtime_timeline() {
 		textUpdate
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
-		if(efficient) {
-			markerJoin.attr('transform', 'translate(' + translate + ')');
-		} else {
-			markerJoin
-				.attr('transform', null)
-				.transition()
-				.attr('transform', 'translate(' + translate + ')');
-		}
-
 		// Exit
 		var markerExit = markerJoin.exit();
 
-		if(efficient) {
-			markerExit.remove();
-		} else {
+		if(_fps < 20 && _fps > 0) {
 			markerExit
 				.attr('opacity', 1)
-				.transition().duration(_duration.reveal/2)
+				.transition().duration(500/_fps)
 				.attr('opacity', 0.1)
 				.remove();
+		} else {
+			markerExit.remove();
 		}
 	}
 
@@ -1175,7 +1124,7 @@ function sentio_realtime_timeline() {
 			var y = _value.y(element);
 			var x = _value.x(element);
 
-			if(x < now - _delay  + _duration.reveal) {
+			if(x < now - _delay && x > now - _delay - _interval) {
 				if(nExtent[0] > y) { nExtent[0] = y; }
 				if(nExtent[1] < y) { nExtent[1] = y; }
 			}
@@ -1196,7 +1145,6 @@ function sentio_realtime_timeline() {
 	chart.start = function(){
 		if(_running){ return; }
 		_running = true;
-		_firstTime = true;
 
 		tick();
 	};
@@ -1287,21 +1235,19 @@ function sentio_realtime_timeline() {
 		_yExtent = v;
 		return chart;
 	};
-	chart.duration = function(v){
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		_transition.duration(_duration.reveal);
+	chart.fps = function(v){
+		if(!arguments.length) { return _fps; }
+		_fps = v;
 		return chart;
 	};
-	chart.efficient = function(v){
-		if(!arguments.length) { return _efficient; }
-		_firstTime = true;
-		_efficient = v;
-		return chart;
-	};
-	chart.markerHover = function(f){
+	chart.markerHover = function(v){
 		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = f;
+		_markerHoverCallback = v;
+		return chart;
+	};
+	chart.margin = function(v){
+		if(!arguments.length) { return _margin; }
+		_margin = v;
 		return chart;
 	};
 	chart.margin = function(v){
