@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.0 */
+/*! sentio Version: 0.3.1 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
