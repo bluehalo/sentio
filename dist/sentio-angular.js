@@ -36,6 +36,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			}
 
 			timeline.init(timelineElement);
+			timeline.data([]).redraw().start();
 
 			// setup the marker callback method if one was provided
 			if(null != scope.markerHover) {
@@ -52,7 +53,6 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				if(null == o && null == n){ return; }
 
 				timeline.data(n).redraw();
-				timeline.start();
 			});
 			
 			scope.$watchCollection('markers', function(n, o){
