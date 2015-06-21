@@ -22,7 +22,7 @@
 
 			$scope.fps = 32;
 
-			$scope.interval = 300000;
+			$scope.interval = 30000;
 			$scope.delay = 0;
 			$scope.yExtent = [0, undefined];
 
@@ -50,7 +50,7 @@
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
 				$scope.model.push([now, (now%10000)/1000]);
-				while($scope.model.length > 301) {
+				while($scope.model.length > $scope.interval/1000 + 1) {
 					$scope.model.shift();
 				}
 
@@ -66,6 +66,17 @@
 				var now = Date.now();
 				$scope.markers.push([now, $scope.markerLabel]);
 				$scope.markerLabel = '';
+			};
+
+			$scope.doStart = function() {
+				if(null != timelineReference) {
+					timelineReference.start();
+				}
+			};
+			$scope.doStop = function() {
+				if(null != timelineReference) {
+					timelineReference.stop();
+				}
 			};
 
 			/**
@@ -106,10 +117,15 @@
 		<label for="fps">FPS: </label>
 		<input id="fps" type="text" data-ng-model="fps" placeholder="fps"/>
 	</div>
-	
+
 	<div>
 		<input id="markerLabel" type="text" data-ng-model="markerLabel" placeholder="Marker Label"/>
 		<button data-ng-click="addMarker()">Add Marker</button>
+	</div>
+
+	<div>
+		<button data-ng-click="doStart()">Start</button>
+		<button data-ng-click="doStop()">Stop</button>
 	</div>
 
 	<div data-ng-show="hoverText != null && hoverText != ''">
