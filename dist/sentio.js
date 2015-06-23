@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.1 */
+/*! sentio Version: 0.3.2 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -862,6 +862,7 @@ sentio.realtime.timeline = sentio_realtime_timeline;
 
 function sentio_realtime_timeline() {
 	'use strict';
+
 	// Layout properties
 	var _id = 'rt_timeline_' + Date.now();
 	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };

@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.1 */
+/*! sentio Version: 0.3.2 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio.realtime').directive('sentioRtTimeline', function($document, $window, $timeout, $log) {
