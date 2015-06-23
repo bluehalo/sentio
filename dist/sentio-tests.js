@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.0 */
+/*! sentio Version: 0.3.1 */
 // just an empty file to ensure the sentio-tests.js file is always created
 
 describe('Realtime Bins Controller', function() {

@@ -110,7 +110,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				// Reapply the old overflow setting
 				body.style.overflow = overflow;
 
-				console.log('resize rt.timeline height: ' + height + ' width: ' + width);
+				$log.debug('resize rt.timeline height: ' + height + ' width: ' + width);
 
 				// Apply the new width and height
 				if(resizeWidth){ timeline.width(width); }
