@@ -390,11 +390,6 @@ function sentio_realtime_timeline() {
 		_margin = v;
 		return chart;
 	};
-	chart.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return chart;
-	};
 
 	return chart;
 }
