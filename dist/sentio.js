@@ -862,7 +862,6 @@ sentio.realtime.timeline = sentio_realtime_timeline;
 
 function sentio_realtime_timeline() {
 	'use strict';
-	
 	// Layout properties
 	var _id = 'rt_timeline_' + Date.now();
 	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
@@ -1243,11 +1242,6 @@ function sentio_realtime_timeline() {
 	chart.markerHover = function(v){
 		if(!arguments.length) { return _markerHoverCallback; }
 		_markerHoverCallback = v;
-		return chart;
-	};
-	chart.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
 		return chart;
 	};
 	chart.margin = function(v){

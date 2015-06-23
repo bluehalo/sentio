@@ -2,7 +2,6 @@ sentio.realtime.timeline = sentio_realtime_timeline;
 
 function sentio_realtime_timeline() {
 	'use strict';
-	
 	// Layout properties
 	var _id = 'rt_timeline_' + Date.now();
 	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
