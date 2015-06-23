@@ -697,8 +697,12 @@ function sentio_timeline_line() {
 		scale.y.domain(getExtent(value.y, yExtent, [0, 10]));
 
 		// Select and draw the x and y axis
-		element.g.xAxis.transition().duration(duration).call(axis.x);
-		element.g.yAxis.transition().duration(duration).call(axis.y);
+		if(null != element.g.xAxis && null != axis.x) {
+			element.g.xAxis.transition().duration(duration).call(axis.x);
+		}
+		if(null != element.g.yAxis && null != axis.y) {
+			element.g.yAxis.transition().duration(duration).call(axis.y);
+		}
 
 		// Update the line
 		element.g.plot.select('.area').transition().duration(duration).attr('d', area.y0(scale.y.range()[0]));
@@ -786,13 +790,17 @@ function sentio_timeline_line() {
 	chart.xScale = function(v) {
 		if(!arguments.length) { return scale.x; }
 		scale.x = v;
-		axis.x.scale(v);
+		if(null != axis.x) {
+			axis.x.scale(v);
+		}
 		return chart;
 	};
 	chart.yScale = function(v) {
 		if(!arguments.length) { return scale.y; }
 		scale.y = v;
-		axis.y.scale(v);
+		if(null != axis.y) {
+			axis.y.scale(v);
+		}
 		return chart;
 	};
 	chart.interpolation = function(v) {
@@ -836,10 +844,14 @@ function sentio_timeline_line() {
 		margin = v;
 		return chart;
 	};
-
 	chart.markerHover = function(f){
 		if(!arguments.length) { return markerHoverCallback; }
 		markerHoverCallback = f;
+		return chart;
+	};
+	chart.margin = function(v){
+		if(!arguments.length) { return margin; }
+		margin = v;
 		return chart;
 	};
 
@@ -850,7 +862,6 @@ sentio.realtime.timeline = sentio_realtime_timeline;
 
 function sentio_realtime_timeline() {
 	'use strict';
-
 	// Layout properties
 	var _id = 'rt_timeline_' + Date.now();
 	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
