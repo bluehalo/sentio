@@ -44,43 +44,46 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			scope.$watch('configure', function(n, o){
 				if(null != scope.configure){
 					scope.configure({ timeline: timeline });
+					timeline.redraw();
 				}
 			});
 
-			scope.$watchCollection('model', function(n, o){
+			// Only want to watch when the collection object changes
+			scope.$watch('model', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.data(n);
+				timeline.data(n).redraw();
 			});
 
-			scope.$watchCollection('markers', function(n, o){
+			// Only want to watch when the collection object changes
+			scope.$watch('markers', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.markers(n);
+				timeline.markers(n).redraw();
 			});
 
 			scope.$watch('interval', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.interval(n);
+				timeline.interval(n).redraw();
 			});
 
 			scope.$watch('delay', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.delay(n);
+				timeline.delay(n).redraw();
 			});
 
 			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.yExtent(n);
+				timeline.yExtent(n).redraw();
 			});
 
 			scope.$watch('fps', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.fps(n);
+				timeline.fps(n).redraw();
 			});
 
 			scope.$watch('api', function(n, o) {

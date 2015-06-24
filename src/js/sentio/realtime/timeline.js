@@ -49,7 +49,7 @@ function sentio_realtime_timeline() {
 	// Default Axis definitions
 	var _axis = {
 		x: d3.svg.axis().scale(_scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(4)
+		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(3)
 	};
 
 	// g elements
