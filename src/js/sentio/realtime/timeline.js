@@ -171,7 +171,6 @@ function sentio_realtime_timeline() {
 	 * chart is updating to proceed through time.
 	 */ 
 	function tick() {
-		console.log('tick');
 		// If not running, let the loop die
 		if(!_running) return;
 

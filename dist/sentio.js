@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.3 */
+/*! sentio Version: 0.3.4 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -1031,7 +1031,6 @@ function sentio_realtime_timeline() {
 	 * chart is updating to proceed through time.
 	 */ 
 	function tick() {
-		console.log('tick');
 		// If not running, let the loop die
 		if(!_running) return;
 
