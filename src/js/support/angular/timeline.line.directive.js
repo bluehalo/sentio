@@ -9,6 +9,7 @@ angular.module('sentio').directive('sentioTimeline', function($document, $window
 			yExtent: '=sentioYExtent',
 			xExtent: '=sentioXExtent',
 			duration: '=sentioDuration',
+			api: '=sentioApi',
 			resizeWidth: '@sentioResizeWidth',
 			resizeHeight: '@sentioResizeHeight',
 			configureFn: '&sentioConfigureFn',
@@ -81,6 +82,16 @@ angular.module('sentio').directive('sentioTimeline', function($document, $window
 
 				timeline.duration(n);
 			}, true);
+
+			scope.$watch('api', function(n, o) {
+				if(null != scope.api) {
+					scope.api.start = timeline.start;
+					scope.api.stop = timeline.stop;
+					scope.api.restart = timeline.restart;
+					scope.api.redraw = timeline.redraw;
+					scope.api.resize = doResize;
+				}
+			});
 
 			// Manage resizing the chart
 			var resizeWidth = (null != attrs.sentioResizeWidth);

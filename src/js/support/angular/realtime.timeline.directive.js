@@ -11,6 +11,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			delay: '=sentioDelay',
 			yExtent: '=sentioYExtent',
 			fps: '=sentioFps',
+			api: '=sentioApi',
 			resizeWidth: '@sentioResizeWidth',
 			resizeHeight: '@sentioResizeHeight',
 			configure: '&sentioConfigureFn'
@@ -49,37 +50,47 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			scope.$watchCollection('model', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.data(n).redraw();
+				timeline.data(n);
 			});
-			
+
 			scope.$watchCollection('markers', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.markers(n).redraw();
+				timeline.markers(n);
 			});
 
 			scope.$watch('interval', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.interval(n).redraw();
+				timeline.interval(n);
 			});
 
 			scope.$watch('delay', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.delay(n).redraw();
+				timeline.delay(n);
 			});
 
 			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.yExtent(n).redraw();
+				timeline.yExtent(n);
 			});
 
 			scope.$watch('fps', function(n, o){
 				if(null == o && null == n){ return; }
 
 				timeline.fps(n);
+			});
+
+			scope.$watch('api', function(n, o) {
+				if(null != scope.api) {
+					scope.api.start = timeline.start;
+					scope.api.stop = timeline.stop;
+					scope.api.restart = timeline.restart;
+					scope.api.redraw = timeline.redraw;
+					scope.api.resize = doResize;
+				}
 			});
 
 			// Manage resizing the chart

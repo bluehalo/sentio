@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.2 */
+/*! sentio Version: 0.3.3 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -653,23 +653,23 @@ function sentio_timeline_line() {
 		
 		// add data to the container of markers
 		var markData = element.g.markers
-		  .selectAll('.marker')
-		    .data(markers)
-		    .enter();
+			.selectAll('.marker')
+				.data(markers)
+				.enter();
 		
 		/*
 		 * markerGroup is a collection of the line
 		 * and label for a particular marker
 		 */
 		var markerGroup = markData.append('g')
-		    .attr('class', 'marker');
-		
+			.attr('class', 'marker');
+
 		// Add the line to the marker group
-		drawMarkerLines(markerGroup.append('line') );
-		
+		drawMarkerLines(markerGroup.append('line'));
+
 		// Text can show on hover or always
-		drawMarkerText( markerGroup.append('text') );
-		
+		drawMarkerText(markerGroup.append('text'));
+
 		return chart;
 	};
 
@@ -707,7 +707,7 @@ function sentio_timeline_line() {
 		// Update the line
 		element.g.plot.select('.area').transition().duration(duration).attr('d', area.y0(scale.y.range()[0]));
 		element.g.plot.select('.line').transition().duration(duration).attr('d', line);
-		
+
 		// Update the markers
 		redrawMarkers();
 
@@ -1001,17 +1001,17 @@ function sentio_realtime_timeline() {
 		var now = Date.now();
 
 		// Set up the scales
-		_scale.x.range([0, _width - _margin.left - _margin.right]);
-		_scale.y.range([_height - _margin.top - _margin.bottom, 0]);
+		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
+		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
 
 		// Append the clip path
 		_element.plotClipPath
-			.attr('width', _width - _margin.left - _margin.right)
-			.attr('height', _height - _margin.top - _margin.bottom);
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.top - _margin.bottom));
 		_element.markerClipPath
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', _width - _margin.left - _margin.right)
-			.attr('height', _height - _margin.bottom);
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
@@ -1031,6 +1031,7 @@ function sentio_realtime_timeline() {
 	 * chart is updating to proceed through time.
 	 */ 
 	function tick() {
+		console.log('tick');
 		// If not running, let the loop die
 		if(!_running) return;
 
@@ -1066,7 +1067,7 @@ function sentio_realtime_timeline() {
 		var path = _element.g.line.select('.line').attr('d', _line);
 	}
 
-	function tickMarkers(efficient) {
+	function tickMarkers() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
@@ -1093,7 +1094,7 @@ function sentio_realtime_timeline() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(function(d) { return d[1]; });
+			.text(function(d) { return _markerValue.label(d); });
 
 		// Update
 		lineUpdate

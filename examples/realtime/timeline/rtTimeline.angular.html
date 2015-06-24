@@ -26,10 +26,9 @@
 			$scope.delay = 0;
 			$scope.yExtent = [0, undefined];
 
-			var timelineReference;
-			$scope.configure = function(timeline){
-				timelineReference = timeline;
+			$scope.api = {};
 
+			$scope.configure = function(timeline){
 				// Set the xScale to be UTC
 				timeline.xScale(d3.time.scale.utc());
 
@@ -69,14 +68,10 @@
 			};
 
 			$scope.doStart = function() {
-				if(null != timelineReference) {
-					timelineReference.start();
-				}
+				$scope.api.start();
 			};
 			$scope.doStop = function() {
-				if(null != timelineReference) {
-					timelineReference.stop();
-				}
+				$scope.api.stop();
 			};
 
 			/**
@@ -105,6 +100,7 @@
 		data-sentio-interval="interval"
 		data-sentio-delay="delay"
 		data-sentio-fps="fps"
+		data-sentio-api="api"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
 		data-sentio-configure-fn="configure(timeline)"></div>

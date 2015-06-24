@@ -209,23 +209,23 @@ function sentio_timeline_line() {
 		
 		// add data to the container of markers
 		var markData = element.g.markers
-		  .selectAll('.marker')
-		    .data(markers)
-		    .enter();
+			.selectAll('.marker')
+				.data(markers)
+				.enter();
 		
 		/*
 		 * markerGroup is a collection of the line
 		 * and label for a particular marker
 		 */
 		var markerGroup = markData.append('g')
-		    .attr('class', 'marker');
-		
+			.attr('class', 'marker');
+
 		// Add the line to the marker group
-		drawMarkerLines(markerGroup.append('line') );
-		
+		drawMarkerLines(markerGroup.append('line'));
+
 		// Text can show on hover or always
-		drawMarkerText( markerGroup.append('text') );
-		
+		drawMarkerText(markerGroup.append('text'));
+
 		return chart;
 	};
 
@@ -263,7 +263,7 @@ function sentio_timeline_line() {
 		// Update the line
 		element.g.plot.select('.area').transition().duration(duration).attr('d', area.y0(scale.y.range()[0]));
 		element.g.plot.select('.line').transition().duration(duration).attr('d', line);
-		
+
 		// Update the markers
 		redrawMarkers();
 
