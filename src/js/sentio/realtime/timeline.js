@@ -9,7 +9,7 @@ function sentio_realtime_timeline() {
 	var _height = 100, _width = 600;
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
-	var _delay = 10000;
+	var _delay = 0;
 
 	// Interval of the timeline, this is the amount of time being displayed by the timeline
 	var _interval = 60000;
@@ -404,8 +404,9 @@ function sentio_realtime_timeline() {
 	chart.fps = function(v){
 		if(!arguments.length) { return _fps; }
 		_fps = v;
-
-		chart.restart();
+		if(_running) {
+			chart.restart();
+		}
 
 		return chart;
 	};

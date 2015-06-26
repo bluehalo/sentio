@@ -17,7 +17,7 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.realtime.timeline()
+		var timeline = sentio.realtime.timeline().init(timelineDiv)
 			.height(100)
 			.width(600)
 			.interval(10000)
@@ -27,9 +27,7 @@
 			.fps(2);
 
 		var data = generateData(Date.now() - 1000*15, 15);
-		timeline.init(timelineDiv).data(data).redraw();
-		timeline.start();
-		timeline.data(data);
+		timeline.data(data).start();
 
 		function addData() {
 			data.shift();
