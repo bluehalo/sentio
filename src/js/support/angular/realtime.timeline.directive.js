@@ -1,4 +1,5 @@
-angular.module('sentio.realtime').directive('sentioRtTimeline', function($document, $window, $timeout, $log) {
+angular.module('sentio.realtime').directive('sentioRtTimeline', [ '$document', '$window', '$timeout', '$log', 
+function($document, $window, $timeout, $log) {
 	'use strict';
 
 	return {
@@ -150,4 +151,4 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 			});
 		}
 	};
-});
+}]);
