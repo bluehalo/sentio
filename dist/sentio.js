@@ -882,6 +882,7 @@ function sentio_realtime_timeline() {
 
 	// Is the timeline running?
 	var _running = false;
+	var _timeout = null;
 
 	// Is the timeline running in efficient mode?
 	var _fps = 32;
@@ -941,7 +942,10 @@ function sentio_realtime_timeline() {
 	// Chart create/init method
 	function chart(selection){}
 
-	// Perform all initial chart construction and setup
+	/*
+	 * Initialize the chart (should only call this once). Performs all initial chart
+	 * creation and setup
+	 */
 	chart.init = function(container){
 		// Create the SVG element
 		_element.svg = container.append('svg');
@@ -967,10 +971,14 @@ function sentio_realtime_timeline() {
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
 		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
 
+		chart.resize();
+
 		return chart;
 	};
 
-	// Update the chart data
+	/*
+	 * Set the chart data
+	 */
 	chart.data = function(v) {
 		if(!arguments.length) { return _data; }
 		_data = v;
@@ -978,7 +986,9 @@ function sentio_realtime_timeline() {
 		return chart;
 	};
 
-	// Update the markers data
+	/*
+	 * Set the markers data
+	 */
 	chart.markers = function(v) {
 		if(!arguments.length) { return _markers; }
 		_markers = v;
@@ -997,7 +1007,10 @@ function sentio_realtime_timeline() {
 		}
 	}
 
-	chart.redraw = function(){
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	chart.resize = function() {
 		var now = Date.now();
 
 		// Set up the scales
@@ -1034,6 +1047,16 @@ function sentio_realtime_timeline() {
 		// If not running, let the loop die
 		if(!_running) return;
 
+		chart.redraw();
+
+		// Schedule the next update
+		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
+	}
+
+	/*
+	 * Redraw the graphic
+	 */
+	chart.redraw = function() {
 		// Store the current time
 		var now = new Date();
 
@@ -1044,15 +1067,14 @@ function sentio_realtime_timeline() {
 		_scale.y.domain(getYExtent(now));
 
 		// Update the plot elements
-		tickAxes();
-		tickLine();
-		tickMarkers();
+		updateAxes();
+		updateLine();
+		updateMarkers();
 
-		// Schedule the next update
-		window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
-	}
+		return chart;
+	};
 
-	function tickAxes() {
+	function updateAxes() {
 		if(null != _axis.x) {
 			_element.g.xAxis.call(_axis.x);
 		}
@@ -1061,12 +1083,12 @@ function sentio_realtime_timeline() {
 		}
 	}
 
-	function tickLine() {
+	function updateLine() {
 		// Select and draw the line
 		var path = _element.g.line.select('.line').attr('d', _line);
 	}
 
-	function tickMarkers() {
+	function updateMarkers() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
@@ -1151,6 +1173,10 @@ function sentio_realtime_timeline() {
 
 	chart.stop = function(){
 		_running = false;
+
+		if(_timeout != null) {
+			window.clearTimeout(_timeout);
+		}
 	};
 
 	chart.restart = function(){
@@ -1238,6 +1264,9 @@ function sentio_realtime_timeline() {
 	chart.fps = function(v){
 		if(!arguments.length) { return _fps; }
 		_fps = v;
+
+		chart.restart();
+
 		return chart;
 	};
 	chart.markerHover = function(v){

@@ -16,36 +16,20 @@
 		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
 
 			$scope.model = [];
-			$scope.hoverText = '';
-			$scope.markerLabel = '';
 			$scope.markers = [];
-
 			$scope.fps = 32;
-
 			$scope.interval = 30000;
 			$scope.delay = 0;
 			$scope.yExtent = [0, undefined];
-
 			$scope.api = {};
 
-			$scope.configure = function(timeline){
-				// Set the xScale to be UTC
-				timeline.xScale(d3.time.scale.utc());
+			$scope.hoverText = '';
+			$scope.markerLabel = '';
 
-				// Custom formatter
-				var customTimeFormat = d3.time.format.utc.multi([
-					[".%L", function(d) { return d.getMilliseconds(); }],
-					[":%S", function(d) { return d.getSeconds(); }],
-					["%H:%M", function(d) { return d.getMinutes(); }],
-					["%H", function(d) { return d.getHours(); }],
-					["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
-					["%b %d", function(d) { return d.getDate() != 1; }],
-					["%B", function(d) { return d.getMonth(); }],
-					["%Y", function() { return true; }]
-				]);
-				timeline.xAxis().tickFormat(customTimeFormat);
+			$scope.configure = function(timeline){
 			};
 
+			// Update the data and markers
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
 				$scope.model.push([now, (now%10000)/1000]);
@@ -61,12 +45,14 @@
 			};
 			update();
 
+			// Add a marker
 			$scope.addMarker = function() {
 				var now = Date.now();
 				$scope.markers.push([now, $scope.markerLabel]);
 				$scope.markerLabel = '';
 			};
 
+			// Start and stop the timeline
 			$scope.doStart = function() {
 				$scope.api.start();
 			};

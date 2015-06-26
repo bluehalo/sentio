@@ -33,8 +33,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				if(null != height && !Number.isNaN(height)) { timeline.height(height); }
 			}
 
-			timeline.init(timelineElement);
-			timeline.data([]).redraw().start();
+			timeline.init(timelineElement).data([]).start();
 
 			// setup the marker callback method if one was provided
 			if(null != scope.markerHover) {
@@ -130,7 +129,7 @@ angular.module('sentio.realtime').directive('sentioRtTimeline', function($docume
 				if(resizeWidth){ timeline.width(width); }
 				if(resizeHeight){ timeline.height(height); }
 
-				timeline.redraw();
+				timeline.resize().redraw();
 			};
 			var delayResize = function(){
 				if(undefined !== resizeTimer){

@@ -26,9 +26,7 @@
 			.delay(1000);
 
 		var data = generateData(Date.now() - 1000*15, 15);
-		timeline.init(timelineDiv).data(data).redraw();
-		timeline.start();
-		timeline.data(data);
+		timeline.init(timelineDiv).data(data).start();
 
 		function addData() {
 			data.shift();
