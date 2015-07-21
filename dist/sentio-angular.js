@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.8 */
+/*! sentio Version: 0.3.11 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio.realtime').directive('sentioRtTimeline', [ '$document', '$window', '$timeout', '$log', 
@@ -198,7 +198,7 @@ function($document, $window, $timeout, $log) {
 			}
 			scope.$watch('filterFn', function(n, o){
 				timeline.filter().on('filterend', function(filterState){
-					scope.$apply(function(){
+					$timeout(function(){
 						scope.filterFn({ filterState: filterState });
 					});
 				});
