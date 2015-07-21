@@ -720,14 +720,20 @@ function sentio_timeline_line() {
 
 			if(null != extent) {
 				// Now clamp the extent
-				extent = [new Date(Math.max(extent[0], scale.x.domain()[0])), new Date(Math.min(extent[1], scale.x.domain()[1]))];
-				if(extent[0] >= extent[1]) {
-					filter.brush.clear();
-				} else {
-					filter.brush.extent(extent);
-				}
+				var newExtent = [new Date(Math.max(extent[0], scale.x.domain()[0])), new Date(Math.min(extent[1], scale.x.domain()[1]))];
 
-				filter.brush.event(element.g.brush);
+				if(extent[0] === nExtent[0] && extent[1] === nExtent[1]) {
+					// Reassert the brush, but do not fire the event
+					filter.brush.extent(extent);
+				} else if(extent[0] >= extent[1]) {
+					// The brush is empty or invalid, so clear it
+					filter.brush.clear();
+					filter.brush.event(element.g.brush);
+				} else {
+					// Reassert the brush and fire the event
+					filter.brush.extent(extent);
+					filter.brush.event(element.g.brush);
+				}
 			}
 
 			element.g.brush
