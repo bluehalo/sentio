@@ -160,10 +160,9 @@ function sentio_timeline_line() {
 	 * coming from enter or update of data
 	 */
 	function drawMarkerText(selection) {
-		
 		var ySize = scale.y.range()[0] - scale.y.range()[1];
 		ySize = ySize * 0.2;
-		
+
 		selection
 			.attr("x", function(d) {
 				return scale.x(d[0]);
@@ -188,12 +187,11 @@ function sentio_timeline_line() {
 			.transition(500)
 			.attr('opacity', 0)
 			.remove();
-		
+
 		drawMarkerLines( element.g.markers.selectAll('line') );
 		drawMarkerText( element.g.markers.selectAll('text') );
-		
 	}
-	
+
 	// Update the chart markers
 	chart.markers = function(value) {
 		if(!arguments.length) { return markers; }
@@ -230,6 +228,11 @@ function sentio_timeline_line() {
 	};
 
 	chart.redraw = function() {
+		var extent;
+		if(filter.enabled) {
+			extent = filter.brush.extent();
+		}
+
 		// Set up the scales
 		scale.x.range([0, width - margin.left - margin.right]);
 		scale.y.range([height - margin.top - margin.bottom, 0]);
@@ -270,6 +273,19 @@ function sentio_timeline_line() {
 		// If filter is enabled, update the brush
 		if(filter.enabled) {
 			filter.brush.x(scale.x);
+
+			if(null != extent) {
+				// Now clamp the extent
+				extent = [new Date(Math.max(extent[0], scale.x.domain()[0])), new Date(Math.min(extent[1], scale.x.domain()[1]))];
+				if(extent[0] >= extent[1]) {
+					filter.brush.clear();
+				} else {
+					filter.brush.extent(extent);
+				}
+
+				filter.brush.event(element.g.brush);
+			}
+
 			element.g.brush
 				.call(filter.brush)
 				.selectAll('rect')
