@@ -40,7 +40,7 @@ function($document, $window, $timeout, $log) {
 			}
 			scope.$watch('filterFn', function(n, o){
 				timeline.filter().on('filterend', function(filterState){
-					scope.$apply(function(){
+					$timeout(function(){
 						scope.filterFn({ filterState: filterState });
 					});
 				});
