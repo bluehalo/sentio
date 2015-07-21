@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.11 */
+/*! sentio Version: 0.3.12 */
 var sentio = {};
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -672,8 +672,9 @@ function sentio_timeline_line() {
 	};
 
 	chart.redraw = function() {
+		// Get the original brush extent
 		var extent;
-		if(filter.enabled) {
+		if(filter.enabled && !filter.brush.empty()) {
 			extent = filter.brush.extent();
 		}
 
@@ -719,19 +720,19 @@ function sentio_timeline_line() {
 			filter.brush.x(scale.x);
 
 			if(null != extent) {
-				// Now clamp the extent
-				var newExtent = [new Date(Math.max(extent[0], scale.x.domain()[0])), new Date(Math.min(extent[1], scale.x.domain()[1]))];
+				// Clamp the extent to the domain of the x scale
+				var nExtent = [new Date(Math.max(extent[0], scale.x.domain()[0])), new Date(Math.min(extent[1], scale.x.domain()[1]))];
 
-				if(extent[0] === nExtent[0] && extent[1] === nExtent[1]) {
+				if(extent[0].getTime() == nExtent[0].getTime() && extent[1].getTime() == nExtent[1].getTime()) {
 					// Reassert the brush, but do not fire the event
-					filter.brush.extent(extent);
-				} else if(extent[0] >= extent[1]) {
+					filter.brush.extent(nExtent);
+				} else if(nExtent[0] >= nExtent[1]) {
 					// The brush is empty or invalid, so clear it
 					filter.brush.clear();
 					filter.brush.event(element.g.brush);
 				} else {
 					// Reassert the brush and fire the event
-					filter.brush.extent(extent);
+					filter.brush.extent(nExtent);
 					filter.brush.event(element.g.brush);
 				}
 			}

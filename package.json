@@ -1,6 +1,6 @@
 {
   "name": "sentio",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "repository" : { 
     "type" : "git",
     "url" : "https://github.com/Asymmetrik/sentio.git"

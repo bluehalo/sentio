@@ -25,8 +25,6 @@
 			.yExtent([0, undefined]);
 
 		timeline.filter()
-			.on('filter', function(val) { console.log({ msg: 'filter', val: val }); })
-			.on('filterstart', function(val) { console.log({ msg: 'filterstart', val: val }); })
 			.on('filterend', function(val) { console.log({ msg: 'filterend', val }); });
 
 		var interval = 60000;
@@ -49,7 +47,7 @@
 
 		function generateData(minTs, maxTs) {
 			var data = [];
-			for(var i=0; i<(maxTs - minTs)/5000; i++) {
+			for(var i=0; i<(maxTs - minTs)/2000; i++) {
 				data.push([minTs + Math.random() * (maxTs - minTs), Math.random() * 10]);
 			}
 			return data;
@@ -62,7 +60,7 @@
 			model.clear().lwm(hwm - interval);
 
 			// add new data from old hwm to new hwm
-			data.concat(generateData(oldHwm, hwm));
+			data = data.concat(generateData(oldHwm, hwm));
 
 			// load the data
 			model.add(data);
