@@ -10,6 +10,9 @@ var src = {
 	js: [
 		'src/js/sentio/sentio.js',
 
+		'src/js/sentio/util/util.js',
+		'src/js/sentio/util/**/*.js',
+
 		'src/js/sentio/model/model.js',
 		'src/js/sentio/model/**/*.js',
 
