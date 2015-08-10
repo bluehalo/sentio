@@ -32,8 +32,8 @@
 			// Update the data and markers
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
-				$scope.model.push([now, (now%10000)/1000]);
-				while($scope.model.length > $scope.interval/1000 + 1) {
+				$scope.model.push([now, (now%10000) / 1000]);
+				while($scope.model.length > ($scope.interval + $scope.delay)/1000 + 1) {
 					$scope.model.shift();
 				}
 

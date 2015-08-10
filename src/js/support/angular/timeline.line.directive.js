@@ -69,13 +69,15 @@ function($document, $window, $timeout, $log) {
 			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.yExtent().overrideValue(n).redraw();
+				timeline.yExtent().overrideValue(n);
+				timeline.redraw();
 			});
 
 			scope.$watchCollection('xExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.xExtent(n).overrideValue(n).redraw();
+				timeline.xExtent(n).overrideValue(n);
+				timeline.redraw();
 			});
 
 			scope.$watch('duration', function(n, o){

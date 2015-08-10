@@ -424,6 +424,11 @@ function sentio_timeline_line() {
 		_filter.enabled = v;
 		return _instance;
 	};
+	_instance.markerHover = function(v) {
+		if(!arguments.length) { return _markerHoverCallback; }
+		_markerHoverCallback = v;
+		return _instance;
+	};
 
 	return _instance;
 }

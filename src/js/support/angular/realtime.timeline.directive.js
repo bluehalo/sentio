@@ -77,7 +77,8 @@ function($document, $window, $timeout, $log) {
 			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.yExtent(n).redraw();
+				timeline.yExtent().overrideValue(n);
+				timeline.redraw();
 			});
 
 			scope.$watch('fps', function(n, o){
