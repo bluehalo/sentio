@@ -1,6 +1,51 @@
 /*! sentio Version: 0.3.12 */
 // just an empty file to ensure the sentio-tests.js file is always created
 
+describe('Realtime Bins Controller', function() {
+	'use strict';
+
+	before(function() {
+	});
+
+	// Basic Usage of controller
+	describe('Creation', function() {
+
+		context('when complete', function() {
+			var controller;
+
+			it('should not throw an error', function() {
+				(function() {
+					controller = sentio.controller.rtBins({
+						binCount: 10,
+						binSize: 1
+					});
+				}).should.not.throw();
+			});
+
+			it('should have the right initial structure', function() {
+				var bins = controller.bins();
+
+				// The rtTimeline adds two buffer bins to the top of the model
+				bins.length.should.equal(12);
+			});
+
+		});
+
+		context('when incomplete', function() {
+			it('should throw an error', function() {
+				(function() {
+					sentio.controller.bins();
+				}).should.throw();
+
+				(function() {
+					sentio.controller.bins({});
+				}).should.throw();
+			});
+		});
+
+	});
+
+});
 describe('Bin Layout', function() {
 	'use strict';
 
@@ -500,51 +545,6 @@ describe('Bin Layout', function() {
 	});
 
 });
-describe('Realtime Bins Controller', function() {
-	'use strict';
-
-	before(function() {
-	});
-
-	// Basic Usage of controller
-	describe('Creation', function() {
-
-		context('when complete', function() {
-			var controller;
-
-			it('should not throw an error', function() {
-				(function() {
-					controller = sentio.controller.rtBins({
-						binCount: 10,
-						binSize: 1
-					});
-				}).should.not.throw();
-			});
-
-			it('should have the right initial structure', function() {
-				var bins = controller.bins();
-
-				// The rtTimeline adds two buffer bins to the top of the model
-				bins.length.should.equal(12);
-			});
-
-		});
-
-		context('when incomplete', function() {
-			it('should throw an error', function() {
-				(function() {
-					sentio.controller.bins();
-				}).should.throw();
-
-				(function() {
-					sentio.controller.bins({});
-				}).should.throw();
-			});
-		});
-
-	});
-
-});
 describe('Extent', function() {
 	'use strict';
 
@@ -622,7 +622,7 @@ describe('Extent', function() {
 				overrideValue: [0, 1]
 			});
 
-			it('should return the default value if passed empty data', function() {
+			it('should return the override value if passed empty data', function() {
 				var extent = extentController.getExtent([]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
@@ -645,7 +645,62 @@ describe('Extent', function() {
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 			});
+
+			it('should return the extent if passed only one value', function() {
+				var extent = extentController.getExtent([0]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(1);
+
+				extent = extentController.getExtent([0, 0, 0]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(1);
+
+			});
+		});
+
+		context('when configured with a partial override value', function() {
+			var extentController = sentio.util.extent({
+				overrideValue: [0, undefined]
+			});
+
+			it('should return the default value combined with the override value if passed empty data', function() {
+				var extent = extentController.getExtent([]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(extentController.defaultValue()[1]);
+			});
+
+			it('should return the extent if passed actual data', function() {
+				var extent = extentController.getExtent([0, 1, 2, 3, 4, 5, 6, 7]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(7);
+
+				extent = extentController.getExtent([-10, 10, 2, 3, 7, 1]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(10);
+
+				extent = extentController.getExtent([1]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(1);
+			});
+
+			it('should return the extent if passed only one value', function() {
+				var extent = extentController.getExtent([0]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(0);
+
+				extent = extentController.getExtent([0, 0, 0]);
+				extent.length.should.equal(2);
+				extent[0].should.equal(0);
+				extent[1].should.equal(0);
+
+			});
 		});
 	});
-
 });

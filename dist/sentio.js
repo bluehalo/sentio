@@ -11,8 +11,8 @@ function sentio_util_extent(config) {
 	 */
 	// Configuration
 	var _config = {
-		_defaultValue: [0, 10],
-		_overrideValue: undefined
+		defaultValue: [0, 10],
+		overrideValue: undefined
 	};
 
 	var _fn = {
@@ -26,8 +26,8 @@ function sentio_util_extent(config) {
 	 */
 
 	function setDefaultValue(v) {
-		if(null != v && 2 !== v.length) {
-			throw new Error('Default extent must be a two element array or null/undefined');
+		if(null != v && 2 !== v.length && !Number.isNaN(v[0]) && !Number.isNaN(v[1]) && v[0] < v[1]) {
+			throw new Error('Default extent must be a two element ordered array of numbers');
 		}
 		_config.defaultValue = v;
 	}
@@ -40,17 +40,18 @@ function sentio_util_extent(config) {
 	}
 
 	function setGetValue(v) {
-		//if(is not a function) {
-		//	throw new Error('Value getter must be a function');
-		//}
+		if(typeof v !== 'function') {
+			throw new Error('Value getter must be a function');
+		}
 
 		_fn.getValue = v;
 	}
 
 	function setFilter(v) {
-		//if(is not a function) {
-		//	throw new Error('Filter must be a function');
-		//}
+		if(typeof v !== 'function') {
+			throw new Error('Filter must be a function');
+		}
+
 
 		_fn.filter = v;
 	}
@@ -59,10 +60,12 @@ function sentio_util_extent(config) {
 	 * Constructor/initialization method
 	 */
 	function extent(extentConfig) {
-		if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
-		if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
-		if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
-		if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+		if(null != extentConfig) {
+			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
+			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
+			if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
+			if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+		}
 	}
 
 
@@ -107,40 +110,60 @@ function sentio_util_extent(config) {
 	};
 
 	/*
-	 * Calculate the extent given some data
+	 * Calculate the extent given some data.
+	 * - Default values are used in the absence of data
+	 * - Override values are used to clamp or extend the extent
 	 */
 	extent.getExtent = function(data) {
 		var toReturn;
 		var ov = _config.overrideValue;
 
 		// Check to see if we need to calculate the extent
-		if(null == ov || null == ov[0] && null == ov[1]) {
+		if(null == ov || null == ov[0] || null == ov[1]) {
 			// Since the override isn't complete, we need to calculate the extent
 			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			var foundData = false;
 
-			// Iterate over each element of the data
-			data.forEach(function(element) {
-				// If the element passes the filter, then update the extent
-				if(_fn.filter(element)) {
-					var v = _fn.getValue(element);
-					toReturn[0] = Math.min(toReturn[0], v);
-					toReturn[1] = Math.max(toReturn[1], v);
-				}
-			});
+			if(null != data) {
+				// Iterate over each element of the data
+				data.forEach(function(element) {
+					// If the element passes the filter, then update the extent
+					if(_fn.filter(element)) {
+						foundData = true;
+						var v = _fn.getValue(element);
+						toReturn[0] = Math.min(toReturn[0], v);
+						toReturn[1] = Math.max(toReturn[1], v);
+					}
+				});
+			}
+
+			// If we didn't find any data, use the default values
+			if(!foundData) {
+				toReturn = _config.defaultValue;
+			}
 
 			// Apply the overrides
 			// - Since we're in this conditional, only one or zero overrides were specified
 			if(null != ov) {
-				if(null != ov[0] && toReturn[1] > ov[0]) { toReturn[0] = ov[0]; }
-				if(null != ov[1] && toReturn[0] < ov[1]) { toReturn[1] = ov[1]; }
+				if(null != ov[0]) {
+					// Set the lower override
+					toReturn[0] = ov[0];
+					if(toReturn[0] > toReturn[1]) {
+						toReturn[1] = toReturn[0];
+					}
+				}
+				if(null != ov[1]) { 
+					toReturn[1] = ov[1];
+					if(toReturn[1] < toReturn[0]) {
+						toReturn[0] = toReturn[1];
+					}
+				}
 			}
 		} else {
+			// Since the override is fully specified, use it
 			toReturn = ov;
 		}
 
-		if(toReturn[0] > toReturn[1]) {
-			toReturn = _config.defaultValue;
-		}
 		return toReturn;
 	};
 
@@ -595,12 +618,15 @@ var sentio_timeline = sentio.timeline = {};
 sentio.timeline.line = sentio_timeline_line;
 
 function sentio_timeline_line() {
-	"use strict";
+	'use strict';
 
 	// Layout properties
-	var _id = 'sentio_timeline_' + Date.now();
-	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
+	var _id = 'timeline_line_' + Date.now();
+	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
 	var _height = 100, _width = 600;
+
+	// Duration of the transition, also this is the minimum buffer time
+	var _duration = 300;
 
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
@@ -620,8 +646,16 @@ function sentio_timeline_line() {
 		label: function(d, i) { return d[1]; }
 	};
 
-	var _xExtent = [undefined, undefined];
-	var _yExtent = [undefined, undefined];
+	var now = Date.now();
+	var _extent = {
+		x: sentio.util.extent({
+			defaultValue: [new Date(now - 60000*5), new Date(now)],
+			getValue: function(d) { return d[0]; }
+		}),
+		y: sentio.util.extent({
+			getValue: function(d) { return d[1]; }
+		})
+	};
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -644,7 +678,9 @@ function sentio_timeline_line() {
 			xAxis: undefined,
 			yAxis: undefined,
 			line: undefined,
-			markers: undefined
+			area: undefined,
+			markers: undefined,
+			brush: undefined
 		},
 		plotClipPath: undefined,
 		markerClipPath: undefined
@@ -659,16 +695,54 @@ function sentio_timeline_line() {
 		return _scale.y(_value.y(d, i));
 	});
 
+	// Area generator for the plot
+	var _area = d3.svg.area().interpolate('linear');
+	_area.x(function(d, i) {
+		return _scale.x(_value.x(d, i));
+	});
+	_area.y1(function(d, i) {
+		return _scale.y(_value.y(d, i));
+	});
+
+	// Brush filter
+	var _filter = {
+		enabled: false,
+		brush: d3.svg.brush(),
+		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
+	};
+
 	var _data = [], _markers = [];
 
+	function brushstart() {
+		var isEmpty = _filter.brush.empty();
+		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
+		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+
+		_filter.dispatch.filterstart([isEmpty, min, max]);
+	}
+	function brush() {
+		var isEmpty = _filter.brush.empty();
+		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
+		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+
+		_filter.dispatch.filter([isEmpty, min, max]);
+	}
+	function brushend() {
+		var isEmpty = _filter.brush.empty();
+		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
+		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+
+		_filter.dispatch.filterend([isEmpty, min, max]);
+	}
+
 	// Chart create/init method
-	function chart(selection) {}
+	function chart(selection){}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	chart.init = function(container) {
+	chart.init = function(container){
 		// Create the SVG element
 		_element.svg = container.append('svg');
 
@@ -679,15 +753,28 @@ function sentio_timeline_line() {
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g');
 
-		// Append a container for the plot (space inside the axes)
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#' + _id + ')');
 
-		// Append the line path group and add the line path
+		// Append the line path groups
 		_element.g.line = _element.g.plot.append('g');
 		_element.g.line.append('path').attr('class', 'line');
+		_element.g.area = _element.g.plot.append('g');
+		_element.g.area.append('path').attr('class', 'area');
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#' + _id + ')');
+
+		// If the filter is enabled, add it
+		if(_filter.enabled) {
+			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
+			_element.g.brush.call(_filter.brush)
+				.selectAll('rect').attr('y', -6);
+			_filter.brush
+				.on('brushend', brushend)
+				.on('brushstart', brushstart)
+				.on('brush', brush);
+		}
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -701,10 +788,11 @@ function sentio_timeline_line() {
 	/*
 	 * Set the chart data
 	 */
-	chart.data = function(v) {
+	chart.data = function(value) {
 		if(!arguments.length) { return _data; }
-		_data = v;
+		_data = value;
 		_element.g.line.datum(_data);
+		_element.g.area.datum(_data);
 		return chart;
 	};
 
@@ -765,16 +853,17 @@ function sentio_timeline_line() {
 	 * Redraw the graphic
 	 */
 	chart.redraw = function() {
-		// Update the x domain to the current data
-		_scale.x.domain(getXExtent());
+		// Update the x domain (to the latest time window)
+		_scale.x.domain(_extent.x.getExtent(_data));
 
-		// Update the y domain based on configuration and data
-		_scale.y.domain(getYExtent());
+		// Update the y domain (based on configuration and data)
+		_scale.y.domain(_extent.y.getExtent(_data));
 
 		// Update the plot elements
 		updateAxes();
 		updateLine();
 		updateMarkers();
+		updateFilter();
 
 		return chart;
 	};
@@ -790,7 +879,8 @@ function sentio_timeline_line() {
 
 	function updateLine() {
 		// Select and draw the line
-		var path = _element.g.line.select('.line').attr('d', _line);
+		_element.g.line.select('.line').attr('d', _line);
+		_element.g.area.select('.area').attr('d', _area);
 	}
 
 	function updateMarkers() {
@@ -831,41 +921,41 @@ function sentio_timeline_line() {
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
 		// Exit
-		var markerExit = markerJoin.exit();
-
-		// Probably need to do something better here
-		markerExit.remove();
+		var markerExit = markerJoin.exit().remove();
 
 	}
 
-	function getXExtent() {
-		var nExtent;
+	function updateFilter() {
+		// If filter is enabled, update the brush
+		if(_filter.enabled) {
+			_filter.brush.x(_scale.x);
 
-		if(null == _xExtent || null == _xExtent[0] && null == _xExtent[1]) {
-			// We need to calculate the xExtent...
-			nExtent = d3.extent(_data, _value.x);
-			if(null != _xExtent[0]) { nExtent[0] = _xExtent[0]; }
-			if(null != _xExtent[1]) { nExtent[1] = _xExtent[1]; }
-		} else {
-			nExtent = _xExtent;
+			var nExtent = _extent.x.getExtent(_data);
+			var extent;
+			if(!_filter.brush.empty()) {
+				extent = _filter.brush.extent();
+			}
+
+			if(null != extent) {
+				if(extent[0].getTime() == nExtent[0].getTime() && extent[1].getTime() == nExtent[1].getTime()) {
+					// Reassert the brush, but do not fire the event
+					_filter.brush.extent(nExtent);
+				} else if(nExtent[0] >= nExtent[1]) {
+					// The brush is empty or invalid, so clear it
+					_filter.brush.clear();
+					_filter.brush.event(_element.g.brush);
+				} else {
+					// Reassert the brush and fire the event
+					_filter.brush.extent(nExtent);
+					_filter.brush.event(_element.g.brush);
+				}
+			}
+
+			_element.g.brush
+				.call(_filter.brush)
+				.selectAll('rect')
+					.attr('height', _height - _margin.top - _margin.bottom + 7);
 		}
-
-		return nExtent;
-	}
-
-	function getYExtent() {
-		var nExtent;
-
-		if(null == _xExtent || null == _xExtent[0] && null == _xExtent[1]) {
-			// We need to calculate the xExtent...
-			nExtent = d3.extent(_data, _value.x);
-			if(null != _xExtent[0]) { nExtent[0] = _xExtent[0]; }
-			if(null != _xExtent[1]) { nExtent[1] = _xExtent[1]; }
-		} else {
-			nExtent = _xExtent;
-		}
-
-		return nExtent;
 	}
 
 	// Basic Getters/Setters
@@ -908,6 +998,7 @@ function sentio_timeline_line() {
 	chart.interpolation = function(v){
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
+		_area.interpolate(v);
 		return chart;
 	};
 	chart.xValue = function(v){
@@ -931,18 +1022,23 @@ function sentio_timeline_line() {
 		return chart;
 	};
 	chart.yExtent = function(v){
-		if(!arguments.length) { return _yExtent; }
-		_yExtent = v;
+		if(!arguments.length) { return _extent.y; }
+		_extent.y = v;
 		return chart;
 	};
-	chart.markerHover = function(v){
-		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = v;
+	chart.xExtent = function(v){
+		if(!arguments.length) { return _extent.x; }
+		_extent.x = v;
 		return chart;
 	};
-	chart.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
+	chart.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return chart;
+	};
+	chart.filter = function(v) {
+		if(!arguments.length) { return _filter.dispatch; }
+		_filter.enabled = v;
 		return chart;
 	};
 

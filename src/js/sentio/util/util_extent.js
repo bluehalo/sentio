@@ -8,8 +8,8 @@ function sentio_util_extent(config) {
 	 */
 	// Configuration
 	var _config = {
-		_defaultValue: [0, 10],
-		_overrideValue: undefined
+		defaultValue: [0, 10],
+		overrideValue: undefined
 	};
 
 	var _fn = {
@@ -23,8 +23,8 @@ function sentio_util_extent(config) {
 	 */
 
 	function setDefaultValue(v) {
-		if(null != v && 2 !== v.length) {
-			throw new Error('Default extent must be a two element array or null/undefined');
+		if(null != v && 2 !== v.length && !Number.isNaN(v[0]) && !Number.isNaN(v[1]) && v[0] < v[1]) {
+			throw new Error('Default extent must be a two element ordered array of numbers');
 		}
 		_config.defaultValue = v;
 	}
@@ -37,17 +37,18 @@ function sentio_util_extent(config) {
 	}
 
 	function setGetValue(v) {
-		//if(is not a function) {
-		//	throw new Error('Value getter must be a function');
-		//}
+		if(typeof v !== 'function') {
+			throw new Error('Value getter must be a function');
+		}
 
 		_fn.getValue = v;
 	}
 
 	function setFilter(v) {
-		//if(is not a function) {
-		//	throw new Error('Filter must be a function');
-		//}
+		if(typeof v !== 'function') {
+			throw new Error('Filter must be a function');
+		}
+
 
 		_fn.filter = v;
 	}
@@ -56,10 +57,12 @@ function sentio_util_extent(config) {
 	 * Constructor/initialization method
 	 */
 	function extent(extentConfig) {
-		if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
-		if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
-		if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
-		if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+		if(null != extentConfig) {
+			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
+			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
+			if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
+			if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+		}
 	}
 
 
@@ -104,40 +107,60 @@ function sentio_util_extent(config) {
 	};
 
 	/*
-	 * Calculate the extent given some data
+	 * Calculate the extent given some data.
+	 * - Default values are used in the absence of data
+	 * - Override values are used to clamp or extend the extent
 	 */
 	extent.getExtent = function(data) {
 		var toReturn;
 		var ov = _config.overrideValue;
 
 		// Check to see if we need to calculate the extent
-		if(null == ov || null == ov[0] && null == ov[1]) {
+		if(null == ov || null == ov[0] || null == ov[1]) {
 			// Since the override isn't complete, we need to calculate the extent
 			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			var foundData = false;
 
-			// Iterate over each element of the data
-			data.forEach(function(element) {
-				// If the element passes the filter, then update the extent
-				if(_fn.filter(element)) {
-					var v = _fn.getValue(element);
-					toReturn[0] = Math.min(toReturn[0], v);
-					toReturn[1] = Math.max(toReturn[1], v);
-				}
-			});
+			if(null != data) {
+				// Iterate over each element of the data
+				data.forEach(function(element) {
+					// If the element passes the filter, then update the extent
+					if(_fn.filter(element)) {
+						foundData = true;
+						var v = _fn.getValue(element);
+						toReturn[0] = Math.min(toReturn[0], v);
+						toReturn[1] = Math.max(toReturn[1], v);
+					}
+				});
+			}
+
+			// If we didn't find any data, use the default values
+			if(!foundData) {
+				toReturn = _config.defaultValue;
+			}
 
 			// Apply the overrides
 			// - Since we're in this conditional, only one or zero overrides were specified
 			if(null != ov) {
-				if(null != ov[0] && toReturn[1] > ov[0]) { toReturn[0] = ov[0]; }
-				if(null != ov[1] && toReturn[0] < ov[1]) { toReturn[1] = ov[1]; }
+				if(null != ov[0]) {
+					// Set the lower override
+					toReturn[0] = ov[0];
+					if(toReturn[0] > toReturn[1]) {
+						toReturn[1] = toReturn[0];
+					}
+				}
+				if(null != ov[1]) { 
+					toReturn[1] = ov[1];
+					if(toReturn[1] < toReturn[0]) {
+						toReturn[0] = toReturn[1];
+					}
+				}
 			}
 		} else {
+			// Since the override is fully specified, use it
 			toReturn = ov;
 		}
 
-		if(toReturn[0] > toReturn[1]) {
-			toReturn = _config.defaultValue;
-		}
 		return toReturn;
 	};
 

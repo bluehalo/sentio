@@ -21,8 +21,8 @@
 		var timeline = sentio.timeline.line()
 			.height(100)
 			.width(600)
-			.filter(true)
-			.yExtent([0, undefined]);
+			.filter(true);
+		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.filter()
 			.on('filterend', function(val) { console.log({ msg: 'filterend', val }); });
