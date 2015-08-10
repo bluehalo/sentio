@@ -263,7 +263,7 @@ function sentio_timeline_line() {
 	function updateLine() {
 		// Select and draw the line
 		_element.g.line.select('.line').attr('d', _line);
-		_element.g.area.select('.area').attr('d', _area);
+		_element.g.area.select('.area').attr('d', _area.y0(_scale.y.range()[0]));
 	}
 
 	function updateMarkers() {

@@ -31,7 +31,7 @@
 
 				var toReturn = [];
 				for(var i=0; i < samples; i++){
-					toReturn.push([start + (i * 1000 * Math.random() * 10), null, { id: 'marker-' + i }]);
+					toReturn.push([start + (i * 1000 * Math.random() * 10), i]);
 				}
 				return toReturn;
 			};

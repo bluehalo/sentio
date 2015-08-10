@@ -128,7 +128,7 @@ function($document, $window, $timeout, $log) {
 				if(resizeWidth){ timeline.width(width); }
 				if(resizeHeight){ timeline.height(height); }
 
-				timeline.redraw();
+				timeline.resize().redraw();
 			};
 			var delayResize = function(){
 				if(undefined !== resizeTimer){
