@@ -32,7 +32,7 @@ function sentio_timeline_line() {
 	var now = Date.now();
 	var _extent = {
 		x: sentio.util.extent({
-			defaultValue: [new Date(now - 60000*5), new Date(now)],
+			defaultValue: [now - 60000*5, now],
 			getValue: function(d) { return d[0]; }
 		}),
 		y: sentio.util.extent({
@@ -119,13 +119,13 @@ function sentio_timeline_line() {
 	}
 
 	// Chart create/init method
-	function chart(selection){}
+	function _instance(selection){}
 
 	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
+	 * Initialize the _instance (should only call this once). Performs all initial _instance
 	 * creation and setup
 	 */
-	chart.init = function(container){
+	_instance.init = function(container){
 		// Create the SVG element
 		_element.svg = container.append('svg');
 
@@ -137,7 +137,7 @@ function sentio_timeline_line() {
 		_element.g.container = _element.svg.append('g');
 
 		// Append the path group (which will have the clip path and the line path
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append the line path groups
 		_element.g.line = _element.g.plot.append('g');
@@ -146,7 +146,7 @@ function sentio_timeline_line() {
 		_element.g.area.append('path').attr('class', 'area');
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
@@ -163,29 +163,29 @@ function sentio_timeline_line() {
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
 		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
 
-		chart.resize();
+		_instance.resize();
 
-		return chart;
+		return _instance;
 	};
 
 	/*
-	 * Set the chart data
+	 * Set the _instance data
 	 */
-	chart.data = function(value) {
+	_instance.data = function(value) {
 		if(!arguments.length) { return _data; }
 		_data = value;
 		_element.g.line.datum(_data);
 		_element.g.area.datum(_data);
-		return chart;
+		return _instance;
 	};
 
 	/*
 	 * Set the markers data
 	 */
-	chart.markers = function(v) {
+	_instance.markers = function(v) {
 		if(!arguments.length) { return _markers; }
 		_markers = v;
-		return chart;
+		return _instance;
 	};
 
 	/*
@@ -203,7 +203,7 @@ function sentio_timeline_line() {
 	/*
 	 * Updates all the elements that depend on the size of the various components
 	 */
-	chart.resize = function() {
+	_instance.resize = function() {
 		var now = Date.now();
 
 		// Set up the scales
@@ -229,13 +229,13 @@ function sentio_timeline_line() {
 		// update the margins on the main draw group
 		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
 
-		return chart;
+		return _instance;
 	};
 
 	/*
 	 * Redraw the graphic
 	 */
-	chart.redraw = function() {
+	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(_extent.x.getExtent(_data));
 
@@ -248,7 +248,7 @@ function sentio_timeline_line() {
 		updateMarkers();
 		updateFilter();
 
-		return chart;
+		return _instance;
 	};
 
 	function updateAxes() {
@@ -342,88 +342,88 @@ function sentio_timeline_line() {
 	}
 
 	// Basic Getters/Setters
-	chart.width = function(v){
+	_instance.width = function(v){
 		if(!arguments.length) { return _width; }
 		_width = v;
-		return chart;
+		return _instance;
 	};
-	chart.height = function(v){
+	_instance.height = function(v){
 		if(!arguments.length) { return _height; }
 		_height = v;
-		return chart;
+		return _instance;
 	};
-	chart.xAxis = function(v){
+	_instance.xAxis = function(v){
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.yAxis = function(v){
+	_instance.yAxis = function(v){
 		if(!arguments.length) { return _axis.y; }
 		_axis.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.xScale = function(v){
+	_instance.xScale = function(v){
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if(null != _axis.x) {
 			_axis.x.scale(v);
 		}
-		return chart;
+		return _instance;
 	};
-	chart.yScale = function(v){
+	_instance.yScale = function(v){
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
 		if(null != _axis.y) {
 			_axis.y.scale(v);
 		}
-		return chart;
+		return _instance;
 	};
-	chart.interpolation = function(v){
+	_instance.interpolation = function(v){
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
-		return chart;
+		return _instance;
 	};
-	chart.xValue = function(v){
+	_instance.xValue = function(v){
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.yValue = function(v){
+	_instance.yValue = function(v){
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.markerXValue = function(v){
+	_instance.markerXValue = function(v){
 		if(!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.markerLabelValue = function(v){
+	_instance.markerLabelValue = function(v){
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
-		return chart;
+		return _instance;
 	};
-	chart.yExtent = function(v){
+	_instance.yExtent = function(v){
 		if(!arguments.length) { return _extent.y; }
 		_extent.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.xExtent = function(v){
+	_instance.xExtent = function(v){
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.duration = function(v) {
+	_instance.duration = function(v) {
 		if(!arguments.length) { return _duration; }
 		_duration = v;
-		return chart;
+		return _instance;
 	};
-	chart.filter = function(v) {
+	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.dispatch; }
 		_filter.enabled = v;
-		return chart;
+		return _instance;
 	};
 
-	return chart;
+	return _instance;
 }

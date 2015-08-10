@@ -21,10 +21,10 @@
 			.height(100)
 			.width(600)
 			.interval(10000)
-			.yExtent([0, undefined])
 			.interpolation('basis')
 			.delay(3000)
 			.fps(2);
+		timeline.yExtent().overrideValue([0, undefined]);
 
 		var data = generateData(Date.now() - 1000*15, 15);
 		timeline.data(data).start();

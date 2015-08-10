@@ -649,7 +649,7 @@ function sentio_timeline_line() {
 	var now = Date.now();
 	var _extent = {
 		x: sentio.util.extent({
-			defaultValue: [new Date(now - 60000*5), new Date(now)],
+			defaultValue: [now - 60000*5, now],
 			getValue: function(d) { return d[0]; }
 		}),
 		y: sentio.util.extent({
@@ -736,13 +736,13 @@ function sentio_timeline_line() {
 	}
 
 	// Chart create/init method
-	function chart(selection){}
+	function _instance(selection){}
 
 	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
+	 * Initialize the _instance (should only call this once). Performs all initial _instance
 	 * creation and setup
 	 */
-	chart.init = function(container){
+	_instance.init = function(container){
 		// Create the SVG element
 		_element.svg = container.append('svg');
 
@@ -754,7 +754,7 @@ function sentio_timeline_line() {
 		_element.g.container = _element.svg.append('g');
 
 		// Append the path group (which will have the clip path and the line path
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append the line path groups
 		_element.g.line = _element.g.plot.append('g');
@@ -763,7 +763,7 @@ function sentio_timeline_line() {
 		_element.g.area.append('path').attr('class', 'area');
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#' + _id + ')');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
@@ -780,29 +780,29 @@ function sentio_timeline_line() {
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
 		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
 
-		chart.resize();
+		_instance.resize();
 
-		return chart;
+		return _instance;
 	};
 
 	/*
-	 * Set the chart data
+	 * Set the _instance data
 	 */
-	chart.data = function(value) {
+	_instance.data = function(value) {
 		if(!arguments.length) { return _data; }
 		_data = value;
 		_element.g.line.datum(_data);
 		_element.g.area.datum(_data);
-		return chart;
+		return _instance;
 	};
 
 	/*
 	 * Set the markers data
 	 */
-	chart.markers = function(v) {
+	_instance.markers = function(v) {
 		if(!arguments.length) { return _markers; }
 		_markers = v;
-		return chart;
+		return _instance;
 	};
 
 	/*
@@ -820,7 +820,7 @@ function sentio_timeline_line() {
 	/*
 	 * Updates all the elements that depend on the size of the various components
 	 */
-	chart.resize = function() {
+	_instance.resize = function() {
 		var now = Date.now();
 
 		// Set up the scales
@@ -846,13 +846,13 @@ function sentio_timeline_line() {
 		// update the margins on the main draw group
 		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
 
-		return chart;
+		return _instance;
 	};
 
 	/*
 	 * Redraw the graphic
 	 */
-	chart.redraw = function() {
+	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(_extent.x.getExtent(_data));
 
@@ -865,7 +865,7 @@ function sentio_timeline_line() {
 		updateMarkers();
 		updateFilter();
 
-		return chart;
+		return _instance;
 	};
 
 	function updateAxes() {
@@ -959,90 +959,90 @@ function sentio_timeline_line() {
 	}
 
 	// Basic Getters/Setters
-	chart.width = function(v){
+	_instance.width = function(v){
 		if(!arguments.length) { return _width; }
 		_width = v;
-		return chart;
+		return _instance;
 	};
-	chart.height = function(v){
+	_instance.height = function(v){
 		if(!arguments.length) { return _height; }
 		_height = v;
-		return chart;
+		return _instance;
 	};
-	chart.xAxis = function(v){
+	_instance.xAxis = function(v){
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.yAxis = function(v){
+	_instance.yAxis = function(v){
 		if(!arguments.length) { return _axis.y; }
 		_axis.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.xScale = function(v){
+	_instance.xScale = function(v){
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if(null != _axis.x) {
 			_axis.x.scale(v);
 		}
-		return chart;
+		return _instance;
 	};
-	chart.yScale = function(v){
+	_instance.yScale = function(v){
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
 		if(null != _axis.y) {
 			_axis.y.scale(v);
 		}
-		return chart;
+		return _instance;
 	};
-	chart.interpolation = function(v){
+	_instance.interpolation = function(v){
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
-		return chart;
+		return _instance;
 	};
-	chart.xValue = function(v){
+	_instance.xValue = function(v){
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.yValue = function(v){
+	_instance.yValue = function(v){
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.markerXValue = function(v){
+	_instance.markerXValue = function(v){
 		if(!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.markerLabelValue = function(v){
+	_instance.markerLabelValue = function(v){
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
-		return chart;
+		return _instance;
 	};
-	chart.yExtent = function(v){
+	_instance.yExtent = function(v){
 		if(!arguments.length) { return _extent.y; }
 		_extent.y = v;
-		return chart;
+		return _instance;
 	};
-	chart.xExtent = function(v){
+	_instance.xExtent = function(v){
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
-		return chart;
+		return _instance;
 	};
-	chart.duration = function(v) {
+	_instance.duration = function(v) {
 		if(!arguments.length) { return _duration; }
 		_duration = v;
-		return chart;
+		return _instance;
 	};
-	chart.filter = function(v) {
+	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.dispatch; }
 		_filter.enabled = v;
-		return chart;
+		return _instance;
 	};
 
-	return chart;
+	return _instance;
 }
 var sentio_realtime = sentio.realtime = {};
 sentio.realtime.timeline = sentio_realtime_timeline;
@@ -1050,191 +1050,35 @@ sentio.realtime.timeline = sentio_realtime_timeline;
 function sentio_realtime_timeline() {
 	'use strict';
 
-	// Layout properties
-	var _id = 'rt_timeline_' + Date.now();
-	var _margin = { top: 20, right: 10, bottom: 20, left: 40 };
-	var _height = 100, _width = 600;
-
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
 	var _delay = 0;
 
 	// Interval of the timeline, this is the amount of time being displayed by the timeline
 	var _interval = 60000;
 
-	/*
-	 * Callback function for hovers over the markers. Invokes this function
-	 * with the data from the marker payload
-	 */
-	var _markerHoverCallback = null;
-
 	// Is the timeline running?
 	var _running = false;
 	var _timeout = null;
 
-	// Is the timeline running in efficient mode?
+	// What is the refresh rate?
 	var _fps = 32;
 
-	// Default accessors for the dimensions of the data
-	var _value = {
-		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; }
-	};
-
-	// Accessors for the positions of the markers
-	var _markerValue = {
-		x: function(d, i) { return d[0]; },
-		label: function(d, i) { return d[1]; }
-	};
-
-	var _yExtent = [undefined, undefined];
-
-	// Default scales for x and y dimensions
-	var _scale = {
-		x: d3.time.scale(),
-		y: d3.scale.linear()
-	};
-
-	// Default Axis definitions
-	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(3)
-	};
-
-	// g elements
-	var _element = {
-		svg: undefined,
-		g: {
-			container: undefined,
-			plot: undefined,
-			xAxis: undefined,
-			yAxis: undefined,
-			line: undefined,
-			markers: undefined
-		},
-		plotClipPath: undefined,
-		markerClipPath: undefined
-	};
-
-	// Line generator for the plot
-	var _line = d3.svg.line().interpolate('linear');
-	_line.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
+	var _instance = sentio.timeline.line();
+	_instance.yExtent().filter(function(d) {
+		var x = _instance.xValue()(d);
+		var xExtent = _instance.xExtent().getExtent();
+		return (x < xExtent[1] && x > xExtent[0]);
 	});
-	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
-	});
-
-	var _data = [], _markers = [];
-
-	// Chart create/init method
-	function chart(selection){}
-
-	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
-	 * creation and setup
-	 */
-	chart.init = function(container){
-		// Create the SVG element
-		_element.svg = container.append('svg');
-
-		// Add the defs and add the clip path definition
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
-
-		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
-
-		// Append a container for the plot (space inside the axes)
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// Append the line path group and add the line path
-		_element.g.line = _element.g.plot.append('g');
-		_element.g.line.append('path').attr('class', 'line');
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		chart.resize();
-
-		return chart;
-	};
-
-	/*
-	 * Set the chart data
-	 */
-	chart.data = function(v) {
-		if(!arguments.length) { return _data; }
-		_data = v;
-		_element.g.line.datum(_data);
-		return chart;
-	};
-
-	/*
-	 * Set the markers data
-	 */
-	chart.markers = function(v) {
-		if(!arguments.length) { return _markers; }
-		_markers = v;
-		return chart;
-	};
-
-	/*
-	 * Accepts the hovered element and conditionally invokes
-	 * the marker hover callback if both the function and data
-	 * are non-null
-	 */
-	function invokeMarkerCallback(d) {
-		// fire an event with the payload
-		if(null != _markerHoverCallback) {
-			_markerHoverCallback(d);
-		}
-	}
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	chart.resize = function() {
-		var now = Date.now();
-
-		// Set up the scales
-		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
-
-		// Append the clip path
-		_element.plotClipPath
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.top - _margin.bottom));
-		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
-
-		// Update the positions of the axes
-		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
-
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
-
-		return chart;
-	};
 
 	/*
 	 * This is the main update loop function. It is called every time the
-	 * chart is updating to proceed through time.
+	 * _instance is updating to proceed through time.
 	 */ 
 	function tick() {
 		// If not running, let the loop die
 		if(!_running) return;
 
-		chart.redraw();
+		_instance.redraw();
 
 		// Schedule the next update
 		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
@@ -1243,230 +1087,59 @@ function sentio_realtime_timeline() {
 	/*
 	 * Redraw the graphic
 	 */
-	chart.redraw = function() {
-		// Store the current time
-		var now = new Date();
-
+	var parentRedraw = _instance.redraw;
+	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
-		_scale.x.domain([now - _delay - _interval, now - _delay]);
+		var now = new Date();
+		_instance.xExtent().overrideValue([now - _delay - _interval, now - _delay]);
 
-		// Update the y domain (based on configuration and data)
-		_scale.y.domain(getYExtent(now));
-
-		// Update the plot elements
-		updateAxes();
-		updateLine();
-		updateMarkers();
-
-		return chart;
+		parentRedraw();
+		return _instance;
 	};
 
-	function updateAxes() {
-		if(null != _axis.x) {
-			_element.g.xAxis.call(_axis.x);
-		}
-		if(null != _axis.y) {
-			_element.g.yAxis.call(_axis.y);
-		}
-	}
-
-	function updateLine() {
-		// Select and draw the line
-		var path = _element.g.line.select('.line').attr('d', _line);
-	}
-
-	function updateMarkers() {
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers, function(d) { 
-				return _markerValue.x(d); 
-			});
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', invokeMarkerCallback);
-
-		var lineEnter = markerEnter.append('line');
-		var textEnter = markerEnter.append('text');
-
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
-
-		lineEnter
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		textEnter
-			.attr('dy', '0em')
-			.attr('y', -3)
-			.attr('text-anchor', 'middle')
-			.text(function(d) { return _markerValue.label(d); });
-
-		// Update
-		lineUpdate
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		textUpdate
-			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		// Exit
-		var markerExit = markerJoin.exit();
-
-		if(_fps < 20 && _fps > 0) {
-			markerExit
-				.attr('opacity', 1)
-				.transition().duration(500/_fps)
-				.attr('opacity', 0.1)
-				.remove();
-		} else {
-			markerExit.remove();
-		}
-	}
-
-	function getYExtent(now){
-		// Calculate the domain of the y axis
-		var nExtent = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-		_data.forEach(function(element, index){
-			var y = _value.y(element);
-			var x = _value.x(element);
-
-			if(x < now - _delay && x > now - _delay - _interval) {
-				if(nExtent[0] > y) { nExtent[0] = y; }
-				if(nExtent[1] < y) { nExtent[1] = y; }
-			}
-		});
-
-		if(Number.POSITIVE_INFINITY === nExtent[0] && Number.NEGATIVE_INFINITY === nExtent[1]){ nExtent = [0, 10]; }
-		if(nExtent[0] >= nExtent[1]) { nExtent[1] = nExtent[0] + 1; }
-		nExtent[1] += (nExtent[1] - nExtent[0]) * 0.1;
-
-		if(null != _yExtent){
-			if(null != _yExtent[0]) { nExtent[0] = _yExtent[0]; }
-			if(null != _yExtent[1]) { nExtent[1] = _yExtent[1]; }
-		}
-
-		return nExtent;
-	}
-
-	chart.start = function(){
+	_instance.start = function() {
 		if(_running){ return; }
 		_running = true;
 
 		tick();
+		return _instance;
 	};
 
-	chart.stop = function(){
+	_instance.stop = function() {
 		_running = false;
 
 		if(_timeout != null) {
 			window.clearTimeout(_timeout);
 		}
+		return _instance;
 	};
 
-	chart.restart = function(){
-		chart.stop();
-		chart.start();
+	_instance.restart = function() {
+		_instance.stop();
+		_instance.start();
+		return _instance;
 	};
 
-	// Basic Getters/Setters
-	chart.width = function(v){
-		if(!arguments.length) { return _width; }
-		_width = v;
-		return chart;
-	};
-	chart.height = function(v){
-		if(!arguments.length) { return _height; }
-		_height = v;
-		return chart;
-	};
-	chart.xAxis = function(v){
-		if(!arguments.length) { return _axis.x; }
-		_axis.x = v;
-		return chart;
-	};
-	chart.yAxis = function(v){
-		if(!arguments.length) { return _axis.y; }
-		_axis.y = v;
-		return chart;
-	};
-	chart.xScale = function(v){
-		if(!arguments.length) { return _scale.x; }
-		_scale.x = v;
-		if(null != _axis.x) {
-			_axis.x.scale(v);
-		}
-		return chart;
-	};
-	chart.yScale = function(v){
-		if(!arguments.length) { return _scale.y; }
-		_scale.y = v;
-		if(null != _axis.y) {
-			_axis.y.scale(v);
-		}
-		return chart;
-	};
-	chart.interpolation = function(v){
-		if(!arguments.length) { return _line.interpolate(); }
-		_line.interpolate(v);
-		return chart;
-	};
-	chart.xValue = function(v){
-		if(!arguments.length) { return _value.x; }
-		_value.x = v;
-		return chart;
-	};
-	chart.yValue = function(v){
-		if(!arguments.length) { return _value.y; }
-		_value.y = v;
-		return chart;
-	};
-	chart.markerXValue = function(v){
-		if(!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
-		return chart;
-	};
-	chart.markerLabelValue = function(v){
-		if(!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
-		return chart;
-	};
-	chart.interval = function(v){
+	_instance.interval = function(v) {
 		if(!arguments.length) { return _interval; }
 		_interval = v;
-		return chart;
+		return _instance;
 	};
-	chart.delay = function(v){
+
+	_instance.delay = function(v) {
 		if(!arguments.length) { return _delay; }
 		_delay = v;
-		return chart;
+		return _instance;
 	};
-	chart.yExtent = function(v){
-		if(!arguments.length) { return _yExtent; }
-		_yExtent = v;
-		return chart;
-	};
-	chart.fps = function(v){
+
+	_instance.fps = function(v){
 		if(!arguments.length) { return _fps; }
 		_fps = v;
 		if(_running) {
-			chart.restart();
+			_instance.restart();
 		}
-
-		return chart;
-	};
-	chart.markerHover = function(v){
-		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = v;
-		return chart;
-	};
-	chart.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return chart;
+		return _instance;
 	};
 
-	return chart;
+	return _instance;
 }
