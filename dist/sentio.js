@@ -1,4 +1,4 @@
-/*! sentio Version: 0.3.12 */
+/*! sentio Version: 0.4.0 */
 var sentio = {};
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -51,7 +51,6 @@ function sentio_util_extent(config) {
 		if(typeof v !== 'function') {
 			throw new Error('Filter must be a function');
 		}
-
 
 		_fn.filter = v;
 	}
@@ -674,11 +673,9 @@ function sentio_timeline_line() {
 		svg: undefined,
 		g: {
 			container: undefined,
-			plot: undefined,
+			plots: undefined,
 			xAxis: undefined,
 			yAxis: undefined,
-			line: undefined,
-			area: undefined,
 			markers: undefined,
 			brush: undefined
 		},
@@ -739,7 +736,7 @@ function sentio_timeline_line() {
 	function _instance(selection){}
 
 	/*
-	 * Initialize the _instance (should only call this once). Performs all initial _instance
+	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
 	_instance.init = function(container){
@@ -754,13 +751,7 @@ function sentio_timeline_line() {
 		_element.g.container = _element.svg.append('g');
 
 		// Append the path group (which will have the clip path and the line path
-		_element.g.plot = _element.g.container.append('g').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// Append the line path groups
-		_element.g.line = _element.g.plot.append('g');
-		_element.g.line.append('path').attr('class', 'line');
-		_element.g.area = _element.g.plot.append('g');
-		_element.g.area.append('path').attr('class', 'area');
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
@@ -788,11 +779,10 @@ function sentio_timeline_line() {
 	/*
 	 * Set the _instance data
 	 */
-	_instance.data = function(value) {
+	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
-		_data = value;
-		_element.g.line.datum(_data);
-		_element.g.area.datum(_data);
+		_data = v;
+
 		return _instance;
 	};
 
@@ -850,15 +840,33 @@ function sentio_timeline_line() {
 		return _instance;
 	};
 
+	// Multi Extent Combiner
+	function multiExtent(data, extent) {
+		var nExtent;
+		data.forEach(function(element) {
+			var tExtent = extent.getExtent(element.data);
+			if(!nExtent){
+				nExtent = tExtent;
+			} else {
+				nExtent[0] = Math.min(nExtent[0], tExtent[0]);
+				nExtent[1] = Math.max(nExtent[1], tExtent[1]);
+			}
+		});
+		if(null == nExtent) {
+			nExtent = extent.getExtent([]);
+		}
+		return nExtent;
+	}
+
 	/*
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(_extent.x.getExtent(_data));
+		_scale.x.domain(multiExtent(_data, _extent.x));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain(_extent.y.getExtent(_data));
+		_scale.y.domain(multiExtent(_data, _extent.y));
 
 		// Update the plot elements
 		updateAxes();
@@ -879,9 +887,31 @@ function sentio_timeline_line() {
 	}
 
 	function updateLine() {
-		// Select and draw the line
-		_element.g.line.select('.line').attr('d', _line);
-		_element.g.area.select('.area').attr('d', _area.y0(_scale.y.range()[0]));
+		// Join
+		var plotJoin = _element.g.plots
+			.selectAll('.plot')
+			.data(_data, function(d) { 
+				return d.key; 
+			});
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g')
+			.attr('class', 'plot');
+
+		plotEnter.append('g').append('path').attr('class', 'line');
+		plotEnter.append('g').append('path').attr('class', 'area');
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Update
+		lineUpdate.datum(function(d) { return d.data; }).attr('d', _line);
+		areaUpdate.datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
 	}
 
 	function updateMarkers() {
