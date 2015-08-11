@@ -15,6 +15,7 @@
 		var app = angular.module("demoapp", ["sentio.realtime"]);
 		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
 
+			var data = [];
 			$scope.model = [];
 			$scope.markers = [];
 			$scope.fps = 32;
@@ -32,10 +33,11 @@
 			// Update the data and markers
 			var update = function(){
 				var now = Math.floor(Date.now() / 1000)*1000;
-				$scope.model.push([now, (now%10000) / 1000]);
-				while($scope.model.length > ($scope.interval + $scope.delay)/1000 + 1) {
-					$scope.model.shift();
+				data.push([now, (now%10000) / 1000]);
+				while(data.length > ($scope.interval + $scope.delay)/1000 + 1) {
+					data.shift();
 				}
+				$scope.model = [{key: 'series1', data: data}];
 
 				while($scope.markers.length > 0 && $scope.markers[0][0] < Date.now() - $scope.interval - $scope.delay) {
 					$scope.markers.shift();

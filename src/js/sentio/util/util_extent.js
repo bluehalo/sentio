@@ -49,7 +49,6 @@ function sentio_util_extent(config) {
 			throw new Error('Filter must be a function');
 		}
 
-
 		_fn.filter = v;
 	}
 

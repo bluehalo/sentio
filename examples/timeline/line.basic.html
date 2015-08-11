@@ -30,7 +30,11 @@
 			.on('filterstart', function(val) { console.log(val); })
 			.on('filterend', function(val) { console.log(val); });
 
-		var data = generateData(Date.now() - 1000*15, 15);
+		var hwm = Date.now();
+		var data = [];
+		var series = 0;
+		data.push({ key: 'series' + series++, data: generateData(hwm - 1000*15, 15) });
+
 		timeline.init(timelineDiv).data(data).redraw();
 
 		function generateData(start, samples){
@@ -42,9 +46,7 @@
 		}
 
 		function updateData(){
-			data.forEach(function(element){
-				element[1] = Math.random() * 10;
-			});
+			data.push({ key: 'series' + series++, data: generateData(hwm - 1000*15, 15) });
 			timeline.redraw();
 		}
 
