@@ -829,8 +829,9 @@ function sentio_timeline_line() {
 
 		// Append the clip path
 		_element.plotClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.top - _margin.bottom));
+			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.markerClipPath
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
