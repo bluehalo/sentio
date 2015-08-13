@@ -1,4 +1,4 @@
-/*! sentio Version: 0.4.0 */
+/*! sentio Version: 0.4.2 */
 var sentio = {};
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -997,6 +997,17 @@ function sentio_timeline_line() {
 		_height = v;
 		return _instance;
 	};
+	_instance.margin = function(v){
+		if(!arguments.length) { return _margin; }
+		_margin = v;
+		return _instance;
+	};
+	_instance.interpolation = function(v){
+		if(!arguments.length) { return _line.interpolate(); }
+		_line.interpolate(v);
+		_area.interpolate(v);
+		return _instance;
+	};
 	_instance.xAxis = function(v){
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
@@ -1023,12 +1034,6 @@ function sentio_timeline_line() {
 		}
 		return _instance;
 	};
-	_instance.interpolation = function(v){
-		if(!arguments.length) { return _line.interpolate(); }
-		_line.interpolate(v);
-		_area.interpolate(v);
-		return _instance;
-	};
 	_instance.xValue = function(v){
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
@@ -1037,16 +1042,6 @@ function sentio_timeline_line() {
 	_instance.yValue = function(v){
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
-		return _instance;
-	};
-	_instance.markerXValue = function(v){
-		if(!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
-		return _instance;
-	};
-	_instance.markerLabelValue = function(v){
-		if(!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
 		return _instance;
 	};
 	_instance.yExtent = function(v){
@@ -1059,14 +1054,24 @@ function sentio_timeline_line() {
 		_extent.x = v;
 		return _instance;
 	};
-	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.dispatch; }
-		_filter.enabled = v;
+	_instance.markerXValue = function(v){
+		if(!arguments.length) { return _markerValue.x; }
+		_markerValue.x = v;
+		return _instance;
+	};
+	_instance.markerLabelValue = function(v){
+		if(!arguments.length) { return _markerValue.label; }
+		_markerValue.label = v;
 		return _instance;
 	};
 	_instance.markerHover = function(v) {
 		if(!arguments.length) { return _markerHoverCallback; }
 		_markerHoverCallback = v;
+		return _instance;
+	};
+	_instance.filter = function(v) {
+		if(!arguments.length) { return _filter.dispatch; }
+		_filter.enabled = v;
 		return _instance;
 	};
 
