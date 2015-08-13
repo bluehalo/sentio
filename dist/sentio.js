@@ -624,9 +624,6 @@ function sentio_timeline_line() {
 	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
 	var _height = 100, _width = 600;
 
-	// Duration of the transition, also this is the minimum buffer time
-	var _duration = 300;
-
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
 	 * with the data from the marker payload
@@ -898,8 +895,8 @@ function sentio_timeline_line() {
 		var plotEnter = plotJoin.enter().append('g')
 			.attr('class', 'plot');
 
-		plotEnter.append('g').append('path').attr('class', 'line');
-		plotEnter.append('g').append('path').attr('class', 'area');
+		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
+		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
 
 		var lineUpdate = plotJoin.select('.line');
 		var areaUpdate = plotJoin.select('.area');
@@ -1060,11 +1057,6 @@ function sentio_timeline_line() {
 	_instance.xExtent = function(v){
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
-		return _instance;
-	};
-	_instance.duration = function(v) {
-		if(!arguments.length) { return _duration; }
-		_duration = v;
 		return _instance;
 	};
 	_instance.filter = function(v) {
