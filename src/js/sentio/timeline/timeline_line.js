@@ -243,6 +243,9 @@ function sentio_timeline_line() {
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
+		// Need to grab the filter extent before we change anything
+		var filterExtent = (_filter.enabled && !_filter.brush.empty())? _filter.brush.extent() : undefined;
+
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(multiExtent(_data, _extent.x));
 
@@ -253,7 +256,7 @@ function sentio_timeline_line() {
 		updateAxes();
 		updateLine();
 		updateMarkers();
-		updateFilter();
+		updateFilter(filterExtent);
 
 		return _instance;
 	};
@@ -337,27 +340,26 @@ function sentio_timeline_line() {
 
 	}
 
-	function updateFilter() {
+	function updateFilter(extent) {
 		// If filter is enabled, update the brush
 		if(_filter.enabled) {
 			_filter.brush.x(_scale.x);
 
-			var nExtent = _extent.x.getExtent(_data);
-			var extent;
-			if(!_filter.brush.empty()) {
-				extent = _filter.brush.extent();
-			}
+			var nExtent = multiExtent(_data, _extent.x);
 
 			if(null != extent) {
+				// Interset extent and new extent
+				nExtent = [new Date(Math.max(nExtent[0], extent[0])), new Date(Math.min(nExtent[1], extent[1]))];
+
 				if(extent[0].getTime() == nExtent[0].getTime() && extent[1].getTime() == nExtent[1].getTime()) {
-					// Reassert the brush, but do not fire the event
-					_filter.brush.extent(nExtent);
+					// The brush hasn't changed, so reassert it
+					_filter.brush.extent(extent);
 				} else if(nExtent[0] >= nExtent[1]) {
 					// The brush is empty or invalid, so clear it
 					_filter.brush.clear();
 					_filter.brush.event(_element.g.brush);
 				} else {
-					// Reassert the brush and fire the event
+					// The brush has changed but is valid, so reassert a clipped brush
 					_filter.brush.extent(nExtent);
 					_filter.brush.event(_element.g.brush);
 				}
