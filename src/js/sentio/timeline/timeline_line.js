@@ -368,7 +368,7 @@ function sentio_timeline_line() {
 			_element.g.brush
 				.call(_filter.brush)
 				.selectAll('rect')
-				.attr('height', _height - _margin.top - _margin.bottom + 7);
+					.attr('height', _height - _margin.top - _margin.bottom + 7);
 		}
 	}
 

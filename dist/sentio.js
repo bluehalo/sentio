@@ -964,10 +964,10 @@ function sentio_timeline_line() {
 			var nExtent = multiExtent(_data, _extent.x);
 
 			if(null != extent) {
-				// Interset extent and new extent
-				nExtent = [new Date(Math.max(nExtent[0], extent[0])), new Date(Math.min(nExtent[1], extent[1]))];
+				// Intersect extent and new extent
+				nExtent = [ Math.max(nExtent[0], extent[0]), Math.min(nExtent[1], extent[1]) ];
 
-				if(extent[0].getTime() == nExtent[0].getTime() && extent[1].getTime() == nExtent[1].getTime()) {
+				if(extent[0] == nExtent[0] && extent[1] == nExtent[1]) {
 					// The brush hasn't changed, so reassert it
 					_filter.brush.extent(extent);
 				} else if(nExtent[0] >= nExtent[1]) {
@@ -1075,6 +1075,9 @@ function sentio_timeline_line() {
 		if(!arguments.length) { return _filter.dispatch; }
 		_filter.enabled = v;
 		return _instance;
+	};
+	_instance.updateFilter = function(extent) {
+		updateFilter(extent);
 	};
 
 	return _instance;

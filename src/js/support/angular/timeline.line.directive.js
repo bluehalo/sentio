@@ -53,7 +53,7 @@ function($document, $window, $timeout, $log) {
 						scope.filterState = filterState;
 
 						// Store the filter state locally so we can suppress updates on our own changes
-						lastFilterState = filterState
+						lastFilterState = filterState;
 					});
 				});
 			});
