@@ -14,7 +14,8 @@ function($document, $window, $timeout, $log) {
 			resizeWidth: '@sentioResizeWidth',
 			resizeHeight: '@sentioResizeHeight',
 			configureFn: '&sentioConfigureFn',
-			filterFn: '&sentioFilterFn'
+			filterFn: '&sentioFilterFn',
+			filterState: '=sentioFilterState'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -35,15 +36,41 @@ function($document, $window, $timeout, $log) {
 			}
 
 			// Check to see if filtering is enabled
-			if(null != attrs.sentioFilterFn) {
+			if (null != attrs.sentioFilterFn || attrs.sentioFilterState) {
 				timeline.filter(true);
 			}
+
+			// Store the filter state outside the scope as well as inside, to compare
+			var lastFilterState = null;
+
 			scope.$watch('filterFn', function(n, o){
 				timeline.filter().on('filterend', function(filterState){
 					$timeout(function(){
+						// Call the function callback
 						scope.filterFn({ filterState: filterState });
+
+						// Set the two-way-bound scope parameter
+						scope.filterState = filterState;
+
+						// Store the filter state locally so we can suppress updates on our own changes
+						lastFilterState = filterState
 					});
 				});
+			});
+			scope.$watch('filterState', function(n, o) {
+				// If a filter was passed in and it is not the one we just set, do some updates
+				if (null != n && n !== lastFilterState) {
+
+					// If we're in the original format with 3 parameters, use the second two only
+					if (n.length >= 3) {
+						// The first element indicates if we're disabled
+						if (n[0]) {
+							return;
+						}
+						n = n.slice(1, 3);
+					}
+					timeline.updateFilter(n);
+				}
 			});
 
 			timeline.init(timelineElement);
@@ -57,27 +84,29 @@ function($document, $window, $timeout, $log) {
 			scope.$watchCollection('model', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.data(n).redraw();
+				timeline.data(n);
+				redraw();
 			});
-			
+
 			scope.$watchCollection('markers', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.markers(n).redraw();
+				timeline.markers(n);
+				redraw();
 			});
 
 			scope.$watchCollection('yExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
 				timeline.yExtent().overrideValue(n);
-				timeline.redraw();
+				redraw();
 			});
 
 			scope.$watchCollection('xExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
 				timeline.xExtent(n).overrideValue(n);
-				timeline.redraw();
+				redraw();
 			});
 
 			scope.$watch('duration', function(n, o){
@@ -100,7 +129,18 @@ function($document, $window, $timeout, $log) {
 			var resizeWidth = (null != attrs.sentioResizeWidth);
 			var resizeHeight = (null != attrs.sentioResizeHeight);
 			var resizeTimer;
+			var redrawTimer;
 			var window = angular.element($window);
+
+			// Do the redraw only once when the $digest cycle has completed
+			var redraw = function() {
+				if (null != redrawTimer) {
+					$timeout.cancel(redrawTimer);
+				}
+				redrawTimer = $timeout(function () {
+					timeline.redraw();
+				}, 0);
+			};
 
 			var doResize = function() {
 
@@ -130,7 +170,8 @@ function($document, $window, $timeout, $log) {
 				if(resizeWidth){ timeline.width(width); }
 				if(resizeHeight){ timeline.height(height); }
 
-				timeline.resize().redraw();
+				timeline.resize();
+				redraw();
 			};
 			var delayResize = function(){
 				if(undefined !== resizeTimer){
