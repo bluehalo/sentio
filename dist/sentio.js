@@ -975,7 +975,7 @@ function sentio_timeline_line() {
 					_filter.brush.event(_element.g.brush);
 				} else {
 					// The brush is valid, so update it
-					_filter.brush.extent([nExtent[0], nExtent[1]]);
+					_filter.brush.extent(nExtent);
 					_filter.brush.event(_element.g.brush);
 				}
 			}
