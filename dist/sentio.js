@@ -1075,8 +1075,10 @@ function sentio_timeline_line() {
 		_filter.enabled = v;
 		return _instance;
 	};
-	_instance.updateFilter = function(extent) {
-		updateFilter(extent);
+	_instance.setFilter = function(extent) {
+		_filter.brush.extent(extent);
+		_instance.redraw();
+		return _instance;
 	};
 
 	return _instance;

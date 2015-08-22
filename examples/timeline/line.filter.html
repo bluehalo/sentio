@@ -15,6 +15,7 @@
 <body>
 	<div id="chart"></div>
 	<button onclick="updateData()">Update Data</button>
+	<button onclick="updateFilter()">Update Filter</button>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -84,6 +85,14 @@
 			model2.add(data2);
 
 			timeline.redraw();
+		}
+
+		function updateFilter() {
+			var lf = hwm - Math.random() * interval;
+			var hf = lf + Math.random() * 20000;
+			var newFilter = [lf, hf];
+			console.log({m: 'Applying filter', filter: newFilter});
+			timeline.setFilter(newFilter).redraw();
 		}
 
 	</script>
