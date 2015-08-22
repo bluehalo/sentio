@@ -345,22 +345,21 @@ function sentio_timeline_line() {
 		if(_filter.enabled) {
 			_filter.brush.x(_scale.x);
 
-			var nExtent = multiExtent(_data, _extent.x);
+			// Plot extent will be Date objects
+			var plotExtent = multiExtent(_data, _extent.x);
 
 			if(null != extent) {
-				// Intersect extent and new extent
-				nExtent = [ Math.max(nExtent[0], extent[0]), Math.min(nExtent[1], extent[1]) ];
+				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
+				// Also, we need the new extent to be an array of Dates to match extent, so they will be comparable (==)
+				var nExtent = [ new Date(Math.max(plotExtent[0], extent[0])), new Date(Math.min(plotExtent[1], extent[1])) ];
 
-				if(extent[0] == nExtent[0] && extent[1] == nExtent[1]) {
-					// The brush hasn't changed, so reassert it
-					_filter.brush.extent(extent);
-				} else if(nExtent[0] >= nExtent[1]) {
+				if(nExtent[0] >= nExtent[1]) {
 					// The brush is empty or invalid, so clear it
 					_filter.brush.clear();
 					_filter.brush.event(_element.g.brush);
 				} else {
-					// The brush has changed but is valid, so reassert a clipped brush
-					_filter.brush.extent(nExtent);
+					// The brush is valid, so update it
+					_filter.brush.extent([nExtent[0], nExtent[1]]);
 					_filter.brush.event(_element.g.brush);
 				}
 			}
