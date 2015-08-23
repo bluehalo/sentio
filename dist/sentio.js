@@ -708,23 +708,29 @@ function sentio_timeline_line() {
 	var _data = [], _markers = [];
 
 	function brushstart() {
-		var isEmpty = _filter.brush.empty();
-		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
-		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+		var extent = getFilter();
+		var isEmpty = (null == extent);
+
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
-		var isEmpty = _filter.brush.empty();
-		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
-		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+		var extent = getFilter();
+		var isEmpty = (null == extent);
+
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
-		var isEmpty = _filter.brush.empty();
-		var min = (isEmpty)? undefined : _filter.brush.extent()[0].getTime();
-		var max = (isEmpty)? undefined : _filter.brush.extent()[1].getTime();
+		var extent = getFilter();
+		var isEmpty = (null == extent);
+
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filterend([isEmpty, min, max]);
 	}
@@ -861,6 +867,10 @@ function sentio_timeline_line() {
 	_instance.redraw = function() {
 		// Need to grab the filter extent before we change anything
 		var filterExtent = (_filter.enabled && !_filter.brush.empty())? _filter.brush.extent() : undefined;
+		// Normalize the filterExtent to milli time since everything else deals with it that way
+		if(null != filterExtent) {
+			filterExtent = [ filterExtent[0].getTime(), filterExtent[1].getTime() ];
+		}
 
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(multiExtent(_data, _extent.x));
@@ -956,28 +966,64 @@ function sentio_timeline_line() {
 
 	}
 
+	/*
+	 * Get the current state of the filter
+	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
+	 */
+	function getFilter() {
+		var extent;
+		if(!_filter.brush.empty()) {
+			extent = _filter.brush.extent();
+			extent = [ extent[0].getTime(), extent[1].getTime() ];
+		}
+
+		return extent;
+	}
+
+	/*
+	 * Set the state of the filter, firing events if necessary
+	 */
+	function setFilter(newExtent, oldExtent) {
+		// Fire the event if the extents are different
+		var suppressEvent = newExtent == oldExtent || newExtent == null || oldExtent == null || (newExtent[0] == oldExtent[0] && newExtent[1] == oldExtent[1]);
+		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
+
+		// either clear the filter or assert it
+		if(clearFilter) {
+			_filter.brush.clear();
+		} else {
+			_filter.brush.extent([ new Date(newExtent[0]), new Date(newExtent[1]) ]);
+		}
+
+		// fire the event if anything changed
+		if(!suppressEvent) {
+			_filter.brush.event(_element.g.brush);
+		}
+	}
+
+	/*
+	 * Update the state of the existing filter (if any) on the plot.
+	 * 
+	 * This method accepts the extent of the brush before any plot changes were applied
+	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
+	 * There is also logic to clip the brush if the extent has moved such that the brush
+	 * has moved partially out of the plot boundaries, as well as to clear the brush if it
+	 * has moved completely outside of the boundaries of the plot.
+	 */
 	function updateFilter(extent) {
-		// If filter is enabled, update the brush
+		// Don't need to do anything if filtering is not enabled
 		if(_filter.enabled) {
+			// Reassert the x scale of the brush (in case the scale has changed)
 			_filter.brush.x(_scale.x);
 
-			// Plot extent will be Date objects
+			// Derive the overall plot extent from the collection of series
 			var plotExtent = multiExtent(_data, _extent.x);
 
+			// If there was no previous extent, then there is no brush to update
 			if(null != extent) {
 				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				// Also, we need the new extent to be an array of Dates to match extent, so they will be comparable (==)
-				var nExtent = [ new Date(Math.max(plotExtent[0], extent[0])), new Date(Math.min(plotExtent[1], extent[1])) ];
-
-				if(nExtent[0] >= nExtent[1]) {
-					// The brush is empty or invalid, so clear it
-					_filter.brush.clear();
-					_filter.brush.event(_element.g.brush);
-				} else {
-					// The brush is valid, so update it
-					_filter.brush.extent(nExtent);
-					_filter.brush.event(_element.g.brush);
-				}
+				var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
+				setFilter(nExtent, extent);
 			}
 
 			_element.g.brush
@@ -1075,8 +1121,21 @@ function sentio_timeline_line() {
 		_filter.enabled = v;
 		return _instance;
 	};
+
+	// Expects milliseconds time
 	_instance.setFilter = function(extent) {
-		_filter.brush.extent(extent);
+		var oldExtent = getFilter();
+		if(null != extent && extent.length === 2) {
+			// Convert to Dates and assert filter
+			if(extent[0] instanceof Date) {
+				extent[0] = extent[0].getTime();
+			}
+			if(extent[1] instanceof Date) {
+				extent[1] = extent[1].getTime();
+			}
+		}
+
+		setFilter(extent, oldExtent);
 		_instance.redraw();
 		return _instance;
 	};
