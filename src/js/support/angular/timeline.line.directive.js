@@ -69,7 +69,7 @@ function($document, $window, $timeout, $log) {
 						}
 						n = n.slice(1, 3);
 					}
-					timeline.updateFilter(n);
+					timeline.setFilter(n);
 				}
 			});
 
