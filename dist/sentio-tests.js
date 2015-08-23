@@ -1,6 +1,4 @@
 /*! sentio Version: 0.4.3 */
-// just an empty file to ensure the sentio-tests.js file is always created
-
 describe('Realtime Bins Controller', function() {
 	'use strict';
 
@@ -704,3 +702,4 @@ describe('Extent', function() {
 		});
 	});
 });
+// just an empty file to ensure the sentio-tests.js file is always created

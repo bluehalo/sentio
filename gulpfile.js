@@ -1,8 +1,9 @@
 var runSequence = require('run-sequence'),
+glob = require('glob'),
 	gulp = require('gulp'),
-	p = require('./package.json'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
-	plugins = gulpLoadPlugins();
+	plugins = gulpLoadPlugins(),
+	p = require('./package.json');
 
 var banner = '/*! ' + p.name + ' Version: ' + p.version + ' */\n';
 
@@ -40,7 +41,7 @@ var src = {
 
 gulp.task('default', ['build']);
 
-gulp.task('watch', ['build'], function(){
+gulp.task('watch', ['build'], function() {
 	gulp.watch(['test/**/*', 'src/**/*', '!/src/lib/**/*'], ['build']);
 });
 
@@ -48,8 +49,13 @@ gulp.task('build', function() {
 	runSequence(['js', 'js-angular', 'css', 'js-test'], 'test');
 });
 
-gulp.task('js', function(){
-	return gulp.src(src.js)
+gulp.task('js', function() {
+	var jsFiles = [];
+	src.js.forEach(function(f) {
+		jsFiles = jsFiles.concat(glob.sync(f).sort());
+	});
+
+	return gulp.src(jsFiles)
 
 		// JS Hint
 		.pipe(plugins.jshint('.jshintrc'))
@@ -71,7 +77,12 @@ gulp.task('js', function(){
 });
 
 gulp.task('js-angular', function(){
-	return gulp.src(src.angular)
+	var jsFiles = [];
+	src.angular.forEach(function(f) {
+		jsFiles = jsFiles.concat(glob.sync(f).sort());
+	});
+
+	return gulp.src(jsFiles)
 
 		// JS Hint
 		.pipe(plugins.jshint('.jshintrc'))
@@ -95,7 +106,12 @@ gulp.task('js-angular', function(){
 });
 
 gulp.task('js-test', function(){
-	return gulp.src(src.tests)
+	var jsFiles = [];
+	src.tests.forEach(function(f) {
+		jsFiles = jsFiles.concat(glob.sync(f).sort());
+	});
+
+	return gulp.src(jsFiles)
 
 		// JS Hint
 		.pipe(plugins.jshint('.jshintrc'))
@@ -117,6 +133,7 @@ gulp.task('css', function(){
 		.pipe(plugins.csslint.reporter('jshint-stylish'))
 
 		// Concatenate
+		.pipe(plugins.sort())
 		.pipe(plugins.concat(p.name + '.css'))
 		.pipe(plugins.insert.prepend(banner))
 		.pipe(gulp.dest('dist'))
