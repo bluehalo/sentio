@@ -250,11 +250,7 @@ function sentio_timeline_line() {
 	 */
 	_instance.redraw = function() {
 		// Need to grab the filter extent before we change anything
-		var filterExtent = (_filter.enabled && !_filter.brush.empty())? _filter.brush.extent() : undefined;
-		// Normalize the filterExtent to milli time since everything else deals with it that way
-		if(null != filterExtent) {
-			filterExtent = [ filterExtent[0].getTime(), filterExtent[1].getTime() ];
-		}
+		var filterExtent = getFilter();
 
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(multiExtent(_data, _extent.x));
@@ -356,9 +352,11 @@ function sentio_timeline_line() {
 	 */
 	function getFilter() {
 		var extent;
-		if(!_filter.brush.empty()) {
+		if(_filter.enabled && !_filter.brush.empty()) {
 			extent = _filter.brush.extent();
-			extent = [ extent[0].getTime(), extent[1].getTime() ];
+			if(null != extent) {
+				extent = [ extent[0].getTime(), extent[1].getTime() ];
+			}
 		}
 
 		return extent;

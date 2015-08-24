@@ -221,7 +221,7 @@ function($document, $window, $timeout, $log) {
 				if (null != n && n !== lastFilterState) {
 
 					// If we're in the original format with 3 parameters, use the second two only
-					// TODO: We should go ahead and get rid of hte 3 parameter style
+					// TODO: We should go ahead and get rid of the 3 parameter style
 					if (n.length > 2) {
 						// The first element indicates if we're disabled
 						if (n[0]) {
