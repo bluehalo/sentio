@@ -1,4 +1,4 @@
-/*! sentio Version: 0.4.3 */
+/*! sentio Version: 0.5.0 */
 var sentio = {};
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
