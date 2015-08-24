@@ -18,10 +18,14 @@
 			$scope.model = [];
 			$scope.markers = [];
 
-			$scope.generateData = function(start, samples) {
+			var interval = 60000;
+			var binSize = 1000;
+			var hwm = Date.now();
+
+			$scope.generateData = function(start) {
 				var toReturn = [];
-				for(var i=0; i<samples; i++){
-					toReturn.push([start + i*1000, Math.random() * 10]);
+				for(var i=0; i<interval/binSize; i++) {
+					toReturn.push([start + i * binSize, Math.random() * 10]);
 				}
 				return toReturn;
 			};
@@ -31,22 +35,35 @@
 
 				var toReturn = [];
 				for(var i=0; i < samples; i++){
-					toReturn.push([start + (i * 1000 * Math.random() * 10), i]);
+					toReturn.push([start + Math.random() * interval, i]);
 				}
 				return toReturn;
 			};
 
 			$scope.updateData = function() {
-				$scope.model = [{ key: 'series1', data: $scope.generateData(Date.now() - 1000*100, 100) }];
-				$scope.markers = $scope.generateMarkers(Date.now() - 1000*100, 25);
+				hwm = Date.now();
+				$scope.model = [{ key: 'series1', data: $scope.generateData(hwm - interval) }];
+				$scope.markers = $scope.generateMarkers(hwm - interval, 25);
 			}
 
 			$scope.filter = function(filterState){
 				console.log(filterState);
 			};
 
-			$scope.model = [{ key: 'series1', data: $scope.generateData(Date.now() - 1000*100, 100) }];
-			$scope.markers = $scope.generateMarkers(Date.now() - 1000*100, 25);
+			$scope.updateFilter = function() {
+				var lf = hwm - Math.random() * interval;
+				var hf = lf + Math.random() * 20000;
+				var newFilter = [lf, hf];
+				console.log({m: 'Applying filter', filter: newFilter});
+
+				$scope.filterState = newFilter;
+			};
+
+			$scope.$watch('filterState', function(n, o) {
+				console.log({ msg: 'Watch Filter', filter: n });
+			});
+
+			$scope.updateData();
 
 		}]);
 
@@ -64,9 +81,11 @@
 		data-sentio-markers="markers"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
-		data-sentio-filter-fn="filter(filterState)"></div>
+		data-sentio-filter-fn="filter(filterState)"
+		data-sentio-filter-state="filterState"></div>
 
 	<button data-ng-click="updateData()">Update Data</button>
+	<button data-ng-click="updateFilter()">Update Filter</button>
 </body>
 	
 </html>
