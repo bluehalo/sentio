@@ -1,5 +1,5 @@
 var runSequence = require('run-sequence'),
-glob = require('glob'),
+	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
 	plugins = gulpLoadPlugins(),
