@@ -1,1 +1,1 @@
-var sentio = {};
+if(null == sentio) { var sentio = {}; }
