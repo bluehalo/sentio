@@ -22,7 +22,10 @@
 			.height(100)
 			.width(600)
 			.filter(true)
-			.yExtent([0, undefined]);
+			.yExtent(sentio.util.extent({
+				overrideValue: [0, undefined],
+				getValue: function(d) { return d[1]; }
+			}));
 
 		timeline.filter()
 			.on('filter', function(val) { console.log(val); })
@@ -40,7 +43,7 @@
 		timeline
 			.xValue(function(d) { return d[0]; })
 			.yValue(function(d) { return d[1]; })
-			.init(timelineDiv).data(layout.bins()).redraw();
+			.init(timelineDiv).data([{ key: 'series1', data: layout.bins() }]).redraw();
 
 		function generateData(range, samples) {
 			var toReturn = [];
