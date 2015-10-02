@@ -535,13 +535,16 @@ function sentio_model_bins(config) {
 	/**
 	 * Clears all the data in the bin with the given index
 	 * @param {number} i The index into the bins array of the bin to clear
+	 * @returns {number} The number of items in the bin that was cleared, as returned by countBin() function
 	 */
 	model.clearBin = function(i) {
 		if (i >= 0 && i < _data.length) {
-			_dataCount -= _fn.countBin(_data[i]);
+			var count = _fn.countBin(_data[i]);
+			_dataCount -= count;
 			_data[i][1] = _fn.createSeed();
+			return count;
 		}
-		return model;
+		return 0;
 	};
 
 	// Initialize the model
