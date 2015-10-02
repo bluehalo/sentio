@@ -30,11 +30,33 @@ function sentio_model_bins(config) {
 		getValue: function(d) { return d; },
 
 		// The default function for updating a bin given a new value
-		updateBin: function(bin, d) { bin[1].push(d); }
+		updateBin: function(bin, d) { bin[1].push(d); },
+
+		// The default function for counting the contents of the bins (includes code for backward compatibility)
+		countBin: function(bin) {
+			// If the bin contains a number, just return it
+			if (typeof bin[1] === 'number') {
+				return bin[1];
+			}
+			// If the bin contains an array of data, return the number of items
+			if (bin[1].hasOwnProperty('length')) {
+				return bin[1].length;
+			}
+			return 0;
+		},
+
+		// The default function to be called after items are added to the bins
+		afterAdd: function(bins, currentCount, previousCount) {},
+
+		// The default function to be called after the bins are updated
+		afterUpdate: function(bins, currentCount, previousCount) {}
 	};
 
 	// The data (an array of object containers)
 	var _data = [];
+
+	// A cached total count of all the objects in the bins
+	var _dataCount = 0;
 
 
 	/**
@@ -55,14 +77,19 @@ function sentio_model_bins(config) {
 	}
 
 	function updateState() {
+		var bin;
+		var prevCount = _dataCount;
+
 		// drop stuff below the lwm
 		while(_data.length > 0 && _data[0][0] < _config.lwm) {
-			_data.shift();
+			bin = _data.shift();
+			_dataCount -= _fn.countBin(bin);
 		}
 
 		// drop stuff above the hwm
 		while(_data.length > 0 && _data[_data.length - 1][0] >= _config.hwm) {
-			_data.pop();
+			bin = _data.pop();
+			_dataCount -= _fn.countBin(bin);
 		}
 
 		// if we emptied the array, add an element for the lwm
@@ -79,19 +106,31 @@ function sentio_model_bins(config) {
 		while(_data[_data.length - 1][0] < _config.hwm - _config.size) {
 			_data.push([_data[_data.length-1][0] + _config.size, _fn.createSeed()]);
 		}
+		if (_fn.afterUpdate) {
+			_fn.afterUpdate.call(model, _data, _dataCount, prevCount);
+		}
 	}
 
 	function addData(dataToAdd) {
+		var prevCount = _dataCount;
+
 		dataToAdd.forEach(function(element) {
 			var i = getIndex(_fn.getKey(element));
 			if(i >= 0 && i < _data.length) {
-				_fn.updateBin(_data[i], _fn.getValue(element));
+				var value = _fn.getValue(element);
+				var prevBinCount = _fn.countBin(_data[i]);
+				_fn.updateBin.call(model, _data[i], value);
+				_dataCount += _fn.countBin(_data[i]) - prevBinCount;
 			}
 		});
+		if (_fn.afterAdd) {
+			_fn.afterAdd.call(model, _data, _dataCount, prevCount);
+		}
 	}
 
 	function clearData() {
 		_data.length = 0;
+		_dataCount = 0;
 	}
 
 
@@ -110,6 +149,9 @@ function sentio_model_bins(config) {
 		if(null != binConfig.getKey) { _fn.getKey = binConfig.getKey; }
 		if(null != binConfig.getValue) { _fn.getValue = binConfig.getValue; }
 		if(null != binConfig.updateBin) { _fn.updateBin = binConfig.updateBin; }
+		if(null != binConfig.countBin) { _fn.countBin = binConfig.countBin; }
+		if(null != binConfig.afterAdd) { _fn.afterAdd = binConfig.afterAdd; }
+		if(null != binConfig.afterUpdate) { _fn.afterUpdate = binConfig.afterUpdate; }
 
 		calculateHwm();
 		updateState();
@@ -120,7 +162,7 @@ function sentio_model_bins(config) {
 	 * Public API
 	 */
 
-	/*
+	/**
 	 * Resets the model with the new data
 	 */
 	model.set = function(data) {
@@ -130,7 +172,7 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Clears the data currently in the bin model
 	 */
 	model.clear = function() {
@@ -139,7 +181,7 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Add an array of data objects to the bins
 	 */
 	model.add = function(dataToAdd) {
@@ -147,7 +189,7 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Get/Set the low water mark value
 	 */
 	model.lwm = function(v) {
@@ -168,14 +210,14 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Get the high water mark
 	 */
 	model.hwm = function() {
 		return _config.hwm;
 	};
 
-	/*
+	/**
 	 * Get/Set the key function used to determine the key value for indexing into the bins
 	 */
 	model.getKey = function(v) {
@@ -188,7 +230,7 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Get/Set the value function for determining what value is added to the bin
 	 */
 	model.getValue = function(v) {
@@ -201,7 +243,7 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Get/Set the Update bin function for determining how to update the state of a bin when a new value is added to it
 	 */
 	model.updateBin = function(v) {
@@ -214,8 +256,8 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
-	 * Get/Set the seedFn for populating 
+	/**
+	 * Get/Set the seed function for populating
 	 */
 	model.createSeed = function(v) {
 		if(!arguments.length) { return _fn.createSeed; }
@@ -227,8 +269,39 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
-	 * Get/Set the bin size
+	/**
+	 * Get/Set the countBin function for populating
+	 */
+	model.countBin = function(v) {
+		if(!arguments.length) { return _fn.countBin; }
+		_fn.countBin = v;
+
+		clearData();
+		updateState();
+
+		return model;
+	};
+
+	/**
+	 * Get/Set the afterAdd callback function
+	 */
+	model.afterAdd = function(v) {
+		if(!arguments.length) { return _fn.afterAdd; }
+		_fn.afterAdd = v;
+		return model;
+	};
+
+	/**
+	 * Get/Set the afterAdd callback function
+	 */
+	model.afterUpdate = function(v) {
+		if(!arguments.length) { return _fn.afterUpdate; }
+		_fn.afterUpdate = v;
+		return model;
+	};
+
+	/**
+	 * Get/Set the bin size configuration
 	 */
 	model.size = function(v) {
 		if(!arguments.length) { return _config.size; }
@@ -248,8 +321,8 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
-	 * Get/Set the bin count
+	/**
+	 * Get/Set the bin count configuration
 	 */
 	model.count = function(v) {
 		if(!arguments.length) { return _config.count; }
@@ -268,11 +341,32 @@ function sentio_model_bins(config) {
 		return model;
 	};
 
-	/*
+	/**
 	 * Accessor for the bins of data
+	 * @returns {Array} Returns the complete array of bins
 	 */
 	model.bins = function() {
 		return _data;
+	};
+
+	/**
+	 * Accessor for the cached count of all the data in the bins, calculated for each bin by the countBin() function
+	 * @returns {number} The count of data in the bins
+	 */
+	model.itemCount = function() {
+		return _dataCount;
+	};
+
+	/**
+	 * Clears all the data in the bin with the given index
+	 * @param {number} i The index into the bins array of the bin to clear
+	 */
+	model.clearBin = function(i) {
+		if (i >= 0 && i < _data.length) {
+			_dataCount -= _fn.countBin(_data[i]);
+			_data[i][1] = _fn.createSeed();
+		}
+		return model;
 	};
 
 	// Initialize the model
