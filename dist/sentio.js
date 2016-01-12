@@ -1,4 +1,4 @@
-/*! sentio Version: 0.5.3 */
+/*! sentio Version: 0.6.0 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -742,7 +742,7 @@ function sentio_chart_vertical_bars() {
 	var _value = {
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
-		label: function(d, i) { return 'key: ' + d.key + ', value: ' + d.value; }
+		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
 	};
 
 	// Default scales for x and y dimensions

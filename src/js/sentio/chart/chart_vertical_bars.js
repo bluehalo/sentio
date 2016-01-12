@@ -29,7 +29,7 @@ function sentio_chart_vertical_bars() {
 	var _value = {
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
-		label: function(d, i) { return 'key: ' + d.key + ', value: ' + d.value; }
+		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
 	};
 
 	// Default scales for x and y dimensions
