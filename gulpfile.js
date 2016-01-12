@@ -20,6 +20,9 @@ var src = {
 		'src/js/sentio/controller/controller.js',
 		'src/js/sentio/controller/**/*.js',
 
+		'src/js/sentio/chart/chart.js',
+		'src/js/sentio/chart/**/*.js',
+
 		'src/js/sentio/timeline/timeline.js',
 		'src/js/sentio/timeline/**/*.js',
 
@@ -130,7 +133,7 @@ gulp.task('css', function(){
 
 		// CSS
 		.pipe(plugins.csslint('.csslintrc'))
-		.pipe(plugins.csslint.reporter('jshint-stylish'))
+		.pipe(plugins.csslint.reporter('text'))
 
 		// Concatenate
 		.pipe(plugins.sort())
@@ -140,7 +143,7 @@ gulp.task('css', function(){
 		.pipe(plugins.filesize())
 
 		// Uglify
-		.pipe(plugins.minifyCss())
+		.pipe(plugins.cssnano())
 		.pipe(plugins.rename(p.name + '.min.css'))
 		.pipe(plugins.insert.prepend(banner))
 		.pipe(gulp.dest('dist'))
