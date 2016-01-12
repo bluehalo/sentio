@@ -55,6 +55,10 @@ function($document, $window, $timeout, $log) {
 
 			scope.$watch('api', function(n, o) {
 				if(null != scope.api) {
+					scope.api.value = chart.value;
+					scope.api.label = chart.label;
+					scope.api.key = chart.key;
+					scope.api.dispatch = chart.dispatch;
 					scope.api.redraw = chart.redraw;
 					scope.api.resize = doResize;
 				}

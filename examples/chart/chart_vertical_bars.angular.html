@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html data-ng-app="demoapp">
 
 <head>
@@ -17,12 +18,17 @@
 
 			$scope.model = [];
 			$scope.widthExtent = [0, undefined];
+			$scope.configureBarChart = function(chart) {
+				chart.label(function(d) {
+					return d.key + "&lrm; (" + d.value + ")";
+				});
+			};
 
 			$scope.generateData = function(samples) {
 				var toReturn = [];
 				for(var i=0; i<samples; i++){
 					toReturn.push({ 
-						key: 'key' + i,
+						key: 'key:' + i,
 						value: Math.trunc(Math.random() * samples)
 					});
 				}
@@ -55,10 +61,10 @@
 	<div data-sentio-vertical-bar-chart style="width:450px;"
 		data-sentio-model="model"
 		data-sentio-width-extent="widthExtent"
+		data-sentio-configure-fn="configureBarChart(chart)"
 		data-sentio-resize-width=""></div>
 
 	<button data-ng-click="updateData()">Update Data</button>
 </body>
 	
 </html>
-
