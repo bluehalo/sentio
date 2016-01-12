@@ -13,7 +13,7 @@
 
 </head>
 <body>
-	<div>Foobar!</div>
+	<div>Vertical Bar Chart</div>
 	<div id="chart"></div>
 	<button onclick="updateData()">Update Data</button>
 
@@ -25,11 +25,11 @@
 		chart.widthExtent().overrideValue([0, undefined]);
 
 		chart.dispatch()
-			.on('onmouseover', function(val) { console.log(val); })
-			.on('onmouseout', function(val) { console.log(val); })
-			.on('onclick', function(val) { console.log(val); });
+			.on('onmouseover', function(d) { console.log(d); })
+			.on('onmouseout', function(d) { console.log(d); })
+			.on('onclick', function(d) { console.log(d); });
 
-		chart.labelValue(function(d) {
+		chart.label(function(d) {
 			return 'Label ' + d.key + ' (' + d.value + ')';
 		});
 

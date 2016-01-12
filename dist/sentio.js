@@ -722,18 +722,19 @@ function sentio_chart_vertical_bars() {
 	var _width = 600;
 	var _barHeight = 24;
 	var _barPadding = 2;
+	var _duration = 500;
 
 	// d3 dispatcher for handling events
 	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
 	var _fn = {
-		onMouseOver: function() {
-			_dispatch.onmouseover(this);
+		onMouseOver: function(d, i) {
+			_dispatch.onmouseover(d, this);
 		},
-		onMouseOut: function() {
-			_dispatch.onmouseover(this);
+		onMouseOut: function(d, i) {
+			_dispatch.onmouseover(d, this);
 		},
-		onClick: function() {
-			_dispatch.onmouseover(this);
+		onClick: function(d, i) {
+			_dispatch.onmouseover(d, this);
 		}
 	};
 
@@ -741,7 +742,7 @@ function sentio_chart_vertical_bars() {
 	var _value = {
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.label; }
+		label: function(d, i) { return 'key: ' + d.key + ', value: ' + d.value; }
 	};
 
 	// Default scales for x and y dimensions
@@ -795,7 +796,7 @@ function sentio_chart_vertical_bars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([0, _width]);
+		_scale.x.range([0, _width - _margin.right - _margin.left]);
 
 		return _instance;
 	};
@@ -821,28 +822,31 @@ function sentio_chart_vertical_bars() {
 		// Enter
 		var bar = div.enter().append('div')
 			.attr('class', 'bar')
-			.style('top', (_scale.y.range()[1] + _margin.bottom + _barHeight) + 'px')
+			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
 			.on('mouseover', _fn.onMouseOver)
 			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
+			.on('click', _fn.onClick)
+			.style('opacity', 0.01);
 
 		bar.append('div')
 			.attr('class', 'bar-label');
 
 		// Enter + Update
-		div.transition().duration(500)
+		div.transition().duration(_duration)
+			.style('opacity', 1)
 			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
-			.style('top', function(d, i) { return _scale.y(i) + 'px'; });
+			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
+			.style('left', function(d, i) { return _margin.left + 'px'; });
 
 		div.select('div.bar-label')
 			.html(_value.label);
 
 		// Exit
 		div.exit()
-			.transition().duration(500)
+			.transition().duration(_duration)
 			.style('opacity', 0.01)
-			.style('top', (_scale.y.range()[1] + _margin.bottom + _barHeight) + 'px' )
+			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
 			.remove();
 
 		// Update the size of the parent div
@@ -874,17 +878,17 @@ function sentio_chart_vertical_bars() {
 		_margin = v;
 		return _instance;
 	};
-	_instance.keyValue = function(v) {
+	_instance.key = function(v) {
 		if(!arguments.length) { return _value.key; }
 		_value.key = v;
 		return _instance;
 	};
-	_instance.valueValue = function(v) {
+	_instance.value = function(v) {
 		if(!arguments.length) { return _value.value; }
 		_value.value = v;
 		return _instance;
 	};
-	_instance.labelValue = function(v) {
+	_instance.label = function(v) {
 		if(!arguments.length) { return _value.label; }
 		_value.label = v;
 		return _instance;
@@ -894,8 +898,18 @@ function sentio_chart_vertical_bars() {
 		_extent.width = v;
 		return _instance;
 	};
+	_instance.widthExtent = function(v) {
+		if(!arguments.length) { return _extent.width; }
+		_extent.width = v;
+		return _instance;
+	};
 	_instance.dispatch = function(v) {
 		if(!arguments.length) { return _dispatch; }
+		return _instance;
+	};
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
 		return _instance;
 	};
 
