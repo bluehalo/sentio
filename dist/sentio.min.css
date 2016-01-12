@@ -1,2 +1,2 @@
-/*! sentio Version: 0.5.1 */
-/*! sentio Version: 0.5.1 */svg{font:10px sans-serif}.line{fill:none;stroke:#000;stroke-width:1.5px}.marker line{stroke:red;stroke-width:1}.area{fill:#eee;stroke:none}.axis line,.axis path{fill:none;stroke:#000;shape-rendering:crispEdges}.brush .extent{stroke:#fff;fill-opacity:.125;shape-rendering:crispEdges}
+/*! sentio Version: 0.5.3 */
+/*! sentio Version: 0.5.3 */.bars-vertical{position:relative}.bar{position:absolute;overflow:visible;white-space:nowrap;background-color:#ddd;font:12px sans-serif;color:#000}.bar:hover{background-color:#bbb}.bar-label,.bar-value{display:inline-block;margin:5px 2px}svg{font:10px sans-serif}.line{fill:none;stroke:#000;stroke-width:1.5px}.marker line{stroke:red;stroke-width:1}.area{fill:#eee;stroke:none}.axis line,.axis path{fill:none;stroke:#000;shape-rendering:crispEdges}.brush .extent{stroke:#fff;fill-opacity:.125;shape-rendering:crispEdges}

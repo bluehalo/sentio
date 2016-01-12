@@ -1,0 +1,22 @@
+.bars-vertical {
+	position: relative;
+}
+
+.bar {
+	position: absolute;
+	overflow: visible;
+	white-space: nowrap;
+
+	background-color: #ddd;
+
+	font: 12px sans-serif;
+	color: black;
+}
+.bar:hover {
+	background-color: #bbb;
+}
+
+.bar-label, .bar-value {
+	display: inline-block;
+	margin: 5px 2px 5px 2px;
+}

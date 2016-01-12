@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Vertical Bar Chart. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<div>Vertical Bar Chart</div>
+	<div id="chart"></div>
+	<button onclick="updateData()">Update Data</button>
+
+	<script type="text/javascript">
+		var chartDiv = d3.select('#chart');
+		var chart = sentio.chart.verticalBars()
+			.width(300);
+
+		chart.widthExtent().overrideValue([0, undefined]);
+
+		chart.dispatch()
+			.on('onmouseover', function(d) { console.log(d); })
+			.on('onmouseout', function(d) { console.log(d); })
+			.on('onclick', function(d) { console.log(d); });
+
+		chart.label(function(d) {
+			return 'Label ' + d.key + ' (' + d.value + ')';
+		});
+
+		chart.init(chartDiv);
+		updateData();
+
+		function generateData(samples){
+			var toReturn = [];
+			for(var i=0; i<samples; i++){
+				toReturn.push({ 
+					key: 'key' + i,
+					value: Math.trunc(Math.random() * samples)
+				});
+			}
+			return toReturn;
+		}
+
+		function updateData(){
+			var data = generateData(16);
+
+			data = data.sort(function(a, b) {
+				return b.value - a.value;
+			}).slice(0, 12);
+
+			chart.data(data).redraw();
+		}
+
+	</script>
+
+</body>
+</html>
+
