@@ -1,4 +1,4 @@
-/*! sentio Version: 0.6.0 */
+/*! sentio Version: 0.6.3 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -26,7 +26,7 @@ function sentio_util_extent(config) {
 	 */
 
 	function setDefaultValue(v) {
-		if(null != v && 2 !== v.length && !Number.isNaN(v[0]) && !Number.isNaN(v[1]) && v[0] < v[1]) {
+		if(null == v || 2 !== v.length || isNaN(v[0]) || isNaN(v[1]) || v[0] >= v[1]) {
 			throw new Error('Default extent must be a two element ordered array of numbers');
 		}
 		_config.defaultValue = v;

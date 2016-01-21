@@ -22,7 +22,7 @@ function($document, $window, $timeout, $log) {
 			var width = element[0].style.width;
 			if(null != width && '' !== width) { 
 				width = parseFloat(width.substring(0, width.length-2));
-				if(null != width && !Number.isNaN(width)) { chart.width(width); }
+				if(null != width && !isNaN(width)) { chart.width(width); }
 			}
 
 			chart.init(chartElement);
