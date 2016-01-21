@@ -1,4 +1,4 @@
-/*! sentio Version: 0.6.0 */
+/*! sentio Version: 0.6.3 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio.realtime').directive('sentioRtTimeline', [ '$document', '$window', '$timeout', '$log', 
@@ -29,12 +29,12 @@ function($document, $window, $timeout, $log) {
 			var width = element[0].style.width;
 			if(null != width && '' !== width) { 
 				width = parseFloat(width.substring(0, width.length-2));
-				if(null != width && !Number.isNaN(width)) { timeline.width(width); }
+				if(null != width && !isNaN(width)) { timeline.width(width); }
 			}
 			var height = element[0].style.height;
 			if(null != height && '' !== height) {
 				height = parseFloat(height.substring(0, height.length-2));
-				if(null != height && !Number.isNaN(height)) { timeline.height(height); }
+				if(null != height && !isNaN(height)) { timeline.height(height); }
 			}
 
 			timeline.init(timelineElement).data([]).start();
@@ -186,12 +186,12 @@ function($document, $window, $timeout, $log) {
 			var width = element[0].style.width;
 			if(null != width && '' !== width) { 
 				width = parseFloat(width.substring(0, width.length-2));
-				if(null != width && !Number.isNaN(width)) { timeline.width(width); }
+				if(null != width && !isNaN(width)) { timeline.width(width); }
 			}
 			var height = element[0].style.height;
 			if(null != height && '' !== height) {
 				height = parseFloat(height.substring(0, height.length-2));
-				if(null != height && !Number.isNaN(height)) { timeline.height(height); }
+				if(null != height && !isNaN(height)) { timeline.height(height); }
 			}
 
 			// Check to see if filtering is enabled
@@ -375,7 +375,7 @@ function($document, $window, $timeout, $log) {
 			var width = element[0].style.width;
 			if(null != width && '' !== width) { 
 				width = parseFloat(width.substring(0, width.length-2));
-				if(null != width && !Number.isNaN(width)) { chart.width(width); }
+				if(null != width && !isNaN(width)) { chart.width(width); }
 			}
 
 			chart.init(chartElement);
@@ -408,6 +408,10 @@ function($document, $window, $timeout, $log) {
 
 			scope.$watch('api', function(n, o) {
 				if(null != scope.api) {
+					scope.api.value = chart.value;
+					scope.api.label = chart.label;
+					scope.api.key = chart.key;
+					scope.api.dispatch = chart.dispatch;
 					scope.api.redraw = chart.redraw;
 					scope.api.resize = doResize;
 				}
