@@ -5,7 +5,7 @@ function sentio_chart_vertical_bars() {
 
 	// Layout properties
 	var _id = 'vertical_bars_' + Date.now();
-	var _margin = { top: 10, right: 10, bottom: 10, left: 10 };
+	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
 	var _width = 600;
 	var _barHeight = 24;
 	var _barPadding = 2;
@@ -173,16 +173,12 @@ function sentio_chart_vertical_bars() {
 	_instance.value = function(v) {
 		if(!arguments.length) { return _value.value; }
 		_value.value = v;
+		_extent.width.getValue(v);
 		return _instance;
 	};
 	_instance.label = function(v) {
 		if(!arguments.length) { return _value.label; }
 		_value.label = v;
-		return _instance;
-	};
-	_instance.widthExtent = function(v) {
-		if(!arguments.length) { return _extent.width; }
-		_extent.width = v;
 		return _instance;
 	};
 	_instance.widthExtent = function(v) {

@@ -29,7 +29,7 @@
 				for(var i=0; i<samples; i++){
 					toReturn.push({ 
 						key: 'key:' + i,
-						value: Math.trunc(Math.random() * samples)
+						value: Math.floor(Math.random() * samples)
 					});
 				}
 				return toReturn;
