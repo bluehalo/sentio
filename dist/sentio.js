@@ -1,4 +1,4 @@
-/*! sentio Version: 0.6.7 */
+/*! sentio Version: 0.6.8 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -731,10 +731,10 @@ function sentio_chart_vertical_bars() {
 			_dispatch.onmouseover(d, this);
 		},
 		onMouseOut: function(d, i) {
-			_dispatch.onmouseover(d, this);
+			_dispatch.onmouseout(d, this);
 		},
 		onClick: function(d, i) {
-			_dispatch.onmouseover(d, this);
+			_dispatch.onclick(d, this);
 		}
 	};
 

@@ -18,10 +18,10 @@ function sentio_chart_vertical_bars() {
 			_dispatch.onmouseover(d, this);
 		},
 		onMouseOut: function(d, i) {
-			_dispatch.onmouseover(d, this);
+			_dispatch.onmouseout(d, this);
 		},
 		onClick: function(d, i) {
-			_dispatch.onmouseover(d, this);
+			_dispatch.onclick(d, this);
 		}
 	};
 
