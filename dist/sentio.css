@@ -17,9 +17,11 @@
 	background-color: #bbb;
 }
 
-.bar-label, .bar-value {
+.bar-label {
+	overflow: hidden;
+	text-overflow: ellipsis;
 	display: inline-block;
-	margin: 5px 2px 5px 2px;
+	margin: 5px 5px 5px 5px;
 }
 
 svg {

@@ -124,10 +124,11 @@ function sentio_chart_vertical_bars() {
 			.style('opacity', 1)
 			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
 			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
-			.style('left', function(d, i) { return _margin.left + 'px'; });
+			.style('left', _margin.left + 'px');
 
 		div.select('div.bar-label')
-			.html(_value.label);
+			.html(_value.label)
+			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
 
 		// Exit
 		div.exit()

@@ -20,7 +20,7 @@
 			$scope.widthExtent = [0, undefined];
 			$scope.configureBarChart = function(chart) {
 				chart.label(function(d) {
-					return d.key + "&lrm; (" + d.value + ")";
+					return d.key + "&lrm; sfdasdfasdfasdfasdf (" + d.value + ")";
 				});
 			};
 
@@ -58,7 +58,7 @@
 <body data-ng-controller="DemoController">
 	<h1>Bar Chart Example</h1>
 	<p>AngularJS integrated D3 vertical bar chart</p>
-	<div data-sentio-vertical-bar-chart style="width:450px;"
+	<div data-sentio-vertical-bar-chart style="width:150px;"
 		data-sentio-model="model"
 		data-sentio-width-extent="widthExtent"
 		data-sentio-configure-fn="configureBarChart(chart)"
