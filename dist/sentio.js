@@ -1,4 +1,4 @@
-/*! sentio Version: 0.6.6 */
+/*! sentio Version: 0.6.7 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -719,7 +719,7 @@ function sentio_chart_vertical_bars() {
 	// Layout properties
 	var _id = 'vertical_bars_' + Date.now();
 	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
-	var _width = 600;
+	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
 	var _duration = 500;

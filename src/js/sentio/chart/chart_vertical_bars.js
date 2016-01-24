@@ -6,7 +6,7 @@ function sentio_chart_vertical_bars() {
 	// Layout properties
 	var _id = 'vertical_bars_' + Date.now();
 	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
-	var _width = 600;
+	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
 	var _duration = 500;
