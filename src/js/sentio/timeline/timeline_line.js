@@ -98,28 +98,28 @@ function sentio_timeline_line() {
 
 	function brushstart() {
 		var extent = getFilter();
-		var isEmpty = _filter.brush.empty();
+		var isEmpty = (null == extent);
 
-		var min = (null==extent)? undefined : extent[0];
-		var max = (null==extent)? undefined : extent[1];
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
 		var extent = getFilter();
-		var isEmpty = _filter.brush.empty();
+		var isEmpty = (null == extent);
 
-		var min = (null==extent)? undefined : extent[0];
-		var max = (null==extent)? undefined : extent[1];
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
 		var extent = getFilter();
-		var isEmpty = _filter.brush.empty();
+		var isEmpty = (null == extent);
 
-		var min = (null==extent)? undefined : extent[0];
-		var max = (null==extent)? undefined : extent[1];
+		var min = (isEmpty)? undefined : extent[0];
+		var max = (isEmpty)? undefined : extent[1];
 
 		_filter.dispatch.filterend([isEmpty, min, max]);
 	}
@@ -358,16 +358,10 @@ function sentio_timeline_line() {
 
 	/*
 	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled, millisecond time otherwise
+	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
 	 */
 	function getFilter() {
 		var extent;
-		if(_filter.enabled) {
-			extent = _filter.brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
-		}
 		if(_filter.enabled && !_filter.brush.empty()) {
 			extent = _filter.brush.extent();
 			if(null != extent) {
