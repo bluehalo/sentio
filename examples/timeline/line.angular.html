@@ -50,6 +50,10 @@
 				console.log(filterState);
 			};
 
+			$scope.markerClicked = function(marker) {
+				console.log(marker);
+			};
+
 			$scope.updateFilter = function() {
 				var lf = hwm - Math.random() * interval;
 				var hf = lf + Math.random() * 20000;
@@ -79,6 +83,7 @@
 	<div data-sentio-timeline style="height:250px;"
 		data-sentio-model="model"
 		data-sentio-markers="markers"
+		data-sentio-marker-clicked="markerClicked(m)"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
 		data-sentio-filter-fn="filter(filterState)"

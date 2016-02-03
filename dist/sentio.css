@@ -39,6 +39,11 @@ svg {
 	stroke-width: 1;
 }
 
+.marker:hover {
+	cursor:hand;
+	cursor:pointer;
+}
+
 .area {
 	fill: #eee;
 	stroke: none;
