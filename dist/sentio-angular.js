@@ -166,6 +166,7 @@ function($document, $window, $timeout, $log) {
 		scope : {
 			model: '=sentioModel',
 			markers: '=sentioMarkers',
+			markerClickedFn: '&sentioMarkerClicked',
 			yExtent: '=sentioYExtent',
 			xExtent: '=sentioXExtent',
 			duration: '=sentioDuration',
@@ -234,6 +235,12 @@ function($document, $window, $timeout, $log) {
 			});
 
 			timeline.init(timelineElement);
+
+			scope.$watch('markerClickedFn', function(n, o) {
+				timeline.markers().on('onclick', function(marker) {
+					scope.markerClickedFn({ m: marker });
+				});
+			});
 
 			scope.$watch('configureFn', function(n, o){
 				if(null != scope.configureFn){
