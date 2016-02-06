@@ -35,6 +35,8 @@ function sentio_chart_donut() {
 
 	// d3 dispatcher for handling events
 	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
+
+	// Function handlers
 	var _fn = {
 		onMouseOver: function(d, i) {
 			_dispatch.onmouseover(d, this);
@@ -56,7 +58,7 @@ function sentio_chart_donut() {
 	};
 
 	var _scale = {
-		
+		color: d3.scale.category10()
 	};
 
 	// elements
@@ -134,7 +136,6 @@ function sentio_chart_donut() {
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
-		var color = d3.scale.category10();
 
 		// Create the donut
 		var arc = d3.svg.arc()
@@ -182,12 +183,11 @@ function sentio_chart_donut() {
 				return d.data.key;
 			})
 			.attr('fill', function(d, i) {
-				return color(d.data.key);
+				return _scale.color(d.data.key);
 			})
 			.style('stroke', _arcStrokeColor);
 
 		var components = {
-			color: color,
 			pie: pie,
 			g: g,
 			arc: arc
@@ -207,7 +207,6 @@ function sentio_chart_donut() {
 	 * Private functions
 	 */
 	function redrawTooltip(components) {
-		var color = components.color;
 		var g = components.g;
 		var arc = components.arc;
 
@@ -275,7 +274,7 @@ function sentio_chart_donut() {
 					var rect = legendContainer.select('rect[key="' + d.data.key +'"]').filter(function(r) { return null != r; });
 					rect
 						.transition(_duration)
-						.style('fill', color)
+						.style('fill', _scale.color)
 						.style("fill-opacity", 1);
 					var thisSelect = d3.select(this)
 						.transition(_duration)
@@ -301,7 +300,6 @@ function sentio_chart_donut() {
 	}
 
 	function redrawLegend(components) {
-		var color = components.color;
 		var pie = components.pie;
 		var g = components.g;
 		var arc = components.arc;
@@ -324,7 +322,7 @@ function sentio_chart_donut() {
 
 		var height, offset, horz, vert;
 		var legend = legendContainer.selectAll('.legend')
-			.data(color.domain())
+			.data(_scale.color.domain())
 			.enter()
 			.append('g')
 			.attr('class', 'legend')
@@ -332,7 +330,7 @@ function sentio_chart_donut() {
 				// In centerLegend mode, the legend will be formatted to go in the middle of the donut
 				if (_centerLegend) {
 					height = _legendRectSize + _legendSpacing;
-					offset = height * color.domain().length / 2;
+					offset = height * _scale.color.domain().length / 2;
 					horz = -2 * _legendRectSize;
 					vert = i * height - offset;
 					return 'translate(' + horz + ',' + vert + ')';
@@ -352,7 +350,7 @@ function sentio_chart_donut() {
 			})
 			.attr('width', _legendRectSize)
 			.attr('height', _legendRectSize)
-			.style('fill', color)
+			.style('fill', _scale.color)
 			.style('stroke', 'black')
 			.style('stroke-width', 1);
 
@@ -433,7 +431,7 @@ function sentio_chart_donut() {
 				d3.select(this)
 					.transition(_duration)
 					.style("fill-opacity", 1)
-					.style("fill", color);
+					.style("fill", _scale.color);
 
 				path
 					.style("stroke", _arcStrokeColor)
