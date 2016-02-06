@@ -11,10 +11,8 @@ function sentio_chart_donut() {
 	var _height = 300;
 
 	// Radius
-	var _radius = 100;
-	var _innerRadiusOffset = 30;
-	var _outerRadiusOffset = 2;
-	var _donutWidth = 30;
+	var _innerRadius = 70;
+	var _outerRadius = 100;
 
 	// Transition duration
 	var _duration = 200;
@@ -139,13 +137,12 @@ function sentio_chart_donut() {
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
-		var radius = _radius;
 		var color = d3.scale.category10();
 
 		// Create the donut
 		var arc = d3.svg.arc()
-			.innerRadius(radius - _donutWidth)
-			.outerRadius(radius);
+			.innerRadius(_innerRadius)
+			.outerRadius(_outerRadius);
 
 		var pie = d3.layout.pie()
 			.value(function(d) { return d.value; })
@@ -261,8 +258,8 @@ function sentio_chart_donut() {
 
 				if (_highlightExpansion > 0) {
 					var arcExpanded = d3.svg.arc()
-						.innerRadius(_radius - _donutWidth - _highlightExpansion)
-						.outerRadius(_radius + _highlightExpansion);
+						.innerRadius(_innerRadius - _highlightExpansion)
+						.outerRadius(_outerRadius + _highlightExpansion);
 					thisSelect.transition(_duration)
 						.attr("d", arcExpanded);
 				}
@@ -421,8 +418,8 @@ function sentio_chart_donut() {
 				}
 				if (_highlightExpansion > 0) {
 					var arcExpanded = d3.svg.arc()
-						.innerRadius(_radius - _donutWidth - _highlightExpansion)
-						.outerRadius(_radius + _highlightExpansion);
+						.innerRadius(_innerRadius - _highlightExpansion)
+						.outerRadius(_outerRadius + _highlightExpansion);
 					path.transition(_duration)
 						.attr("d", arcExpanded);
 				}
@@ -472,24 +469,14 @@ function sentio_chart_donut() {
 		return _instance;
 	};
 
-	_instance.radius = function(v) {
-		if(!arguments.length) { return _radius; }
-		_radius = v;
+	_instance.innerRadius = function(v) {
+		if(!arguments.length) { return _innerRadius; }
+		_innerRadius = v;
 		return _instance;
 	};
-	_instance.innerRadiusOffset = function(v) {
-		if(!arguments.length) { return _innerRadiusOffset; }
-		_innerRadiusOffset = v;
-		return _instance;
-	};
-	_instance.outerRadiusOffset = function(v) {
-		if(!arguments.length) { return _outerRadiusOffset; }
-		_outerRadiusOffset = v;
-		return _instance;
-	};
-	_instance.donutWidth = function(v) {
-		if(!arguments.length) { return _donutWidth; }
-		_donutWidth = v;
+	_instance.outerRadius = function(v) {
+		if(!arguments.length) { return _outerRadius; }
+		_outerRadius = v;
 		return _instance;
 	};
 
