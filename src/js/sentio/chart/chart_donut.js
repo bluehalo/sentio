@@ -61,6 +61,11 @@ function sentio_chart_donut() {
 		color: d3.scale.category10()
 	};
 
+	var _layout = {
+		arc: d3.svg.arc().innerRadius(_innerRadius).outerRadius(_outerRadius),
+		pie: d3.layout.pie().value(_fn.value).sort(null)
+	};
+
 	// elements
 	var _element = {
 		div: undefined,
@@ -94,12 +99,9 @@ function sentio_chart_donut() {
 			.append('div')
 			.attr('class', 'tooltip');
 
-		_element.tooltip.append('div')
-			.attr('class', 'label');
-		_element.tooltip.append('div')
-			.attr('class', 'count');
-		_element.tooltip.append('div')
-			.attr('class', 'percent');
+		_element.tooltip.append('div').attr('class', 'label');
+		_element.tooltip.append('div').attr('class', 'count');
+		_element.tooltip.append('div').attr('class', 'percent');
 
 		_instance.resize();
 
@@ -137,32 +139,28 @@ function sentio_chart_donut() {
 	 */
 	_instance.redraw = function() {
 
-		// Create the donut
-		var arc = d3.svg.arc()
-			.innerRadius(_innerRadius)
-			.outerRadius(_outerRadius);
-
-		var pie = d3.layout.pie()
-			.value(function(d) { return d.value; })
-			.sort(null);
-
+		// Join
 		var g = _element.gChart.selectAll(".arc")
-			.data(pie(_data));
+			.data(_layout.pie(_data));
 
-			g.transition(_duration)
+		// Update
+		g.transition(_duration)
 			.attrTween('d', function(d) {
 				var interpolate = d3.interpolate(this._current, d);
 				this._current = interpolate(0);
 				return function(t) {
-					return arc(interpolate(t));
+					return _layout.arc(interpolate(t));
 				};
 			});
 
+		// Enter
 		var gEnter = g.enter();
 		gEnter.append("path")
 			.attr("class", "arc")
 			.each(function(d) { this._current = d; });
-			g.transition()
+
+		// Enter + Update
+		g.transition()
 			.duration(_duration)
 			.attrTween('d', function(d) {
 				if (this.tweened) return;
@@ -174,11 +172,11 @@ function sentio_chart_donut() {
 						endAngle: 0
 					};
 					var i = d3.interpolate(start, d);
-					return function(d1) { return arc(i(d1)); };
+					return function(d1) { return _layout.arc(i(d1)); };
 			});
 
 		g.attr("class", "arc")
-			.attr("d", arc)
+			.attr("d", _layout.arc)
 			.attr('key', function(d) {
 				return d.data.key;
 			})
@@ -188,9 +186,7 @@ function sentio_chart_donut() {
 			.style('stroke', _arcStrokeColor);
 
 		var components = {
-			pie: pie,
-			g: g,
-			arc: arc
+			g: g
 		};
 
 		if (_showTooltip || _highlightLegend) {
@@ -208,7 +204,6 @@ function sentio_chart_donut() {
 	 */
 	function redrawTooltip(components) {
 		var g = components.g;
-		var arc = components.arc;
 
 		// Mouse over a donut arc, show tooltip
 		g.on('mouseover', function(d) {
@@ -284,7 +279,7 @@ function sentio_chart_donut() {
 
 					if (_highlightExpansion > 0) {
 						thisSelect.transition(_duration)
-							.attr("d", arc);
+							.attr("d", _layout.arc);
 					}
 				}
 			});
@@ -300,9 +295,7 @@ function sentio_chart_donut() {
 	}
 
 	function redrawLegend(components) {
-		var pie = components.pie;
 		var g = components.g;
-		var arc = components.arc;
 
 		// set up the legend container
 		if (!_centerLegend) {
@@ -372,12 +365,12 @@ function sentio_chart_donut() {
 					enabled = false;
 				}
 
-				pie.value(function (d) {
+				_layout.pie.value(function (d) {
 					if (d.key === label) d.enabled = enabled;
 					return (d.enabled) ? d.value : 0;
 				});
 
-				g = g.data(pie(_data));
+				g = g.data(_layout.pie(_data));
 
 				g.transition()
 					.duration(_duration)
@@ -385,7 +378,7 @@ function sentio_chart_donut() {
 						var interpolate = d3.interpolate(this._current, d);
 						this._current = interpolate(0);
 						return function (t) {
-							return arc(interpolate(t));
+							return _layout.arc(interpolate(t));
 						};
 					});
 			});
@@ -439,7 +432,7 @@ function sentio_chart_donut() {
 
 				if (_highlightExpansion > 0) {
 					path.transition(_duration)
-						.attr("d", arc);
+						.attr("d", _layout.arc);
 				}
 			});
 		}
@@ -489,11 +482,17 @@ function sentio_chart_donut() {
 	_instance.value = function(v) {
 		if(!arguments.length) { return _fn.value; }
 		_fn.value = v;
+		_layout.pie.value(v);
 		return _instance;
 	};
 	_instance.label = function(v) {
 		if(!arguments.length) { return _fn.label; }
 		_fn.label = v;
+		return _instance;
+	};
+	_instance.color = function(v) {
+		if(!arguments.length) { return _scale.color; }
+		_scale.color = v;
 		return _instance;
 	};
 
