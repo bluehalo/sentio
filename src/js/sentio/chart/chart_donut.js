@@ -10,7 +10,7 @@ function sentio_chart_donut() {
 	var _width = 460;
 	var _height = 300;
 
-	// Radius
+	// Inner and outer radius settings
 	var _innerRadius = 70;
 	var _outerRadius = 100;
 
@@ -44,15 +44,12 @@ function sentio_chart_donut() {
 		},
 		onClick: function(d, i) {
 			_dispatch.onclick(d, this);
-		}
-	};
-
-	// Default accessors for the dimensions of the data
-	var _value = {
+		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
 		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
 	};
+
 
 	// Extents
 	var _extent = {
@@ -487,19 +484,18 @@ function sentio_chart_donut() {
 	};
 
 	_instance.key = function(v) {
-		if(!arguments.length) { return _value.key; }
-		_value.key = v;
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
 		return _instance;
 	};
 	_instance.value = function(v) {
-		if(!arguments.length) { return _value.value; }
-		_value.value = v;
-		_extent.width.getValue(v);
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
 		return _instance;
 	};
 	_instance.label = function(v) {
-		if(!arguments.length) { return _value.label; }
-		_value.label = v;
+		if(!arguments.length) { return _fn.label; }
+		_fn.label = v;
 		return _instance;
 	};
 
