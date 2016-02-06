@@ -255,6 +255,7 @@ sentio.matrix = function(){
         return _instance;
     };
 
+    // TODO: Is there any value in opening this up for alternate implementation? 
     _instance.generateTooltip = function(v) {
         if(!arguments.length) { return _settings.generateTooltip; }
         _settings.generateTooltip = v;
