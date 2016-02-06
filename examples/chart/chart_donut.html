@@ -23,8 +23,6 @@
 			.width(300)
 			.centerLegend(false);
 
-	chart.widthExtent().overrideValue([0, undefined]);
-
 	chart.dispatch()
 			.on('onmouseover', function(d) { console.log(d); })
 			.on('onmouseout', function(d) { console.log(d); })

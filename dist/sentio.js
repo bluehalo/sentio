@@ -718,15 +718,21 @@ function sentio_chart_donut() {
 
 	// Layout properties
 	var _id = 'donut_' + Date.now();
+
+	// Chart height/width
 	var _width = 460;
 	var _height = 300;
+
+	// Radius
 	var _radius = 100;
 	var _innerRadiusOffset = 30;
 	var _outerRadiusOffset = 2;
-	var _duration = 200;
-
 	var _donutWidth = 30;
 
+	// Transition duration
+	var _duration = 200;
+
+	// Legend stuff
 	var _showLegend = true;
 	var _legendRectSize = 18;
 	var _legendSpacing = 4;
@@ -737,7 +743,6 @@ function sentio_chart_donut() {
 	var _highlightOpacity = 0.5;
 	var _highlightStrokeColor = "#111";
 	var _highlightExpansion = 5;
-
 	var _centerLegend = true;
 
 	var _showTooltip = true;
@@ -770,15 +775,19 @@ function sentio_chart_donut() {
 
 	// Extents
 	var _extent = {
-		width: sentio.util.extent({
-			defaultValue: [0, 10],
-			getValue: _value.value
-		})
+	};
+
+	var _scale = {
+		
 	};
 
 	// elements
 	var _element = {
-		div: undefined
+		div: undefined,
+		svg: undefined,
+		gChart: undefined,
+		legend: undefined,
+		tooltip: undefined
 	};
 
 	var _data = [];
@@ -1175,6 +1184,7 @@ function sentio_chart_donut() {
 		_height = v;
 		return _instance;
 	};
+
 	_instance.radius = function(v) {
 		if(!arguments.length) { return _radius; }
 		_radius = v;
@@ -1190,6 +1200,18 @@ function sentio_chart_donut() {
 		_outerRadiusOffset = v;
 		return _instance;
 	};
+	_instance.donutWidth = function(v) {
+		if(!arguments.length) { return _donutWidth; }
+		_donutWidth = v;
+		return _instance;
+	};
+
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return _instance;
+	};
+
 	_instance.key = function(v) {
 		if(!arguments.length) { return _value.key; }
 		_value.key = v;
@@ -1206,20 +1228,12 @@ function sentio_chart_donut() {
 		_value.label = v;
 		return _instance;
 	};
-	_instance.widthExtent = function(v) {
-		if(!arguments.length) { return _extent.width; }
-		_extent.width = v;
-		return _instance;
-	};
+
 	_instance.dispatch = function(v) {
 		if(!arguments.length) { return _dispatch; }
 		return _instance;
 	};
-	_instance.duration = function(v) {
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		return _instance;
-	};
+
 	_instance.legendSpacing = function(v) {
 		if(!arguments.length) { return _legendSpacing; }
 		_legendSpacing = v;
@@ -1228,11 +1242,6 @@ function sentio_chart_donut() {
 	_instance.legendRectSize = function(v) {
 		if(!arguments.length) { return _legendRectSize; }
 		_legendRectSize = v;
-		return _instance;
-	};
-	_instance.donutWidth = function(v) {
-		if(!arguments.length) { return _donutWidth; }
-		_donutWidth = v;
 		return _instance;
 	};
 	_instance.showTooltip = function(v) {
