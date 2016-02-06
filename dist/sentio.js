@@ -746,10 +746,6 @@ function sentio_chart_donut() {
 	var _showTooltip = true;
 	var _followMouseOnTooltip = false;
 
-	var _svg;
-	var _tooltip;
-	var _legend;
-
 	// d3 dispatcher for handling events
 	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
 	var _fn = {
@@ -801,25 +797,22 @@ function sentio_chart_donut() {
 		// Create the DIV element
 		_element.div = container.append('div').attr('class', 'donut');
 
-		// set up the main donut svg
-		_svg = _element.div
-			.append('svg')
-			.attr('width', _width)
-			.attr('height', _height)
-			.append('g')
-			.attr('transform', 'translate(' + (_width / 2) +
-				',' + (_height / 2) + ')');
+		// Create the svg element
+		_element.svg = _element.div.append('svg');
+
+		// Create the main chart group
+		_element.gChart = _element.svg.append('g');
 
 		// set up the tooltip container
-		_tooltip = _element.div
+		_element.tooltip = _element.div
 			.append('div')
 			.attr('class', 'tooltip');
 
-		_tooltip.append('div')
+		_element.tooltip.append('div')
 			.attr('class', 'label');
-		_tooltip.append('div')
+		_element.tooltip.append('div')
 			.attr('class', 'count');
-		_tooltip.append('div')
+		_element.tooltip.append('div')
 			.attr('class', 'percent');
 
 		_instance.resize();
@@ -843,6 +836,13 @@ function sentio_chart_donut() {
 	 * Updates all the elements that depend on the size of the various components
 	 */
 	_instance.resize = function() {
+		_element.svg
+			.attr('width', _width)
+			.attr('height', _height);
+
+		_element.gChart
+			.attr('transform', 'translate(' + (_width / 2) + ',' + (_height / 2) + ')');
+
 		return _instance;
 	};
 
@@ -861,7 +861,7 @@ function sentio_chart_donut() {
 			.value(function(d) { return d.value; })
 			.sort(null);
 
-		var g = _svg.selectAll(".arc")
+		var g = _element.gChart.selectAll(".arc")
 			.data(pie(_data));
 
 			g.transition(_duration)
@@ -937,15 +937,15 @@ function sentio_chart_donut() {
 				}));
 
 				var percent = Math.round(100 * d.data.value / total);
-				_tooltip.select('.label').html(d.data.key);
-				_tooltip.select('.count').html(d.data.value);
-				_tooltip.select('.percent').html(percent + '%');
-				_tooltip.style('display', 'block');
+				_element.tooltip.select('.label').html(d.data.key);
+				_element.tooltip.select('.count').html(d.data.value);
+				_element.tooltip.select('.percent').html(percent + '%');
+				_element.tooltip.style('display', 'block');
 			}
 
 			if (_highlightLegend) {
 				// Reverse highlight the legend when hovering over a donut arc
-				var legendContainer = _centerLegend ? _svg : _legend;
+				var legendContainer = _centerLegend ? _element.gChart : _element.legend;
 
 				// Get the rect in the legend that corresponds to this donut arc
 				var rect = legendContainer.select('rect[key="' + d.data.key +'"]');
@@ -980,12 +980,12 @@ function sentio_chart_donut() {
 		});
 
 		if (_showTooltip || _highlightLegend) {
-			var legendContainer = _centerLegend ? _svg : _legend;
+			var legendContainer = _centerLegend ? _element.gChart : _element.legend;
 
 			// Put things back how they were
 			g.on('mouseout', function (d) {
 				if (_showTooltip) {
-					_tooltip.style('display', 'none');
+					_element.tooltip.style('display', 'none');
 				}
 				if (_highlightLegend) {
 					var rect = legendContainer.select('rect[key="' + d.data.key +'"]').filter(function(r) { return null != r; });
@@ -1010,7 +1010,7 @@ function sentio_chart_donut() {
 		// This option makes the tooltip follow the mouse or stay fixed in place
 		if (_followMouseOnTooltip) {
 			g.on('mousemove', function(d) {
-				_tooltip.style('top', (d3.event.pageY + 10) + 'px')
+				_element.tooltip.style('top', (d3.event.pageY + 10) + 'px')
 					.style('left', (d3.event.pageX + 10) + 'px');
 			});
 		}
@@ -1026,13 +1026,13 @@ function sentio_chart_donut() {
 		if (!_centerLegend) {
 			_element.div.select('.legend-container')
 				.remove();
-			_legend = _element.div
+			_element.legend = _element.div
 				.append('div')
 				.attr('class', 'legend-container')
 				.append('svg');
 		}
 
-		var legendContainer = _centerLegend ? _svg : _legend;
+		var legendContainer = _centerLegend ? _element.gChart : _element.legend;
 
 		// Reset previous legend
 		legendContainer.selectAll('.legend')
@@ -1114,7 +1114,7 @@ function sentio_chart_donut() {
 			rect.on('mouseover', function(d) {
 
 				// Perform highlight on the arc path
-				var path = _svg.select('path[key="' + d +'"]')
+				var path = _element.gChart.select('path[key="' + d +'"]')
 					.transition(_duration);
 				if (undefined !== _highlightColor && _highlightColor !== "") {
 					path.style('fill', _highlightColor);
@@ -1142,7 +1142,7 @@ function sentio_chart_donut() {
 			rect.on('mouseout', function(d) {
 
 				// Unhighlight the arc path
-				var path = _svg.select('path[key="' + d +'"]');
+				var path = _element.gChart.select('path[key="' + d +'"]');
 
 
 				// Unhighlight the rect (this)
