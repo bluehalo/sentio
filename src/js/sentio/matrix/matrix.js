@@ -64,7 +64,7 @@ sentio.matrix = function(){
             axis : { x1: xAxis1, x2: xAxis2 },
             g: { x1: gXAxis1, x2: gXAxis2 },
             tooltip: tooltip
-        }
+        };
 
         return _instance;
     };
@@ -255,7 +255,7 @@ sentio.matrix = function(){
         return _instance;
     };
 
-    // TODO: Is there any value in opening this up for alternate implementation? 
+    // TODO: Is there any value in opening this up for alternate implementation?
     _instance.generateTooltip = function(v) {
         if(!arguments.length) { return _settings.generateTooltip; }
         _settings.generateTooltip = v;
