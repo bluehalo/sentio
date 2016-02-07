@@ -852,9 +852,24 @@ function sentio_chart_donut() {
 	 */
 	_instance.redraw = function() {
 
+		redrawChart();
+
+		if (_showTooltip || _highlightLegend) {
+			redrawTooltip();
+		}
+
+		if (_showLegend) {
+			redrawLegend();
+		}
+		return _instance;
+	};
+
+	/**
+	 * Private functions
+	 */
+	function redrawChart() {
 		// Join
-		var g = _element.gChart.selectAll(".arc")
-			.data(_layout.pie(_data));
+		var g = _element.gChart.selectAll("path.arc").data(_layout.pie(_data));
 
 		// Update
 		g.transition(_duration)
@@ -870,6 +885,9 @@ function sentio_chart_donut() {
 		var gEnter = g.enter();
 		gEnter.append("path")
 			.attr("class", "arc")
+			.on('mouseover', _fn.onMouseOver)
+			.on('mouseout', _fn.onMouseOut)
+			.on('click', _fn.onClick)
 			.each(function(d) { this._current = d; });
 
 		// Enter + Update
@@ -898,25 +916,10 @@ function sentio_chart_donut() {
 			})
 			.style('stroke', _arcStrokeColor);
 
-		var components = {
-			g: g
-		};
+	}
 
-		if (_showTooltip || _highlightLegend) {
-			redrawTooltip(components);
-		}
-
-		if (_showLegend) {
-			redrawLegend(components);
-		}
-		return _instance;
-	};
-
-	/**
-	 * Private functions
-	 */
-	function redrawTooltip(components) {
-		var g = components.g;
+	function redrawTooltip() {
+		var g = _element.gChart.selectAll('path.arc');
 
 		// Mouse over a donut arc, show tooltip
 		g.on('mouseover', function(d) {
@@ -1007,8 +1010,8 @@ function sentio_chart_donut() {
 		}
 	}
 
-	function redrawLegend(components) {
-		var g = components.g;
+	function redrawLegend() {
+		var g = _element.gChart.selectAll('path.arc');
 
 		// set up the legend container
 		if (!_centerLegend) {
