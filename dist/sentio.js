@@ -812,12 +812,9 @@ function sentio_chart_donut() {
 			.append('div')
 			.attr('class', 'tooltip');
 
-		_element.tooltip.append('div')
-			.attr('class', 'label');
-		_element.tooltip.append('div')
-			.attr('class', 'count');
-		_element.tooltip.append('div')
-			.attr('class', 'percent');
+		_element.tooltip.append('div').attr('class', 'label');
+		_element.tooltip.append('div').attr('class', 'count');
+		_element.tooltip.append('div').attr('class', 'percent');
 
 		_instance.resize();
 
