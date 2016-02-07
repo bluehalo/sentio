@@ -3,35 +3,22 @@ sentio.chart.donut = sentio_chart_donut;
 function sentio_chart_donut() {
 	'use strict';
 
-	// Layout properties
-	var _id = 'donut_' + Date.now();
-
 	// Chart height/width
 	var _width = 460;
 	var _height = 300;
 
 	// Inner and outer radius settings
-	var _innerRadius = 70;
-	var _outerRadius = 100;
+	var _innerRadiusRatio = 0.7;
 
 	// Transition duration
-	var _duration = 200;
+	var _duration = 500;
 
-	// Legend stuff
-	var _showLegend = true;
-	var _legendRectSize = 18;
-	var _legendSpacing = 4;
-	var _arcStrokeColor = "#111";
-	var _enableLegendToggles = true;
-	var _highlightLegend = true;
-	var _highlightColor = "";
-	var _highlightOpacity = 0.5;
-	var _highlightStrokeColor = "#111";
-	var _highlightExpansion = 5;
-	var _centerLegend = true;
-
-	var _showTooltip = true;
-	var _followMouseOnTooltip = false;
+	// Legend configuration
+	var _legend = {
+		enabled: true,
+		markSize: 16,
+		position: 'center' // only option right now
+	};
 
 	// d3 dispatcher for handling events
 	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
@@ -62,7 +49,7 @@ function sentio_chart_donut() {
 	};
 
 	var _layout = {
-		arc: d3.svg.arc().innerRadius(_innerRadius).outerRadius(_outerRadius),
+		arc: d3.svg.arc(),
 		pie: d3.layout.pie().value(_fn.value).sort(null)
 	};
 
@@ -71,8 +58,7 @@ function sentio_chart_donut() {
 		div: undefined,
 		svg: undefined,
 		gChart: undefined,
-		legend: undefined,
-		tooltip: undefined
+		legend: undefined
 	};
 
 	var _data = [];
@@ -93,15 +79,6 @@ function sentio_chart_donut() {
 
 		// Create the main chart group
 		_element.gChart = _element.svg.append('g');
-
-		// set up the tooltip container
-		_element.tooltip = _element.div
-			.append('div')
-			.attr('class', 'tooltip');
-
-		_element.tooltip.append('div').attr('class', 'label');
-		_element.tooltip.append('div').attr('class', 'count');
-		_element.tooltip.append('div').attr('class', 'percent');
 
 		_instance.resize();
 
@@ -131,6 +108,9 @@ function sentio_chart_donut() {
 		_element.gChart
 			.attr('transform', 'translate(' + (_width / 2) + ',' + (_height / 2) + ')');
 
+		var radius = _width/2;
+		_layout.arc.innerRadius(radius * _innerRadiusRatio).outerRadius(radius);
+
 		return _instance;
 	};
 
@@ -141,13 +121,10 @@ function sentio_chart_donut() {
 
 		redrawChart();
 
-		if (_showTooltip || _highlightLegend) {
-			redrawTooltip();
-		}
-
-		if (_showLegend) {
+		if (_legend.enabled) {
 			redrawLegend();
 		}
+
 		return _instance;
 	};
 
@@ -155,11 +132,33 @@ function sentio_chart_donut() {
 	 * Private functions
 	 */
 	function redrawChart() {
-		// Join
-		var g = _element.gChart.selectAll("path.arc").data(_layout.pie(_data));
+		/*
+		 * Join the data
+		 */
+		var g = _element.gChart.selectAll('path.arc')
+			.data(_layout.pie(_data), function(d) { return _fn.key(d.data); });
 
-		// Update
-		g.transition(_duration)
+		/*
+		 * Update Only
+		 */
+
+		/*
+		 * Enter Only
+		 * Create the path, add the arc class, register the callbacks
+		 * Grow from 0 for both start and end angles
+		 */
+		var gEnter = g.enter().append('path')
+			.attr('class', 'arc')
+			.on('mouseover', _fn.onMouseOver)
+			.on('mouseout', _fn.onMouseOut)
+			.on('click', _fn.onClick)
+			.each(function(d) { this._current = { startAngle: 0, endAngle: 0 }; });
+
+		/*
+		 * Enter + Update
+		 * Apply the update from current angle to next angle
+		 */
+		g.transition().duration(_duration)
 			.attrTween('d', function(d) {
 				var interpolate = d3.interpolate(this._current, d);
 				this._current = interpolate(0);
@@ -168,284 +167,13 @@ function sentio_chart_donut() {
 				};
 			});
 
-		// Enter
-		var gEnter = g.enter();
-		gEnter.append("path")
-			.attr("class", "arc")
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
-			.each(function(d) { this._current = d; });
+		g.attr('key', function(d) { return _fn.key(d.data); })
+			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data)); });
 
-		// Enter + Update
-		g.transition()
-			.duration(_duration)
-			.attrTween('d', function(d) {
-				if (this.tweened) return;
-				this.tweened = true;
-				// When this is the first draw, need a transition that
-				// ramps up like a gauge
-					var start = {
-						startAngle: 0,
-						endAngle: 0
-					};
-					var i = d3.interpolate(start, d);
-					return function(d1) { return _layout.arc(i(d1)); };
-			});
-
-		g.attr("class", "arc")
-			.attr("d", _layout.arc)
-			.attr('key', function(d) {
-				return d.data.key;
-			})
-			.attr('fill', function(d, i) {
-				return _scale.color(d.data.key);
-			})
-			.style('stroke', _arcStrokeColor);
-
-	}
-
-	function redrawTooltip() {
-		var g = _element.gChart.selectAll('path.arc');
-
-		// Mouse over a donut arc, show tooltip
-		g.on('mouseover', function(d) {
-			if (_showTooltip) {
-
-				// Tooltip contents...
-				var total = d3.sum(_data.map(function (d) {
-					return (d.enabled) ? d.value : 0;
-				}));
-
-				var percent = Math.round(100 * d.data.value / total);
-				_element.tooltip.select('.label').html(d.data.key);
-				_element.tooltip.select('.count').html(d.data.value);
-				_element.tooltip.select('.percent').html(percent + '%');
-				_element.tooltip.style('display', 'block');
-			}
-
-			if (_highlightLegend) {
-				// Reverse highlight the legend when hovering over a donut arc
-				var legendContainer = _centerLegend ? _element.gChart : _element.legend;
-
-				// Get the rect in the legend that corresponds to this donut arc
-				var rect = legendContainer.select('rect[key="' + d.data.key +'"]');
-
-				// save off the original color
-				d.origColor = rect.style('fill');
-
-				// Do the highlighting
-				rect
-					.transition(_duration)
-					.style("fill-opacity", _highlightOpacity);
-				if (undefined !== _highlightColor && _highlightColor !== "") {
-					rect.style('fill', _highlightColor);
-				}
-				var thisSelect = d3.select(this)
-					.transition(_duration);
-				if (undefined !== _highlightColor && _highlightColor !== "") {
-					thisSelect.style('fill', _highlightColor);
-				}
-				thisSelect
-					.style("fill-opacity", _highlightOpacity)
-					.style('stroke', _highlightStrokeColor);
-
-				if (_highlightExpansion > 0) {
-					var arcExpanded = d3.svg.arc()
-						.innerRadius(_innerRadius - _highlightExpansion)
-						.outerRadius(_outerRadius + _highlightExpansion);
-					thisSelect.transition(_duration)
-						.attr("d", arcExpanded);
-				}
-			}
-		});
-
-		if (_showTooltip || _highlightLegend) {
-			var legendContainer = _centerLegend ? _element.gChart : _element.legend;
-
-			// Put things back how they were
-			g.on('mouseout', function (d) {
-				if (_showTooltip) {
-					_element.tooltip.style('display', 'none');
-				}
-				if (_highlightLegend) {
-					var rect = legendContainer.select('rect[key="' + d.data.key +'"]').filter(function(r) { return null != r; });
-					rect
-						.transition(_duration)
-						.style('fill', _scale.color)
-						.style("fill-opacity", 1);
-					var thisSelect = d3.select(this)
-						.transition(_duration)
-						.style('fill', function(d) { return d.origColor; })
-						.style("fill-opacity", 1)
-						.style('stroke', _arcStrokeColor);
-
-					if (_highlightExpansion > 0) {
-						thisSelect.transition(_duration)
-							.attr("d", _layout.arc);
-					}
-				}
-			});
-		}
-
-		// This option makes the tooltip follow the mouse or stay fixed in place
-		if (_followMouseOnTooltip) {
-			g.on('mousemove', function(d) {
-				_element.tooltip.style('top', (d3.event.pageY + 10) + 'px')
-					.style('left', (d3.event.pageX + 10) + 'px');
-			});
-		}
+		g.exit().remove();
 	}
 
 	function redrawLegend() {
-		var g = _element.gChart.selectAll('path.arc');
-
-		// set up the legend container
-		if (!_centerLegend) {
-			_element.div.select('.legend-container')
-				.remove();
-			_element.legend = _element.div
-				.append('div')
-				.attr('class', 'legend-container')
-				.append('svg');
-		}
-
-		var legendContainer = _centerLegend ? _element.gChart : _element.legend;
-
-		// Reset previous legend
-		legendContainer.selectAll('.legend')
-			.remove();
-
-		var height, offset, horz, vert;
-		var legend = legendContainer.selectAll('.legend')
-			.data(_scale.color.domain())
-			.enter()
-			.append('g')
-			.attr('class', 'legend')
-			.attr('transform', function (d, i) {
-				// In centerLegend mode, the legend will be formatted to go in the middle of the donut
-				if (_centerLegend) {
-					height = _legendRectSize + _legendSpacing;
-					offset = height * _scale.color.domain().length / 2;
-					horz = -2 * _legendRectSize;
-					vert = i * height - offset;
-					return 'translate(' + horz + ',' + vert + ')';
-				} else {
-					// Otherwise format it such that a css styled div can hold the legend contents
-					height = _legendRectSize + _legendSpacing;
-					horz = _legendRectSize/2;
-					vert = i * height + _legendSpacing;
-					return 'translate(' + horz + ',' + vert + ')';
-				}
-
-			});
-
-		var rect = legend.append('rect')
-			.attr('key', function(d) {
-				return d;
-			})
-			.attr('width', _legendRectSize)
-			.attr('height', _legendRectSize)
-			.style('fill', _scale.color)
-			.style('stroke', 'black')
-			.style('stroke-width', 1);
-
-		// If the legend should be able to toggle data on and off, set that up
-		if (_enableLegendToggles) {
-			rect.attr("class", "toggle");
-			rect.on('click', function (label) {
-				var rect = d3.select(this);
-				var enabled = true;
-				var totalEnabled = d3.sum(_data.map(function (d) {
-					return (d.enabled) ? 1 : 0;
-				}));
-
-				if (rect.attr('class') === 'disabled') {
-					rect.attr('class', 'toggle');
-				} else {
-					if (totalEnabled < 2) return;
-					rect.attr('class', 'disabled');
-					enabled = false;
-				}
-
-				_layout.pie.value(function (d) {
-					if (d.key === label) d.enabled = enabled;
-					return (d.enabled) ? d.value : 0;
-				});
-
-				g = g.data(_layout.pie(_data));
-
-				g.transition()
-					.duration(_duration)
-					.attrTween('d', function (d) {
-						var interpolate = d3.interpolate(this._current, d);
-						this._current = interpolate(0);
-						return function (t) {
-							return _layout.arc(interpolate(t));
-						};
-					});
-			});
-		}
-
-		// If highlight legend is enabled, highlight the rect and donut arc on mouse over
-		if (_highlightLegend) {
-			rect.on('mouseover', function(d) {
-
-				// Perform highlight on the arc path
-				var path = _element.gChart.select('path[key="' + d +'"]')
-					.transition(_duration);
-				if (undefined !== _highlightColor && _highlightColor !== "") {
-					path.style('fill', _highlightColor);
-				}
-				path.style('stroke', _highlightStrokeColor)
-					.style('fill-opacity', _highlightOpacity);
-
-				// Perform highlight on the rect being hovered over (this)
-				var thisRect = d3.select(this)
-					.transition(_duration)
-					.style("fill-opacity", _highlightOpacity);
-				if (undefined !== _highlightColor && _highlightColor !== "") {
-					thisRect.style("fill", _highlightColor);
-				}
-				if (_highlightExpansion > 0) {
-					var arcExpanded = d3.svg.arc()
-						.innerRadius(_innerRadius - _highlightExpansion)
-						.outerRadius(_outerRadius + _highlightExpansion);
-					path.transition(_duration)
-						.attr("d", arcExpanded);
-				}
-			});
-
-			// Put things back
-			rect.on('mouseout', function(d) {
-
-				// Unhighlight the arc path
-				var path = _element.gChart.select('path[key="' + d +'"]');
-
-
-				// Unhighlight the rect (this)
-				d3.select(this)
-					.transition(_duration)
-					.style("fill-opacity", 1)
-					.style("fill", _scale.color);
-
-				path
-					.style("stroke", _arcStrokeColor)
-					.style('fill-opacity', 1);
-
-				if (_highlightExpansion > 0) {
-					path.transition(_duration)
-						.attr("d", _layout.arc);
-				}
-			});
-		}
-
-		legend.append('text')
-			.attr('x', _legendRectSize + _legendSpacing)
-			.attr('y', _legendRectSize - _legendSpacing)
-			.text(function (d) {
-				return d;
-			});
 	}
 
 	// Basic Getters/Setters
@@ -460,14 +188,9 @@ function sentio_chart_donut() {
 		return _instance;
 	};
 
-	_instance.innerRadius = function(v) {
-		if(!arguments.length) { return _innerRadius; }
-		_innerRadius = v;
-		return _instance;
-	};
-	_instance.outerRadius = function(v) {
-		if(!arguments.length) { return _outerRadius; }
-		_outerRadius = v;
+	_instance.innerRadiusRatio = function(v) {
+		if(!arguments.length) { return _innerRadiusRatio; }
+		_innerRadiusRatio = v;
 		return _instance;
 	};
 
@@ -504,55 +227,11 @@ function sentio_chart_donut() {
 		return _instance;
 	};
 
-	_instance.legendSpacing = function(v) {
-		if(!arguments.length) { return _legendSpacing; }
-		_legendSpacing = v;
+	_instance.legend = function(v) {
+		if(!arguments.length) { return _legend; }
+		_legend = v;
 		return _instance;
 	};
-	_instance.legendRectSize = function(v) {
-		if(!arguments.length) { return _legendRectSize; }
-		_legendRectSize = v;
-		return _instance;
-	};
-	_instance.showTooltip = function(v) {
-		if(!arguments.length) { return _showTooltip; }
-		_showTooltip = v;
-		return _instance;
-	};
-	_instance.showLegend = function(v) {
-		if(!arguments.length) { return _showLegend; }
-		_showLegend = v;
-		return _instance;
-	};
-	_instance.legendToggles = function(v) {
-		if(!arguments.length) { return _enableLegendToggles; }
-		_enableLegendToggles = v;
-		return _instance;
-	};
-	_instance.highlightLegend = function(v) {
-		if(!arguments.length) { return _highlightLegend; }
-		_highlightLegend = v;
-		return _instance;
-	};
-	_instance.highlightColor = function(v) {
-		if(!arguments.length) { return _highlightColor; }
-		_highlightColor = v;
-		return _instance;
-	};
-	_instance.highlightStrokeColor = function(v) {
-		if(!arguments.length) { return _highlightStrokeColor; }
-		_highlightStrokeColor = v;
-		return _instance;
-	};
-	_instance.highlightExpansion = function(v) {
-		if(!arguments.length) { return _highlightExpansion; }
-		_highlightExpansion = v;
-		return _instance;
-	};
-	_instance.centerLegend = function(v) {
-		if(!arguments.length) { return _centerLegend; }
-		_centerLegend = v;
-		return _instance;
-	};
+
 	return _instance;
 }

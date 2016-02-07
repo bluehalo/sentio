@@ -20,8 +20,7 @@
 <script type="text/javascript">
 	var chartDiv = d3.select('#chart');
 	var chart = sentio.chart.donut()
-			.width(300)
-			.centerLegend(false);
+			.width(300);
 
 	chart.dispatch()
 			.on('onmouseover', function(d) { console.log(d); })
@@ -35,23 +34,14 @@
 	chart.init(chartDiv);
 	updateData();
 
-	function generateData(samples){
-		var toReturn = [];
-		for(var i=0; i<samples; i++){
-			toReturn.push({
+	function updateData(){
+		var data = [];
+		for(var i=0; i<4; i++){
+			data.push({
 				key: 'key' + i,
-				value: Math.floor(Math.random() * samples)
+				value: Math.floor(Math.random() * 10)
 			});
 		}
-		return toReturn;
-	}
-
-	function updateData(){
-		var data = generateData(3);
-
-		data = data.sort(function(a, b) {
-			return b.value - a.value;
-		}).slice(0, 12);
 
 		chart.data(data).redraw();
 	}

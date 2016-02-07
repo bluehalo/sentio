@@ -1,41 +1,11 @@
-.tooltip {
-	background: #eee;
-	box-shadow: 0 0 5px #999999;
-	color: #333;
-	display: none;
-	font-size: 12px;
-	left: 130px;
-	position: absolute;
-	text-align: center;
-	top: 95px;
-	width: 80px;
-	z-index: 11;
+.donut svg {
+	padding: 2px;
+}
+.donut .arc{
+	stroke: none;
 }
 
-.legend-container {
-    background: #eee;
-    box-shadow: 0 0 5px #999999;
-    color: #333;
-    font-size: 12px;
-    left: 220px;
-    position: absolute;
-    text-align: center;
-    top: 95px;
-    width: 100px;
-    height: 80px;
-    z-index: 10;
-}
-
-.toggle, rect.disabled {
-	cursor: pointer;
-	stroke-width: 2;
-}
-
-rect.disabled {
-	fill: transparent;
-}
-
-h1 {
-	font-size: 14px;
-	text-align: center;
+.donut .arc:hover {
+	stroke-width: 1.5px;
+	stroke: #000;
 }
