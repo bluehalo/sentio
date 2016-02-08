@@ -43,17 +43,24 @@ function sentio_chart_matrix() {
         duration: 500
     };
 
-    //TODO: add getters/setters for scale and axis.  But we have to do something specific with the axis with scale changes or something.
-
-
-    // Default scales for x and y dimensions
+    // Default scales for x, y, and color
     var _scale = {
         x: d3.time.scale.utc(),
         y: d3.scale.ordinal(),
         color: d3.scale.linear().domain([-1, 0, 1]).range(_settings.color)
     };
 
-	var _instance = function (selection) {};
+    function initAxis() {
+        var gXAxis2 = _element.svg.append("g").attr("class", "context axis").attr("transform", "translate(" + (_settings.margin.left) + "," + (_settings.margin.top - 20) + ")");
+        var gXAxis1 = _element.svg.append("g").attr("class", "x axis").attr("transform", "translate(" + (_settings.margin.left) + "," + (_settings.margin.top - _settings.boxMargin) + ")");
+        var xAxis1 = d3.svg.axis().scale(_scale.x).orient("top").outerTickSize(0).ticks(d3.time.monday.utc, 1);
+        var xAxis2 = d3.svg.axis().scale(_scale.x).orient("top").innerTickSize(-(20)).outerTickSize(0).ticks(d3.time.month.utc, 1);
+
+        _axis = { x1: xAxis1, x2: xAxis2 };
+        _element.g = { x1: gXAxis1, x2: gXAxis2 };
+    }
+
+	var _instance = function () {};
 
 	_instance.data = function(d) {
 		if(!arguments.length) {
@@ -69,22 +76,14 @@ function sentio_chart_matrix() {
 		_element.div.attr("class", "sentio matrix");
 		_element.svg = d3Container.append("svg");
 
-		// Set up axes
-		var gXAxis2 = _element.svg.append("g").attr("class", "context axis").attr("transform", "translate(" + (_settings.margin.left) + "," + (_settings.margin.top - 20) + ")");
-		var gXAxis1 = _element.svg.append("g").attr("class", "x axis").attr("transform", "translate(" + (_settings.margin.left) + "," + (_settings.margin.top - _settings.boxMargin) + ")");
-		var xAxis1 = d3.svg.axis().scale(_scale.x).orient("top").outerTickSize(0).ticks(d3.time.monday.utc, 1);
-		var xAxis2 = d3.svg.axis().scale(_scale.x).orient("top").innerTickSize(-(20)).outerTickSize(0).ticks(d3.time.month.utc, 1);
-
-		_axis = { x1: xAxis1, x2: xAxis2 };
-		_element.g = { x1: gXAxis1, x2: gXAxis2 };
-
+		initAxis();
 		return _instance;
 	};
 
 	_instance.draw = function() {
-	    // TODO: other things worth checking at start? (_extent.width?)
+	    // TODO: other things worth checking at start?
 		// Bail out if data is missing
-		if(undefined === _data){
+		if(undefined === _data || undefined === _extent.width){
 			return;
 		}
 
@@ -283,15 +282,24 @@ function sentio_chart_matrix() {
 
 	// Scale getter/setters
     _instance.colorScale = function(v) {
-        // TODO: implement
+        if(!arguments.length) { return _scale.color; }
+        _scale.color = v;
+        initAxis();
+        return _instance;
     };
 
 	_instance.xScale = function(v) {
-		// TODO: implement
+		if(!arguments.length) { return _scale.xScale; }
+        _scale.xScale = v;
+        initAxis();
+        return _instance;
 	};
 
     _instance.yScale = function(v) {
-        // TODO: implement
+		if(!arguments.length) { return _scale.yScale; }
+        _scale.yScale = v;
+        initAxis();
+        return _instance;
     };
 
     // Extent getter/setters
