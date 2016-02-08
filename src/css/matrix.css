@@ -1,29 +1,3 @@
-/*! sentio Version: 0.6.9 */
-.bars-vertical {
-	position: relative;
-}
-
-.bar {
-	position: absolute;
-	overflow: visible;
-	white-space: nowrap;
-
-	background-color: #ddd;
-
-	font: 12px sans-serif;
-	color: black;
-}
-.bar:hover {
-	background-color: #bbb;
-}
-
-.bar-label {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	display: inline-block;
-	margin: 5px 5px 5px 5px;
-}
-
 
 /*
 =======================================
@@ -166,42 +140,4 @@
 .s-tooltip-data-label {
 	position: relative;
 	color: #777;
-}
-
-svg {
-	font: 10px sans-serif;
-}
-
-.line {
-	fill: none;
-	stroke: #000;
-	stroke-width: 1.5px;
-}
-
-.marker line {
-	stroke: #F00;
-	stroke-width: 1;
-}
-
-.marker:hover {
-	cursor:hand;
-	cursor:pointer;
-}
-
-.area {
-	fill: #eee;
-	stroke: none;
-}
-
-.axis path,
-.axis line {
-	fill: none;
-	stroke: #000;
-	shape-rendering: crispEdges;
-}
-
-.brush .extent {
-	stroke: #fff;
-	fill-opacity: .125;
-	shape-rendering: crispEdges;
 }

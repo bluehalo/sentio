@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Matrix. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+
+	<div id="sentio-matrix" ></div>
+
+	<script>
+		var origJson = '[{"obj":{"upc":"04223830221","brand":"HARIBO","manufacturer":"HARIBO OF AMERICA, INC.","description":"HARIBO GOLD BEARS GUMMI CANDY 5OZ","subvendor":"Candy Bag","regularAmount":123414,"regularVolume":106726,"promotedAmount":268494,"promotedVolume":261562,"firstHeard":1335657600000,"lastHeard":1398384000000,"totalAmount":391908,"totalVolume":368288,"$$hashKey":"06Y"},"key":"04223830221","label":"HARIBO GOLD BEARS GUMMI CANDY 5OZ","values":[[1356998400000,0.8718080724876441,{"ts":1356998400000,"ra":187.55,"rv":188,"pa":235.8,"pv":237,"ct":104}],[1357084800000,0.9701400329489291,{"ts":1357084800000,"ra":199.25,"rv":203,"pa":271.85,"pv":275,"ct":117}],[1357171200000,0.9743616144975288,{"ts":1357171200000,"ra":209.4,"rv":210,"pa":263.75,"pv":265,"ct":104}],[1357257600000,1,{"ts":1357257600000,"ra":210.4,"rv":211,"pa":275.2,"pv":277,"ct":113}]],"highlights":[]},{"obj":{"upc":"04000000032","brand":"M&M","manufacturer":"M&M/MARS, INC.","description":"MARS M&M P/NUT CHOC CANDY Â 1.74OZ","subvendor":"Candy Bar","regularAmount":86682.5,"regularVolume":99684,"promotedAmount":186153,"promotedVolume":253202,"firstHeard":1335657600000,"lastHeard":1398384000000,"totalAmount":272835.5,"totalVolume":352886,"$$hashKey":"06Z"},"key":"04000000032","label":"MARS M&M P/NUT CHOC CANDY Â 1.74OZ","values":[[1356998400000,0.7272549785240141,{"ts":1356998400000,"ra":0,"rv":0,"pa":223.5,"pv":238,"ct":92}],[1357084800000,0.7252375374202785,{"ts":1357084800000,"ra":0,"rv":0,"pa":222.88,"pv":233,"ct":92}],[1357171200000,1,{"ts":1357171200000,"ra":243.85,"rv":258,"pa":63.47,"pv":67,"ct":105}],[1357257600000,0.876415462709879,{"ts":1357257600000,"ra":208.58,"rv":219,"pa":60.76,"pv":63,"ct":102}]],"highlights":[]}]';
+		var json = {
+		"xExtent": [1356998400000, 1357257600000],
+			"data" : JSON.parse(origJson)
+		};
+		json.data[0].highlights = [[1356998400000, 1357084800000]];
+		json.data[1].highlights = [[1356998400000, 1357084800000], [1357171200000, 1357257600000]];
+	
+		var chart = sentio.chart.matrix();
+		chart.init(d3.select("#sentio-matrix"));
+		chart.data(json);
+		chart.draw();
+
+	</script>
+
+</body>
+</html>
