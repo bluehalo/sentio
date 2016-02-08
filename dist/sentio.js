@@ -807,9 +807,6 @@ function sentio_chart_donut() {
 	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
 		_data = v || [];
-		_data.forEach(function(d) {
-			d.enabled = true;
-		});
 		return _instance;
 	};
 
