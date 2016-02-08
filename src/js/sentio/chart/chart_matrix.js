@@ -81,9 +81,8 @@ function sentio_chart_matrix() {
 	};
 
 	_instance.draw = function() {
-	    // TODO: other things worth checking at start?
 		// Bail out if data is missing
-		if(undefined === _data || undefined === _extent.width){
+		if(undefined === _data || undefined === _extent.width || _extent.width.length < 2){
 			return;
 		}
 
@@ -259,6 +258,7 @@ function sentio_chart_matrix() {
 	_instance.color = function(v) {
 		if(!arguments.length) { return _settings.color; }
 		_settings.color = v;
+		_scale.color.range(v);
 		return _instance;
 	};
 
