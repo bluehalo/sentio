@@ -1,0 +1,11 @@
+.donut svg {
+	padding: 2px;
+}
+.donut .arc{
+	stroke: none;
+}
+
+.donut .arc:hover {
+	stroke-width: 1.5px;
+	stroke: #000;
+}
