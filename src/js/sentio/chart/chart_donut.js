@@ -78,7 +78,10 @@ function sentio_chart_donut() {
 		_element.svg = _element.div.append('svg');
 
 		// Create the main chart group
-		_element.gChart = _element.svg.append('g');
+		_element.gChart = _element.svg.append('g').attr('class', 'chart');
+
+		// Create a group for the legend
+		_element.gLegend = _element.svg.append('g').attr('class', 'legend');
 
 		_instance.resize();
 
@@ -108,6 +111,7 @@ function sentio_chart_donut() {
 		_element.gChart
 			.attr('transform', 'translate(' + (_width / 2) + ',' + (_height / 2) + ')');
 
+		// The outer radius is half of the width of the chart itself
 		var radius = _width/2;
 		_layout.arc.innerRadius(radius * _innerRadiusRatio).outerRadius(radius);
 
@@ -174,6 +178,7 @@ function sentio_chart_donut() {
 	}
 
 	function redrawLegend() {
+		
 	}
 
 	// Basic Getters/Setters
