@@ -32,7 +32,9 @@
 		updateData();
 
 		function swap(i, j, arr) {
-			
+			var t = arr[j];
+			arr[j] = arr[i];
+			arr[i] = t;
 		}
 
 		function updateData(){
