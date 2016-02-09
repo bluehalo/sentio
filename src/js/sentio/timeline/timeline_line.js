@@ -36,6 +36,7 @@ function sentio_timeline_line() {
 			getValue: function(d) { return d[1]; }
 		})
 	};
+	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -132,8 +133,11 @@ function sentio_timeline_line() {
 	 * creation and setup
 	 */
 	_instance.init = function(container){
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
 		// Create the SVG element
-		_element.svg = container.append('svg');
+		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
@@ -238,20 +242,7 @@ function sentio_timeline_line() {
 
 	// Multi Extent Combiner
 	function multiExtent(data, extent) {
-		var nExtent;
-		data.forEach(function(element) {
-			var tExtent = extent.getExtent(element.data);
-			if(!nExtent){
-				nExtent = tExtent;
-			} else {
-				nExtent[0] = Math.min(nExtent[0], tExtent[0]);
-				nExtent[1] = Math.max(nExtent[1], tExtent[1]);
-			}
-		});
-		if(null == nExtent) {
-			nExtent = extent.getExtent([]);
-		}
-		return nExtent;
+		return _multiExtent.extent(extent).getExtent(data);
 	}
 
 	/*

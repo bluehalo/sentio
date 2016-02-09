@@ -72,7 +72,7 @@ function sentio_chart_donut() {
 	 */
 	_instance.init = function(container){
 		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'donut');
+		_element.div = container.append('div').attr('class', 'sentio donut');
 
 		// Create the svg element
 		_element.svg = _element.div.append('svg');

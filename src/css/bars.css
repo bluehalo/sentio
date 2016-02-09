@@ -1,8 +1,14 @@
-.bars-vertical {
+/*
+=======================================
+	Vertical Bar Chart
+=======================================
+*/
+
+.sentio.bars-vertical {
 	position: relative;
 }
 
-.bar {
+.sentio.bars-vertical .bar {
 	position: absolute;
 	overflow: visible;
 	white-space: nowrap;
@@ -12,11 +18,11 @@
 	font: 12px sans-serif;
 	color: black;
 }
-.bar:hover {
+.sentio.bars-vertical .bar:hover {
 	background-color: #bbb;
 }
 
-.bar-label {
+.sentio.bars-vertical .bar-label {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	display: inline-block;

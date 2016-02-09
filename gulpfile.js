@@ -1,5 +1,7 @@
-var runSequence = require('run-sequence'),
-	glob = require('glob'),
+'use strict';
+
+var glob = require('glob'),
+	runSequence = require('run-sequence'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
 	plugins = gulpLoadPlugins(),
@@ -48,8 +50,8 @@ gulp.task('watch', ['build'], function() {
 	gulp.watch(['test/**/*', 'src/**/*', '!/src/lib/**/*'], ['build']);
 });
 
-gulp.task('build', function() {
-	runSequence(['js', 'js-angular', 'css', 'js-test'], 'test');
+gulp.task('build', function(done) {
+	runSequence(['js', 'js-angular', 'css', 'js-test'], 'test', done);
 });
 
 gulp.task('js', function() {
