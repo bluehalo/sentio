@@ -23,7 +23,9 @@
 
 	<script>
 		var chartDiv = d3.select('#chart');
-		var chart = sentio.chart.matrix();
+		var chart = sentio.chart.matrix()
+			.cellSize(32)
+			.cellMargin(2);
 
 		chart.dispatch()
 			.on('onMouseOverCell', function(d) { console.log({ msg: 'OnMouseOverCell', d: d }); })
