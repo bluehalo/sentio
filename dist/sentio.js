@@ -730,7 +730,8 @@ function sentio_chart_donut() {
 	var _legend = {
 		enabled: true,
 		markSize: 16,
-		position: 'center' // only option right now
+		position: 'center', // only option right now
+		layout: 'vertical'
 	};
 
 	// d3 dispatcher for handling events
@@ -888,7 +889,75 @@ function sentio_chart_donut() {
 	}
 
 	function redrawLegend() {
-		
+		/*
+		 * Join the data
+		 */
+		var gLegendGroup = _element.gLegend.selectAll('g.legend-group')
+			.data(_data, function(d) { return _fn.key(d); });
+
+		/*
+		 * Update Only
+		 */
+
+		/*
+		 * Enter Only
+		 * Create a g (gLegendGroup) to add the rect & text label,
+		 * register the callbacks, apply the transform to position each gLegendGroup
+		 */
+		var gLegendGroupEnter = gLegendGroup.enter()
+			.append('g')
+			.attr('class', 'legend-group');
+
+		// Add the legend's rect
+		var rect = gLegendGroupEnter
+			.append("rect")
+			.attr('width', _legend.markSize)
+			.attr('height', _legend.markSize)
+			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
+
+		// Add the legend text
+		gLegendGroupEnter
+			.append('text')
+			.attr('x', _legend.markSize + 2)
+			.attr('y', _legend.markSize - 2)
+			.text(function(d) { return _fn.key(d); });
+
+		// Set up events
+		gLegendGroupEnter
+			.on('mouseover', _fn.onMouseOver)
+			.on('mouseout', _fn.onMouseOut)
+			.on('click', _fn.onClick);
+
+		// Position each rect
+		var height, vert;
+		gLegendGroupEnter
+		// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
+			.each(function(d, i) {
+				if (i === 0) {
+					// Reset
+					gLegendGroup._maxWidth = _element.gLegend.node().getBBox().width;
+				} else {
+					gLegendGroup._maxWidth = Math.max(_element.gLegend.node().getBBox().width, gLegendGroup._maxWidth);
+				}
+			})
+			.attr('transform', function(d, i) {
+				var offset = 0;
+				height = _legend.markSize + 2;
+				horz = _legend.markSize;
+
+				// Only option is 'center' for now
+				if (_legend.position === 'center') {
+					var centerHeight = _height/2;
+					offset = centerHeight - height * _scale.color.domain().length / 2;
+
+					var centerWidth = _width/2;
+					var horz = centerWidth - gLegendGroup._maxWidth/2;
+					vert = (i * height) + offset;
+					return 'translate(' + horz + ',' + vert + ')';
+				} else {
+					// TODO
+				}
+			});
 	}
 
 	// Basic Getters/Setters

@@ -37,10 +37,14 @@
 	function updateData(){
 		var data = [];
 		for(var i=0; i<4; i++){
-			data.push({
+			var d = {
 				key: 'key' + i,
 				value: Math.floor(Math.random() * 10)
-			});
+			};
+			if (i==2) {
+				d.key = 'long test key'
+			}
+			data.push(d);
 		}
 
 		chart.data(data).redraw();
