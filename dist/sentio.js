@@ -935,9 +935,9 @@ function sentio_chart_donut() {
 			.each(function(d, i) {
 				if (i === 0) {
 					// Reset
-					gLegendGroup._maxWidth = _element.gLegend.node().getBBox().width;
+					gLegendGroup._maxWidth = this.getBBox().width;
 				} else {
-					gLegendGroup._maxWidth = Math.max(_element.gLegend.node().getBBox().width, gLegendGroup._maxWidth);
+					gLegendGroup._maxWidth = Math.max(this.getBBox().width, gLegendGroup._maxWidth);
 				}
 			})
 			.attr('transform', function(d, i) {
