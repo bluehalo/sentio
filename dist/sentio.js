@@ -16,8 +16,8 @@ function sentio_util_extent(config) {
 	};
 
 	var _fn = {
-		getValue: function(d) { return d; },
-		filter: function(d) { return true; }
+		getValue: function(d, i) { return d; },
+		filter: function(d, i) { return true; }
 	};
 
 
@@ -125,11 +125,11 @@ function sentio_util_extent(config) {
 
 			if(null != data) {
 				// Iterate over each element of the data
-				data.forEach(function(element) {
+				data.forEach(function(element, i) {
 					// If the element passes the filter, then update the extent
-					if(_fn.filter(element)) {
+					if(_fn.filter(element, i)) {
 						foundData = true;
-						var v = _fn.getValue(element);
+						var v = _fn.getValue(element, i);
 						toReturn[0] = Math.min(toReturn[0], v);
 						toReturn[1] = Math.max(toReturn[1], v);
 					}
@@ -1043,26 +1043,50 @@ function sentio_chart_matrix() {
 	'use strict';
 
 	// Chart dimensions
-	var _boxSize = 16;
-	var _boxMargin = 1;
+	var _cellSize = 16;
+	var _cellMargin = 1;
 	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
 
 	// Transition duration
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
+	var _dispatch = d3.dispatch('onMouseOverCell', 'onMouseOutCell', 'onClickCell', 'onMouseOverRow', 'onMouseOutRow', 'onClickRow');
 
 	// Function handlers
 	var _fn = {
-		onMouseOver: function(d, i) {
-			_dispatch.onmouseover(d, this);
+		updateActiveSeries: function(d) {
+			var seriesLabels = _element.g.chart.selectAll('.row text');
+
+			if(null != d) {
+				// Set the highlight on the row
+				var seriesKey = _fn.seriesKey(d);
+				seriesLabels.classed('active', function(series, i){ return _fn.seriesKey(series) == seriesKey; });
+			}
+			else {
+				// Now update the style
+				seriesLabels.classed('active', false);
+			}
 		},
-		onMouseOut: function(d, i) {
-			_dispatch.onmouseout(d, this);
+		onMouseOverRow: function(d, i) {
+			_fn.updateActiveSeries(d);
+			_dispatch.onMouseOverRow(d, this);
 		},
-		onClick: function(d, i) {
-			_dispatch.onclick(d, this);
+		onMouseOutRow: function(d, i) {
+			_fn.updateActiveSeries();
+			_dispatch.onMouseOutRow(d, this);
+		},
+		onClickRow: function(d, i) {
+			_dispatch.onClickRow(d, this);
+		},
+		onMouseOverCell: function(d, i) {
+			_dispatch.onMouseOverCell(d, this);
+		},
+		onMouseOutCell: function(d, i) {
+			_dispatch.onMouseOutCell(d, this);
+		},
+		onClickCell: function(d, i) {
+			_dispatch.onClickCell(d, this);
 		},
 		seriesKey: function(d, i) { return d.key; },
 		seriesLabel: function(d, i) { return d.label; },
@@ -1110,6 +1134,9 @@ function sentio_chart_matrix() {
 		// Add the axis
 		_element.g.xAxis = _element.svg.append('g').attr('class', 'x axis');
 
+		// Add a group for the chart itself
+		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
+
 		_instance.resize();
 
 		return _instance;
@@ -1137,11 +1164,11 @@ function sentio_chart_matrix() {
 		var boxCount = boxes.length;
 
 		// Dimensions of the visualization
-		var boxSpan = _boxMargin + _boxSize;
+		var cellSpan = _cellMargin + _cellSize;
 
 		// calculate the width/height of the svg
-		var width = boxCount*boxSpan + _boxMargin,
-			height = rowCount*boxSpan + _boxMargin;
+		var width = boxCount*cellSpan + _cellMargin,
+			height = rowCount*cellSpan + _cellMargin;
 
 		// scale the svg to the right size
 		_element.svg
@@ -1149,111 +1176,131 @@ function sentio_chart_matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Cofigure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _boxMargin - boxSpan]);
+		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _cellMargin - cellSpan]);
 		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
 
 		// Draw the x axis
-		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _boxMargin + _boxSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
 		_element.g.xAxis.call(_axis.x);
 
 		/**
 		 * Chart Manipulation
 		 */
-		// Row Join and Update using the series name as the join function
-		var row = _element.svg.selectAll('g.row').data(_data, _fn.key);
-		row.transition().duration(_duration*2)
-			.attr('transform', function(d, i){
-				return 'translate(' + _margin.left + ',' + (_margin.top + (boxSpan*i)) + ')';
-			});
 
-		// Row Enter - when a row enters, we append a g element as row
+		/*
+		 * Row Join
+		 */
+		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+
+		/*
+		 * Row Update Only
+		 */
+
+		/*
+		 * Row Enter Only
+		 * Build the row structure
+		 */
 		var rowEnter = row.enter().append('g');
 		rowEnter
+			.style('opacity', 0.1)
 			.attr('class', 'row')
-			.attr('transform', function(d, i){ return 'translate(' + _margin.left + ',' + (_margin.top + (boxSpan*i)) + ')'; });
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
+			.on('mouseover', _fn.onMouseOverRow)
+			.on('mouseout', _fn.onMouseOutRow)
+			.on('click', _fn.onClickRow);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
 			.attr('class', 'series label')
 			.style('text-anchor', 'end')
 			.attr('x', -6)
-			.attr('y', _boxMargin + (_boxSize/2))
-			.attr('dy', '.32em')
-			.text(_fn.seriesLabel);
+			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('dy', '.32em');
 
 		// Also must append a line
 		rowEnter.append('line')
 			.attr('class', 'series tick')
 			.attr('x1', -3)
 			.attr('x2', 0)
-			.attr('y1', _boxMargin + (_boxSize/2))
-			.attr('y2', _boxMargin + (_boxSize/2));
+			.attr('y1', _cellMargin + (_cellSize/2))
+			.attr('y2', _cellMargin + (_cellSize/2));
 
-		// Row Exit
+		/*
+		 * Row Enter + Update
+		 */
+		// Transition rows to their new positions
+		row.transition().duration(_duration)
+			.style('opacity', 1)
+			.attr('transform', function(d, i){
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+			});
+
+		// Update the series labels in case they changed
+		row.select('text.series.label')
+			.text(_fn.seriesLabel);
+
+		/*
+		 * Row Exit
+		 */
 		row.exit()
 			.transition().duration(_duration)
+			.style('opacity', 0.1)
 			.remove();
 
-		// Cell Join and Update on Row Enter
-		var rowEnterCell = rowEnter.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
-		rowEnterCell.enter().append('rect')
-			.attr('class', 'cell')
-			.style('fill', function(d) {
-				return _scale.color(_fn.value(d));
-			})
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d)) + _boxMargin; })
-			.attr('y', _boxMargin)
-			.attr('height', _boxSize)
-			.attr('width', _boxSize)
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
 
-		// Cell Join and Update on Row Update
-		var rowUpdateCell = row.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
-		// Update
-		rowUpdateCell
-			.transition().duration(_duration)
-			.style('fill', function(d) {
-				return _scale.color(_fn.value(d));
-			})
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d)) + _boxMargin; })
-			.attr('y', _boxMargin);
-		// Enter
-		rowUpdateCell.enter().append('rect')
+		/*
+		 * Cell Join - Will be done on row enter + exit
+		 */
+		var rowCell = row.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
+
+		/*
+		 * Cell Update Only
+		 */
+
+		/*
+		 * Cell Enter Only
+		 */
+		rowCell.enter().append('rect')
 			.attr('class', 'cell')
-			.style('fill', function(d) {
-				return _scale.color(_fn.value(d));
-			})
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d)) + _boxMargin; })
-			.attr('y', _boxMargin)
-			.attr('height', _boxSize)
-			.attr('width', _boxSize)
 			.style('opacity', 0.1)
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.transition().duration(_duration)
-				.style('opacity', 1);
-		// Exit
-		rowUpdateCell.exit()
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
+			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('y', _cellMargin)
+			.attr('height', _cellSize)
+			.attr('width', _cellSize)
+			.on('mouseover', _fn.onMouseOverCell)
+			.on('mouseout', _fn.onMouseOutCell)
+			.on('click', _fn.onClickCell);
+
+		/*
+		 * Cell Enter + Update
+		 * Update fill, move to proper x coordinate
+		 */
+		rowCell.transition().duration(_duration)
 			.style('opacity', 1)
-			.transition().duration(_duration)
-				.attr('width', 0)
-				.style('opacity', 0.1)
-				.remove();
+			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+
+		/*
+		 * Cell Remove
+		 */
+		rowCell.exit().transition().duration(_duration)
+			.attr('width', 0)
+			.style('opacity', 0.1)
+			.remove();
 
 		return _instance;
 	};
 
 
-	_instance.boxSize = function(v) {
-		if(!arguments.length) { return _boxSize; }
-		_boxSize = v;
+	_instance.cellSize = function(v) {
+		if(!arguments.length) { return _cellSize; }
+		_cellSize = v;
 		return _instance;
 	};
-	_instance.boxMargin = function(v) {
-		if(!arguments.length) { return _boxMargin; }
-		_boxMargin = v;
+	_instance.cellMargin = function(v) {
+		if(!arguments.length) { return _cellMargin; }
+		_cellMargin = v;
 		return _instance;
 	};
 	_instance.margin = function(v) {
@@ -1285,6 +1332,7 @@ function sentio_chart_matrix() {
 	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
+		_extent.x.getValue(v);
 		_fn.key = v;
 		return _instance;
 	};

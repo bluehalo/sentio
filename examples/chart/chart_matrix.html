@@ -26,9 +26,8 @@
 		var chart = sentio.chart.matrix();
 
 		chart.dispatch()
-			.on('onmouseover', function(d) { console.log(d); })
-			.on('onmouseout', function(d) { console.log(d); })
-			.on('onclick', function(d) { console.log(d); });
+			.on('onMouseOverCell', function(d) { console.log({ msg: 'OnMouseOverCell', d: d }); })
+			.on('onMouseOverRow', function(d) { console.log({ msg: 'OnMouseOverRow', d: d }); });
 
 		chart.init(chartDiv);
 		updateData();

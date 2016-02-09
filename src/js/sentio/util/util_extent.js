@@ -13,8 +13,8 @@ function sentio_util_extent(config) {
 	};
 
 	var _fn = {
-		getValue: function(d) { return d; },
-		filter: function(d) { return true; }
+		getValue: function(d, i) { return d; },
+		filter: function(d, i) { return true; }
 	};
 
 
@@ -122,11 +122,11 @@ function sentio_util_extent(config) {
 
 			if(null != data) {
 				// Iterate over each element of the data
-				data.forEach(function(element) {
+				data.forEach(function(element, i) {
 					// If the element passes the filter, then update the extent
-					if(_fn.filter(element)) {
+					if(_fn.filter(element, i)) {
 						foundData = true;
-						var v = _fn.getValue(element);
+						var v = _fn.getValue(element, i);
 						toReturn[0] = Math.min(toReturn[0], v);
 						toReturn[1] = Math.max(toReturn[1], v);
 					}
