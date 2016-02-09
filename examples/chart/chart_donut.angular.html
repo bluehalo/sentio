@@ -25,7 +25,6 @@
 			};
 
 			$scope.generateData = function(samples) {
-//				var toReturn = [{key:'Bananas', value:Math.floor(Math.random()*100)},{key:'Oranges', value:Math.floor(Math.random()*100)},{key:'Apples', value:Math.floor(Math.random()*100)}];
 				var toReturn = [];
 				for(var i=0; i<samples; i++){
 					toReturn.push({
@@ -57,7 +56,7 @@
 
 </head>
 <body data-ng-controller="DemoController">
-	<h1>Bar Chart Example</h1>
+	<h1>Donut Chart Example</h1>
 	<p>AngularJS integrated D3 donut chart</p>
 	<div data-sentio-donut-chart style="width:150px;height:150px;"
 		data-sentio-model="model"

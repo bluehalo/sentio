@@ -13,8 +13,8 @@ function sentio_util_extent(config) {
 	};
 
 	var _fn = {
-		getValue: function(d) { return d; },
-		filter: function(d) { return true; }
+		getValue: function(d, i) { return d; },
+		filter: function(d, i) { return true; }
 	};
 
 
@@ -55,7 +55,7 @@ function sentio_util_extent(config) {
 	/*
 	 * Constructor/initialization method
 	 */
-	function extent(extentConfig) {
+	function _instance(extentConfig) {
 		if(null != extentConfig) {
 			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
 			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
@@ -72,37 +72,37 @@ function sentio_util_extent(config) {
 	/*
 	 * Get/Set the default value for the extent
 	 */
-	extent.defaultValue = function(v) {
+	_instance.defaultValue = function(v) {
 		if(!arguments.length) { return _config.defaultValue; }
 		setDefaultValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the override value for the extent
 	 */
-	extent.overrideValue = function(v) {
+	_instance.overrideValue = function(v) {
 		if(!arguments.length) { return _config.overrideValue; }
 		setOverrideValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the value accessor for the extent
 	 */
-	extent.getValue = function(v) {
+	_instance.getValue = function(v) {
 		if(!arguments.length) { return _fn.getValue; }
 		setGetValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the filter fn for the extent
 	 */
-	extent.filter = function(v) {
+	_instance.filter = function(v) {
 		if(!arguments.length) { return _fn.filter; }
 		setFilter(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
@@ -110,7 +110,7 @@ function sentio_util_extent(config) {
 	 * - Default values are used in the absence of data
 	 * - Override values are used to clamp or extend the extent
 	 */
-	extent.getExtent = function(data) {
+	_instance.getExtent = function(data) {
 		var toReturn;
 		var ov = _config.overrideValue;
 
@@ -122,11 +122,11 @@ function sentio_util_extent(config) {
 
 			if(null != data) {
 				// Iterate over each element of the data
-				data.forEach(function(element) {
+				data.forEach(function(element, i) {
 					// If the element passes the filter, then update the extent
-					if(_fn.filter(element)) {
+					if(_fn.filter(element, i)) {
 						foundData = true;
-						var v = _fn.getValue(element);
+						var v = _fn.getValue(element, i);
 						toReturn[0] = Math.min(toReturn[0], v);
 						toReturn[1] = Math.max(toReturn[1], v);
 					}
@@ -165,7 +165,7 @@ function sentio_util_extent(config) {
 
 
 	// Initialize the model
-	extent(config);
+	_instance(config);
 
-	return extent;
+	return _instance;
 }

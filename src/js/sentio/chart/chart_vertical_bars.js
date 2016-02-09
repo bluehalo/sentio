@@ -62,7 +62,7 @@ function sentio_chart_vertical_bars() {
 	 */
 	_instance.init = function(container){
 		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'bars-vertical');
+		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
 		_instance.resize();
 
 		return _instance;
