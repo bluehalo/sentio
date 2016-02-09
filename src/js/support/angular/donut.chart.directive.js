@@ -10,6 +10,7 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 				duration: '=sentioDuration',
 				api: '=sentioApi',
 				resizeWidth: '@sentioResizeWidth',
+				resizeHeight: '@sentioResizeHeight',
 				configureFn: '&sentioConfigureFn'
 			},
 			replace : false,
@@ -22,8 +23,13 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 				var width = element[0].style.width;
 				if(null != width && '' !== width) {
 					width = parseFloat(width.substring(0, width.length-2));
-					if(null != width && !isNaN(width)) { chart.width(width); }
+					if(null != width && !isNaN(width)) {
+						chart.width(width);
+						// set height to match width in this case to keep the donut round
+						chart.height(width);
+					}
 				}
+
 
 				chart.init(chartElement);
 
@@ -66,6 +72,7 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 
 				// Manage resizing the chart
 				var resizeWidth = (null != attrs.sentioResizeWidth);
+				var resizeHeight = (null != attrs.sentioResizeHeight);
 				var resizeTimer;
 				var redrawTimer;
 				var window = angular.element($window);
@@ -97,22 +104,36 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 					// Calculate the new width based on the parent and the resize size
 					var width = (resizeWidth)? parentWidth - attrs.sentioResizeWidth : undefined;
 
+					// Set height to match width to keep donut round
+					var height = width;
+
 					// Reapply the old overflow setting
 					body.style.overflow = overflow;
 
-					$log.debug('resize verticalBars.chart width: ' + width);
+					// Get the old widths and heights
+					var oldHeight = chart.height();
+					var oldWidth = chart.width();
 
-					// Apply the new width
-					if(resizeWidth){ chart.width(width); }
+					if (height !== oldHeight || width !== oldWidth) {
+						$log.debug('resize donut.chart width: ' + width);
+						$log.debug('resize donut.chart height: ' + height);
 
-					chart.resize();
-					redraw();
+						// Apply the new height
+						if(resizeHeight){ chart.height(height);}
+						// Apply the new width
+						if(resizeWidth){ chart.width(width); }
+						chart.resize();
+						redraw();
+					} else {
+						$log.debug('resize donut.chart width unchanged: ' + width);
+						$log.debug('resize donut.chart height unchanged: ' + height);
+					}
 				};
 				var delayResize = function(){
 					if(undefined !== resizeTimer){
 						$timeout.cancel(resizeTimer);
 					}
-					resizeTimer = $timeout(doResize, 200);
+					resizeTimer = $timeout(doResize, 0);
 				};
 
 				if(resizeWidth){

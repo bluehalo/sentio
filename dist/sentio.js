@@ -826,6 +826,10 @@ function sentio_chart_donut() {
 		var radius = _width/2;
 		_layout.arc.innerRadius(radius * _innerRadiusRatio).outerRadius(radius);
 
+		// Update legend positioning
+		_element.gLegend.selectAll('g.legend-group')
+			.attr('transform', legendTransform);
+
 		return _instance;
 	};
 
@@ -888,16 +892,33 @@ function sentio_chart_donut() {
 		g.exit().remove();
 	}
 
+	function legendTransform(d, i) {
+		var height, vert;
+		var offset = 0;
+		height = _legend.markSize + 2;
+		horz = _legend.markSize;
+
+		// Only option is 'center' for now
+		if (_legend.position === 'center') {
+			var centerHeight = _height/2;
+
+			offset = centerHeight - height * _scale.color.domain().length / 2;
+
+			var centerWidth = _width/2;
+			var horz = centerWidth - _element.gLegend._maxWidth/2;
+			vert = (i * height) + offset;
+			return 'translate(' + horz + ',' + vert + ')';
+		} else {
+			// TODO
+		}
+	}
+
 	function redrawLegend() {
 		/*
 		 * Join the data
 		 */
 		var gLegendGroup = _element.gLegend.selectAll('g.legend-group')
 			.data(_data, function(d) { return _fn.key(d); });
-
-		/*
-		 * Update Only
-		 */
 
 		/*
 		 * Enter Only
@@ -928,36 +949,20 @@ function sentio_chart_donut() {
 			.on('mouseout', _fn.onMouseOut)
 			.on('click', _fn.onClick);
 
-		// Position each rect
+		// Position each rect on both enter and update to fully account for changing widths and sizes
 		var height, vert;
 		gLegendGroupEnter
-		// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
+			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
 			.each(function(d, i) {
 				if (i === 0) {
 					// Reset
-					gLegendGroup._maxWidth = this.getBBox().width;
+					_element.gLegend._maxWidth = this.getBBox().width;
 				} else {
-					gLegendGroup._maxWidth = Math.max(this.getBBox().width, gLegendGroup._maxWidth);
+					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
 				}
 			})
-			.attr('transform', function(d, i) {
-				var offset = 0;
-				height = _legend.markSize + 2;
-				horz = _legend.markSize;
+			.attr('transform', legendTransform);
 
-				// Only option is 'center' for now
-				if (_legend.position === 'center') {
-					var centerHeight = _height/2;
-					offset = centerHeight - height * _scale.color.domain().length / 2;
-
-					var centerWidth = _width/2;
-					var horz = centerWidth - gLegendGroup._maxWidth/2;
-					vert = (i * height) + offset;
-					return 'translate(' + horz + ',' + vert + ')';
-				} else {
-					// TODO
-				}
-			});
 	}
 
 	// Basic Getters/Setters

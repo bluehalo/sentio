@@ -18,7 +18,7 @@
 
 			$scope.model = [];
 			$scope.widthExtent = [0, undefined];
-			$scope.configurePieChart = function(chart) {
+			$scope.configureDonutChart = function(chart) {
 				chart.label(function(d) {
 					return d.key + "&lrm; (" + d.value + ")";
 				});
@@ -59,11 +59,11 @@
 <body data-ng-controller="DemoController">
 	<h1>Bar Chart Example</h1>
 	<p>AngularJS integrated D3 donut chart</p>
-	<div data-sentio-donut-chart style="width:200px;"
+	<div data-sentio-donut-chart style="width:150px;height:150px;"
 		data-sentio-model="model"
-		data-sentio-width-extent="widthExtent"
-		data-sentio-configure-fn="configurePieChart(chart)"
-		data-sentio-resize-width=""></div>
+		data-sentio-configure-fn="configureDonutChart(chart)"
+		data-sentio-resize-width=""
+		data-sentio-resize-height=""></div>
 
 	<button data-ng-click="updateData()">Update Data</button>
 </body>
