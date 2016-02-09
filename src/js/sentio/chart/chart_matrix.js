@@ -109,7 +109,7 @@ function sentio_chart_matrix() {
 			.attr('width', width + _margin.left + _margin.right)
 			.attr('height', height + _margin.top + _margin.bottom);
 
-		// Cofigure the scales
+		// Configure the scales
 		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _boxMargin - boxSpan]);
 		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
 
