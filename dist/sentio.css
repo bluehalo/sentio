@@ -25,6 +25,7 @@
 }
 
 .donut svg {
+	overflow: visible;
 }
 .donut .arc{
 	stroke: none;

@@ -22,6 +22,15 @@
 				chart.label(function(d) {
 					return d.key + "&lrm; (" + d.value + ")";
 				});
+
+				// Create custom color scale
+				var color = d3.scale.linear().domain([0,3])
+						.interpolate(d3.interpolateHcl)
+						.range([d3.rgb('#ff0000'), d3.rgb('#00ff00')]);
+
+				chart.color(color);
+				chart.colorFn(function(d) { return d.value; });
+
 			};
 
 			$scope.generateData = function(samples) {
@@ -57,7 +66,7 @@
 
 </head>
 <body data-ng-controller="DemoController">
-	<h1>Bar Chart Example</h1>
+	<h1>Donut Chart Example</h1>
 	<p>AngularJS integrated D3 donut chart</p>
 	<div data-sentio-donut-chart style="width:150px;height:150px;"
 		data-sentio-model="model"

@@ -6,7 +6,6 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 			restrict : 'A',
 			scope : {
 				model: '=sentioModel',
-				widthExtent: '=sentioWidthExtent',
 				duration: '=sentioDuration',
 				api: '=sentioApi',
 				resizeWidth: '@sentioResizeWidth',
@@ -33,12 +32,6 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 
 				chart.init(chartElement);
 
-				scope.$watch('configureFn', function(n, o){
-					if(null != scope.configureFn){
-						scope.configureFn({ chart: chart });
-					}
-				});
-
 				scope.$watchCollection('model', function(n, o){
 					if(null == o && null == n){ return; }
 
@@ -46,11 +39,11 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 					redraw();
 				});
 
-				scope.$watchCollection('widthExtent', function(n, o){
-					if(null == o && null == n){ return; }
 
-					chart.widthExtent().overrideValue(n);
-					redraw();
+				scope.$watch('configureFn', function(n, o){
+					if(null != scope.configureFn){
+						scope.configureFn({ chart: chart });
+					}
 				});
 
 				scope.$watch('duration', function(n, o){

@@ -37,7 +37,8 @@ function sentio_chart_donut() {
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
+		label: function(d, i) { return d.key + ' (' + d.value + ')'; },
+		colorFn: function(d) { return _fn.key(d.data) }
 	};
 
 
@@ -174,7 +175,7 @@ function sentio_chart_donut() {
 			});
 
 		g.attr('key', function(d) { return _fn.key(d.data); })
-			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data)); });
+			.attr('fill', function(d, i) { return _scale.color(_fn.colorFn(d)) });
 
 		g.exit().remove();
 	}
@@ -221,7 +222,7 @@ function sentio_chart_donut() {
 			.append("rect")
 			.attr('width', _legend.markSize)
 			.attr('height', _legend.markSize)
-			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
+			.style('fill', function(d) { return _scale.color(_fn.colorFn(d)); });
 
 		// Add the legend text
 		gLegendGroupEnter
@@ -295,6 +296,11 @@ function sentio_chart_donut() {
 	_instance.color = function(v) {
 		if(!arguments.length) { return _scale.color; }
 		_scale.color = v;
+		return _instance;
+	};
+	_instance.colorFn = function(v) {
+		if(!arguments.length) { return _fn.colorFn; }
+		_fn.colorFn = v;
 		return _instance;
 	};
 
