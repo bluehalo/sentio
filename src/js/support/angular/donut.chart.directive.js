@@ -6,8 +6,8 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 			restrict : 'A',
 			scope : {
 				model: '=sentioModel',
-				widthExtent: '=sentioWidthExtent',
 				duration: '=sentioDuration',
+				color: '=sentioColor',
 				api: '=sentioApi',
 				resizeWidth: '@sentioResizeWidth',
 				resizeHeight: '@sentioResizeHeight',
@@ -33,12 +33,6 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 
 				chart.init(chartElement);
 
-				scope.$watch('configureFn', function(n, o){
-					if(null != scope.configureFn){
-						scope.configureFn({ chart: chart });
-					}
-				});
-
 				scope.$watchCollection('model', function(n, o){
 					if(null == o && null == n){ return; }
 
@@ -46,14 +40,20 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 					redraw();
 				});
 
-				scope.$watchCollection('widthExtent', function(n, o){
-					if(null == o && null == n){ return; }
 
-					chart.widthExtent().overrideValue(n);
-					redraw();
+				scope.$watch('configureFn', function(n, o){
+					if(null != scope.configureFn){
+						scope.configureFn({ chart: chart });
+					}
 				});
 
 				scope.$watch('duration', function(n, o){
+					if(null == o && null == n){ return; }
+
+					chart.duration(n);
+				});
+
+				scope.$watch('colorScale', function(n, o){
 					if(null == o && null == n){ return; }
 
 					chart.duration(n);
@@ -61,10 +61,6 @@ angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window',
 
 				scope.$watch('api', function(n, o) {
 					if(null != scope.api) {
-						scope.api.value = chart.value;
-						scope.api.label = chart.label;
-						scope.api.key = chart.key;
-						scope.api.dispatch = chart.dispatch;
 						scope.api.redraw = chart.redraw;
 						scope.api.resize = doResize;
 					}

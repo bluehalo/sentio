@@ -13,37 +13,39 @@
 	<script src="../../dist/sentio-angular.js" charset="utf-8"></script>
 
 	<script>
-		var app = angular.module("demoapp", ["sentio"]);
-		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
+		var app = angular.module('demoapp', ['sentio']);
+		app.controller('DemoController', [ '$scope', '$timeout', function($scope, $timeout) {
 
 			$scope.model = [];
-			$scope.widthExtent = [0, undefined];
+
 			$scope.configureDonutChart = function(chart) {
 				chart.label(function(d) {
-					return d.key + "&lrm; (" + d.value + ")";
+					return d.key + '(' + d.value + ')';
 				});
-			};
 
-			$scope.generateData = function(samples) {
-				var toReturn = [];
-				for(var i=0; i<samples; i++){
-					toReturn.push({
-						key: i,
-						value: Math.floor(Math.random() * samples)
-					});
-				}
-				return toReturn;
+				// Create custom color scale
+				var color = d3.scale.ordinal()
+					.range(['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c']);
+
+				chart.color(color);
+
 			};
 
 			$scope.updateData = function() {
-				var data = $scope.generateData(3);
-
-				data = data.sort(function(a, b) {
-					return b.value - a.value;
-				}).slice(0, 12);
+				var data = [];
+				for(var i=0; i<4; i++){
+					var d = {
+						key: 'key' + i,
+						value: Math.floor(Math.random() * 10)
+					};
+					if (i==2) {
+						d.key = 'long test key'
+					}
+					data.push(d);
+				}
 
 				$scope.model = data;
-			};
+			}
 
 			$scope.updateData();
 
@@ -58,7 +60,7 @@
 <body data-ng-controller="DemoController">
 	<h1>Donut Chart Example</h1>
 	<p>AngularJS integrated D3 donut chart</p>
-	<div data-sentio-donut-chart style="width:150px;height:150px;"
+	<div data-sentio-donut-chart style="width:300px;height:300px;"
 		data-sentio-model="model"
 		data-sentio-configure-fn="configureDonutChart(chart)"
 		data-sentio-resize-width=""
