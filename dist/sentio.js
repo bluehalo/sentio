@@ -1,4 +1,4 @@
-/*! sentio Version: 0.6.8 */
+/*! sentio Version: 0.6.9 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -16,8 +16,8 @@ function sentio_util_extent(config) {
 	};
 
 	var _fn = {
-		getValue: function(d) { return d; },
-		filter: function(d) { return true; }
+		getValue: function(d, i) { return d; },
+		filter: function(d, i) { return true; }
 	};
 
 
@@ -58,7 +58,7 @@ function sentio_util_extent(config) {
 	/*
 	 * Constructor/initialization method
 	 */
-	function extent(extentConfig) {
+	function _instance(extentConfig) {
 		if(null != extentConfig) {
 			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
 			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
@@ -75,37 +75,37 @@ function sentio_util_extent(config) {
 	/*
 	 * Get/Set the default value for the extent
 	 */
-	extent.defaultValue = function(v) {
+	_instance.defaultValue = function(v) {
 		if(!arguments.length) { return _config.defaultValue; }
 		setDefaultValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the override value for the extent
 	 */
-	extent.overrideValue = function(v) {
+	_instance.overrideValue = function(v) {
 		if(!arguments.length) { return _config.overrideValue; }
 		setOverrideValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the value accessor for the extent
 	 */
-	extent.getValue = function(v) {
+	_instance.getValue = function(v) {
 		if(!arguments.length) { return _fn.getValue; }
 		setGetValue(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
 	 * Get/Set the filter fn for the extent
 	 */
-	extent.filter = function(v) {
+	_instance.filter = function(v) {
 		if(!arguments.length) { return _fn.filter; }
 		setFilter(v);
-		return extent;
+		return _instance;
 	};
 
 	/*
@@ -113,7 +113,7 @@ function sentio_util_extent(config) {
 	 * - Default values are used in the absence of data
 	 * - Override values are used to clamp or extend the extent
 	 */
-	extent.getExtent = function(data) {
+	_instance.getExtent = function(data) {
 		var toReturn;
 		var ov = _config.overrideValue;
 
@@ -125,11 +125,11 @@ function sentio_util_extent(config) {
 
 			if(null != data) {
 				// Iterate over each element of the data
-				data.forEach(function(element) {
+				data.forEach(function(element, i) {
 					// If the element passes the filter, then update the extent
-					if(_fn.filter(element)) {
+					if(_fn.filter(element, i)) {
 						foundData = true;
-						var v = _fn.getValue(element);
+						var v = _fn.getValue(element, i);
 						toReturn[0] = Math.min(toReturn[0], v);
 						toReturn[1] = Math.max(toReturn[1], v);
 					}
@@ -168,9 +168,96 @@ function sentio_util_extent(config) {
 
 
 	// Initialize the model
-	extent(config);
+	_instance(config);
 
-	return extent;
+	return _instance;
+}
+sentio.util.multiExtent = sentio_util_multi_extent;
+
+function sentio_util_multi_extent(config) {
+	'use strict';
+
+	/**
+	 * Private variables
+	 */
+
+	var _fn = {
+		values: function(d) { return d.values; }
+	};
+
+	var _extent = sentio.util.extent();
+
+	/**
+	 * Private Functions
+	 */
+
+	function setExtent(v) {
+		_extent = v;
+	}
+
+	/*
+	 * Constructor/initialization method
+	 */
+	function _instance(config) {
+		if(null != config && null != config.extent) {
+			setExtent(config.extent);
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	/*
+	 * Get/Set the extent to use 
+	 */
+	_instance.extent = function(v) {
+		if(!arguments.length) { return _extent; }
+		setExtent(v);
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the values accessor function
+	 */
+	_instance.values = function(v) {
+		if(!arguments.length) { return _fn.values; }
+		_fn.values = v;
+		return _instance;
+	};
+
+	/*
+	 * Calculate the extent given some data.
+	 * - Default values are used in the absence of data
+	 * - Override values are used to clamp or extend the extent
+	 */
+	_instance.getExtent = function(data) {
+		var toReturn;
+
+		data.forEach(function(e) {
+			var tExtent = _extent.getExtent(_fn.values(e));
+			if(null == toReturn) {
+				toReturn = tExtent;
+			}
+			else {
+				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
+				toReturn[1] = Math.max(toReturn[1], tExtent[1]);
+			}
+		});
+
+		// In case there was no data
+		if(null == toReturn) {
+			toReturn = _extent.getExtent([]);
+		}
+
+		return toReturn;
+	};
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
 }
 var sentio_model = sentio.model = {};
 sentio.model.bins = sentio_model_bins;
@@ -751,7 +838,7 @@ function sentio_chart_donut() {
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
 		label: function(d, i) { return d.key + ' (' + d.value + ')'; },
-		colorFn: function(d) { return _fn.key(d.data) }
+		colorFn: function(d) { return _fn.key(d.data); }
 	};
 
 
@@ -787,7 +874,7 @@ function sentio_chart_donut() {
 	 */
 	_instance.init = function(container){
 		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'donut');
+		_element.div = container.append('div').attr('class', 'sentio donut');
 
 		// Create the svg element
 		_element.svg = _element.div.append('svg');
@@ -888,7 +975,7 @@ function sentio_chart_donut() {
 			});
 
 		g.attr('key', function(d) { return _fn.key(d.data); })
-			.attr('fill', function(d, i) { return _scale.color(_fn.colorFn(d)) });
+			.attr('fill', function(d, i) { return _scale.color(_fn.colorFn(d)); });
 
 		g.exit().remove();
 	}
@@ -1030,6 +1117,352 @@ function sentio_chart_donut() {
 
 	return _instance;
 }
+sentio.chart.matrix = sentio_chart_matrix;
+
+function sentio_chart_matrix() {
+	'use strict';
+
+	// Chart dimensions
+	var _cellSize = 16;
+	var _cellMargin = 1;
+	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
+
+	// Transition duration
+	var _duration = 500;
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3.dispatch('onMouseOverCell', 'onMouseOutCell', 'onClickCell', 'onMouseOverRow', 'onMouseOutRow', 'onClickRow');
+
+	// Function handlers
+	var _fn = {
+		updateActiveSeries: function(d) {
+			var seriesLabels = _element.g.chart.selectAll('.row text');
+
+			if(null != d) {
+				// Set the highlight on the row
+				var seriesKey = _fn.seriesKey(d);
+				seriesLabels.classed('active', function(series, i){ return _fn.seriesKey(series) == seriesKey; });
+			}
+			else {
+				// Now update the style
+				seriesLabels.classed('active', false);
+			}
+		},
+		onMouseOverRow: function(d, i) {
+			_fn.updateActiveSeries(d);
+			_dispatch.onMouseOverRow(d, this);
+		},
+		onMouseOutRow: function(d, i) {
+			_fn.updateActiveSeries();
+			_dispatch.onMouseOutRow(d, this);
+		},
+		onClickRow: function(d, i) {
+			_dispatch.onClickRow(d, this);
+		},
+		onMouseOverCell: function(d, i) {
+			_dispatch.onMouseOverCell(d, this);
+		},
+		onMouseOutCell: function(d, i) {
+			_dispatch.onMouseOutCell(d, this);
+		},
+		onClickCell: function(d, i) {
+			_dispatch.onClickCell(d, this);
+		},
+		seriesKey: function(d, i) { return d.key; },
+		seriesLabel: function(d, i) { return d.label; },
+		seriesValues: function(d, i) { return d.values; },
+		key: function(d, i) { return d.key; },
+		value: function(d, i) { return d.value; }
+	};
+
+	// Extents
+	var _extent = {
+		x: sentio.util.extent().getValue(_fn.key),
+		value: sentio.util.extent().getValue(_fn.value),
+		multi: sentio.util.multiExtent()
+	};
+
+	// Scales for x, y, and color
+	var _scale = {
+		x: d3.scale.linear(),
+		y: d3.scale.ordinal(),
+		color: d3.scale.linear().range(['#e7e7e7', '#008500'])
+	};
+
+	var _axis = {
+		x: d3.svg.axis().scale(_scale.x).orient('top').outerTickSize(0).innerTickSize(2)
+	};
+
+	var _element = {
+		div: undefined,
+		svg: undefined,
+		g: {
+			chart: undefined,
+			xAxis: undefined
+		}
+	};
+
+	var _data = [];
+
+	var _instance = function () {};
+
+	_instance.init = function(d3Container) {
+		// Add the svg element
+		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
+		_element.svg = _element.div.append('svg');
+
+		// Add the axis
+		_element.g.xAxis = _element.svg.append('g').attr('class', 'x axis');
+
+		// Add a group for the chart itself
+		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	_instance.data = function(d) {
+		if(!arguments.length) {
+			return _data;
+		}
+		_data = d || [];
+		return _instance;
+	};
+
+	_instance.resize = function() { };
+
+	_instance.redraw = function() {
+		// Determine the number of rows to render
+		var rowCount = _data.length;
+
+		// Determine the number of boxes to render (assume complete data)
+		var boxes = [];
+		if(rowCount > 0) {
+			boxes = _fn.seriesValues(_data[0]);
+		}
+		var boxCount = boxes.length;
+
+		// Dimensions of the visualization
+		var cellSpan = _cellMargin + _cellSize;
+
+		// calculate the width/height of the svg
+		var width = boxCount*cellSpan + _cellMargin,
+			height = rowCount*cellSpan + _cellMargin;
+
+		// scale the svg to the right size
+		_element.svg
+			.attr('width', width + _margin.left + _margin.right)
+			.attr('height', height + _margin.top + _margin.bottom);
+
+		// Configure the scales
+		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _cellMargin - cellSpan]);
+		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
+
+		// Draw the x axis
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.call(_axis.x);
+
+		/**
+		 * Chart Manipulation
+		 */
+
+		/*
+		 * Row Join
+		 */
+		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+
+		/*
+		 * Row Update Only
+		 */
+
+		/*
+		 * Row Enter Only
+		 * Build the row structure
+		 */
+		var rowEnter = row.enter().append('g');
+		rowEnter
+			.style('opacity', 0.1)
+			.attr('class', 'row')
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
+			.on('mouseover', _fn.onMouseOverRow)
+			.on('mouseout', _fn.onMouseOutRow)
+			.on('click', _fn.onClickRow);
+
+		// Also must append the label of the row
+		rowEnter.append('text')
+			.attr('class', 'series label')
+			.style('text-anchor', 'end')
+			.attr('x', -6)
+			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('dy', '.32em');
+
+		// Also must append a line
+		rowEnter.append('line')
+			.attr('class', 'series tick')
+			.attr('x1', -3)
+			.attr('x2', 0)
+			.attr('y1', _cellMargin + (_cellSize/2))
+			.attr('y2', _cellMargin + (_cellSize/2));
+
+		/*
+		 * Row Enter + Update
+		 */
+		// Transition rows to their new positions
+		row.transition().duration(_duration)
+			.style('opacity', 1)
+			.attr('transform', function(d, i){
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+			});
+
+		// Update the series labels in case they changed
+		row.select('text.series.label')
+			.text(_fn.seriesLabel);
+
+		/*
+		 * Row Exit
+		 */
+		row.exit()
+			.transition().duration(_duration)
+			.style('opacity', 0.1)
+			.remove();
+
+
+		/*
+		 * Cell Join - Will be done on row enter + exit
+		 */
+		var rowCell = row.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
+
+		/*
+		 * Cell Update Only
+		 */
+
+		/*
+		 * Cell Enter Only
+		 */
+		rowCell.enter().append('rect')
+			.attr('class', 'cell')
+			.style('opacity', 0.1)
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
+			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('y', _cellMargin)
+			.attr('height', _cellSize)
+			.attr('width', _cellSize)
+			.on('mouseover', _fn.onMouseOverCell)
+			.on('mouseout', _fn.onMouseOutCell)
+			.on('click', _fn.onClickCell);
+
+		/*
+		 * Cell Enter + Update
+		 * Update fill, move to proper x coordinate
+		 */
+		rowCell.transition().duration(_duration)
+			.style('opacity', 1)
+			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+
+		/*
+		 * Cell Remove
+		 */
+		rowCell.exit().transition().duration(_duration)
+			.attr('width', 0)
+			.style('opacity', 0.1)
+			.remove();
+
+		return _instance;
+	};
+
+
+	_instance.cellSize = function(v) {
+		if(!arguments.length) { return _cellSize; }
+		_cellSize = v;
+		return _instance;
+	};
+	_instance.cellMargin = function(v) {
+		if(!arguments.length) { return _cellMargin; }
+		_cellMargin = v;
+		return _instance;
+	};
+	_instance.margin = function(v) {
+		if(!arguments.length) { return _margin; }
+		_margin = v;
+		return _instance;
+	};
+
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return _instance;
+	};
+
+	_instance.seriesKey = function(v) {
+		if(!arguments.length) { return _fn.seriesKey; }
+		_fn.seriesKey = v;
+		return _instance;
+	};
+	_instance.seriesLabel = function(v) {
+		if(!arguments.length) { return _fn.seriesLabel; }
+		_fn.seriesLabel = v;
+		return _instance;
+	};
+	_instance.seriesValues = function(v) {
+		if(!arguments.length) { return _fn.seriesValues; }
+		_fn.seriesValues = v;
+		return _instance;
+	};
+	_instance.key = function(v) {
+		if(!arguments.length) { return _fn.key; }
+		_extent.x.getValue(v);
+		_fn.key = v;
+		return _instance;
+	};
+	_instance.value = function(v) {
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
+		_extent.value.getValue(v);
+		return _instance;
+	};
+
+	_instance.colorScale = function(v) {
+		if(!arguments.length) { return _scale.color; }
+		_scale.color = v;
+		return _instance;
+	};
+	_instance.xScale = function(v) {
+		if(!arguments.length) { return _scale.xScale; }
+		_scale.xScale = v;
+		_axis.x.scale(v);
+		return _instance;
+	};
+	_instance.yScale = function(v) {
+		if(!arguments.length) { return _scale.yScale; }
+		_scale.yScale = v;
+		return _instance;
+	};
+
+	_instance.xExtent = function(v) {
+		if(!arguments.length) { return _extent.x; }
+		_extent.x = v;
+		return _instance;
+	};
+	_instance.yExtent = function(v) {
+		if(!arguments.length) { return _extent.y; }
+		_extent.y = v;
+		return _instance;
+	};
+	_instance.valueExtent = function(v) {
+		if(!arguments.length) { return _extent.value; }
+		_extent.value = v;
+		return _instance;
+	};
+
+	_instance.dispatch = function(v) {
+		if(!arguments.length) { return _dispatch; }
+		return _instance;
+	};
+
+	return _instance;
+}
 sentio.chart.verticalBars = sentio_chart_vertical_bars;
 
 function sentio_chart_vertical_bars() {
@@ -1094,7 +1527,7 @@ function sentio_chart_vertical_bars() {
 	 */
 	_instance.init = function(container){
 		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'bars-vertical');
+		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
 		_instance.resize();
 
 		return _instance;
@@ -1270,6 +1703,7 @@ function sentio_timeline_line() {
 			getValue: function(d) { return d[1]; }
 		})
 	};
+	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -1323,7 +1757,12 @@ function sentio_timeline_line() {
 		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
 	};
 
-	var _data = [], _markers = [];
+	var _data = [];
+
+	var _markers = {
+		values: [],
+		dispatch: d3.dispatch('onclick')
+	};
 
 	function brushstart() {
 		var extent = getFilter();
@@ -1361,8 +1800,11 @@ function sentio_timeline_line() {
 	 * creation and setup
 	 */
 	_instance.init = function(container){
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
 		// Create the SVG element
-		_element.svg = container.append('svg');
+		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
@@ -1374,9 +1816,6 @@ function sentio_timeline_line() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
 			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
@@ -1387,6 +1826,9 @@ function sentio_timeline_line() {
 				.on('brushstart', brushstart)
 				.on('brush', brush);
 		}
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -1411,8 +1853,8 @@ function sentio_timeline_line() {
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers; }
-		_markers = v;
+		if(!arguments.length) { return _markers.dispatch; }
+		_markers.values = v;
 		return _instance;
 	};
 
@@ -1426,6 +1868,10 @@ function sentio_timeline_line() {
 		if(null != _markerHoverCallback) {
 			_markerHoverCallback(d);
 		}
+	}
+
+	function markerClicked(d) {
+		_markers.dispatch.onclick(d);
 	}
 
 	/*
@@ -1463,20 +1909,7 @@ function sentio_timeline_line() {
 
 	// Multi Extent Combiner
 	function multiExtent(data, extent) {
-		var nExtent;
-		data.forEach(function(element) {
-			var tExtent = extent.getExtent(element.data);
-			if(!nExtent){
-				nExtent = tExtent;
-			} else {
-				nExtent[0] = Math.min(nExtent[0], tExtent[0]);
-				nExtent[1] = Math.max(nExtent[1], tExtent[1]);
-			}
-		});
-		if(null == nExtent) {
-			nExtent = extent.getExtent([]);
-		}
-		return nExtent;
+		return _multiExtent.extent(extent).getExtent(data);
 	}
 
 	/*
@@ -1542,14 +1975,15 @@ function sentio_timeline_line() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
-			.data(_markers, function(d) { 
+			.data(_markers.values, function(d) {
 				return _markerValue.x(d); 
 			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', invokeMarkerCallback);
+			.on('mouseover', invokeMarkerCallback)
+			.on('click', markerClicked);
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');

@@ -13,44 +13,49 @@
 
 </head>
 <body>
-<div>Vertical Bar Chart</div>
-<div id="chart"></div>
-<button onclick="updateData()">Update Data</button>
 
-<script type="text/javascript">
-	var chartDiv = d3.select('#chart');
-	var chart = sentio.chart.donut()
-			.width(300);
+	<h1>Donut Chart Example</h1>
+	<p>Standalong D3 Donut Chart Example</p>
 
-	chart.dispatch()
-			.on('onmouseover', function(d) { console.log(d); })
-			.on('onmouseout', function(d) { console.log(d); })
-			.on('onclick', function(d) { console.log(d); });
+	<div id="chart"></div>
 
-	chart.label(function(d) {
-		return 'Label ' + d.key + ' (' + d.value + ')';
-	});
+	<button onclick="updateData()">Update Data</button>
 
-	chart.init(chartDiv);
-	updateData();
+	<script type="text/javascript">
+		var chartDiv = d3.select('#chart');
+		var chart = sentio.chart.donut()
+				.width(300)
+				.label(function(d) { return 'label: ' + d.key + ' (' + d.value + ')'; });
 
-	function updateData(){
-		var data = [];
-		for(var i=0; i<4; i++){
-			var d = {
-				key: 'key' + i,
-				value: Math.floor(Math.random() * 10)
-			};
-			if (i==2) {
-				d.key = 'long test key'
+		chart.dispatch()
+				.on('onmouseover', function(d) { console.log(d); })
+				.on('onmouseout', function(d) { console.log(d); })
+				.on('onclick', function(d) { console.log(d); });
+
+		chart.label(function(d) {
+			return 'Label ' + d.key + ' (' + d.value + ')';
+		});
+
+		chart.init(chartDiv);
+		updateData();
+
+		function updateData(){
+			var data = [];
+			for(var i=0; i<4; i++){
+				var d = {
+					key: 'key' + i,
+					value: Math.floor(Math.random() * 10)
+				};
+				if (i==2) {
+					d.key = 'long test key'
+				}
+				data.push(d);
 			}
-			data.push(d);
+
+			chart.data(data).redraw();
 		}
 
-		chart.data(data).redraw();
-	}
-
-</script>
+	</script>
 
 </body>
 </html>

@@ -18,3 +18,7 @@ node_modules
 
 # Bower modules
 src/lib
+
+# Idea artifacts
+*.iml
+.idea/

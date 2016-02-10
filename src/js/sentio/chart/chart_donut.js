@@ -38,7 +38,7 @@ function sentio_chart_donut() {
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
 		label: function(d, i) { return d.key + ' (' + d.value + ')'; },
-		colorFn: function(d) { return _fn.key(d.data) }
+		colorFn: function(d) { return _fn.key(d.data); }
 	};
 
 
@@ -74,7 +74,7 @@ function sentio_chart_donut() {
 	 */
 	_instance.init = function(container){
 		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'donut');
+		_element.div = container.append('div').attr('class', 'sentio donut');
 
 		// Create the svg element
 		_element.svg = _element.div.append('svg');
@@ -175,7 +175,7 @@ function sentio_chart_donut() {
 			});
 
 		g.attr('key', function(d) { return _fn.key(d.data); })
-			.attr('fill', function(d, i) { return _scale.color(_fn.colorFn(d)) });
+			.attr('fill', function(d, i) { return _scale.color(_fn.colorFn(d)); });
 
 		g.exit().remove();
 	}

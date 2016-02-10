@@ -1,11 +1,18 @@
-.donut svg {
-	overflow: visible;
+/*
+=======================================
+	Donut Chart
+=======================================
+*/
+
+.sentio.donut svg {
+	padding: 2px;
 }
-.donut .arc{
+
+.sentio.donut .arc{
 	stroke: none;
 }
 
-.donut .arc:hover {
+.sentio.donut .arc:hover {
 	stroke-width: 1.5px;
 	stroke: #000;
 }

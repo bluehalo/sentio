@@ -36,6 +36,7 @@ function sentio_timeline_line() {
 			getValue: function(d) { return d[1]; }
 		})
 	};
+	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -89,7 +90,12 @@ function sentio_timeline_line() {
 		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
 	};
 
-	var _data = [], _markers = [];
+	var _data = [];
+
+	var _markers = {
+		values: [],
+		dispatch: d3.dispatch('onclick')
+	};
 
 	function brushstart() {
 		var extent = getFilter();
@@ -127,8 +133,11 @@ function sentio_timeline_line() {
 	 * creation and setup
 	 */
 	_instance.init = function(container){
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
 		// Create the SVG element
-		_element.svg = container.append('svg');
+		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
@@ -140,9 +149,6 @@ function sentio_timeline_line() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
 			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
@@ -153,6 +159,9 @@ function sentio_timeline_line() {
 				.on('brushstart', brushstart)
 				.on('brush', brush);
 		}
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -177,8 +186,8 @@ function sentio_timeline_line() {
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers; }
-		_markers = v;
+		if(!arguments.length) { return _markers.dispatch; }
+		_markers.values = v;
 		return _instance;
 	};
 
@@ -192,6 +201,10 @@ function sentio_timeline_line() {
 		if(null != _markerHoverCallback) {
 			_markerHoverCallback(d);
 		}
+	}
+
+	function markerClicked(d) {
+		_markers.dispatch.onclick(d);
 	}
 
 	/*
@@ -229,20 +242,7 @@ function sentio_timeline_line() {
 
 	// Multi Extent Combiner
 	function multiExtent(data, extent) {
-		var nExtent;
-		data.forEach(function(element) {
-			var tExtent = extent.getExtent(element.data);
-			if(!nExtent){
-				nExtent = tExtent;
-			} else {
-				nExtent[0] = Math.min(nExtent[0], tExtent[0]);
-				nExtent[1] = Math.max(nExtent[1], tExtent[1]);
-			}
-		});
-		if(null == nExtent) {
-			nExtent = extent.getExtent([]);
-		}
-		return nExtent;
+		return _multiExtent.extent(extent).getExtent(data);
 	}
 
 	/*
@@ -308,14 +308,15 @@ function sentio_timeline_line() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
-			.data(_markers, function(d) { 
+			.data(_markers.values, function(d) {
 				return _markerValue.x(d); 
 			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', invokeMarkerCallback);
+			.on('mouseover', invokeMarkerCallback)
+			.on('click', markerClicked);
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');
