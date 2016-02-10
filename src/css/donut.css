@@ -3,16 +3,16 @@
 	Donut Chart
 =======================================
 */
-
-.sentio.donut svg {
-	padding: 2px;
+.sentio.donut .legend {
+	font: 12px sans-serif;
 }
 
 .sentio.donut .arc{
 	stroke: none;
 }
 
-.sentio.donut .arc:hover {
+.sentio.donut .arc.active,
+.sentio.donut .legend .entry.active rect {
 	stroke-width: 1.5px;
 	stroke: #000;
 }

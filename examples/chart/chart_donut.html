@@ -24,13 +24,13 @@
 	<script type="text/javascript">
 		var chartDiv = d3.select('#chart');
 		var chart = sentio.chart.donut()
-				.width(300)
+				.width(300).height(300)
 				.label(function(d) { return 'label: ' + d.key + ' (' + d.value + ')'; });
 
 		chart.dispatch()
-				.on('onmouseover', function(d) { console.log(d); })
-				.on('onmouseout', function(d) { console.log(d); })
-				.on('onclick', function(d) { console.log(d); });
+				.on('onMouseOver', function(d) { console.log(d); })
+				.on('onMouseOut', function(d) { console.log(d); })
+				.on('onClick', function(d) { console.log(d); });
 
 		chart.label(function(d) {
 			return 'Label ' + d.key + ' (' + d.value + ')';

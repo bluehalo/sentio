@@ -4,10 +4,12 @@ function sentio_chart_donut() {
 	'use strict';
 
 	// Chart height/width
-	var _width = 460;
-	var _height = 300;
+	var _width = 400;
+	var _height = 400;
+	var _margin = { top: 2, bottom: 2, right: 2, left: 2 };
 
 	// Inner and outer radius settings
+	var _radius;
 	var _innerRadiusRatio = 0.7;
 
 	// Transition duration
@@ -17,23 +19,50 @@ function sentio_chart_donut() {
 	var _legend = {
 		enabled: true,
 		markSize: 16,
+		markMargin: 8,
+		labelOffset: 2,
 		position: 'center', // only option right now
 		layout: 'vertical'
 	};
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
+	var _dispatch = d3.dispatch('onMouseOver', 'onMouseOut', 'onClick');
 
 	// Function handlers
 	var _fn = {
+		updateActiveElement: function(d) {
+			var legendEntries = _element.gLegend.selectAll('g.entry');
+			var arcs = _element.gChart.selectAll('path.arc');
+
+			if(null != d && null != d.data) {
+				d = d.data;
+			}
+
+			if(null != d) {
+				// Set the highlight on the row
+				var key = _fn.key(d);
+				legendEntries.classed('active', function(e){
+					return _fn.key(e) == key;
+				});
+				arcs.classed('active', function(e){
+					return _fn.key(e.data) == key;
+				});
+			}
+			else {
+				legendEntries.classed('active', false);
+				arcs.classed('active', false);
+			}
+		},
 		onMouseOver: function(d, i) {
-			_dispatch.onmouseover(d, this);
+			_fn.updateActiveElement(d);
+			_dispatch.onMouseOver(d, this);
 		},
 		onMouseOut: function(d, i) {
-			_dispatch.onmouseout(d, this);
+			_fn.updateActiveElement();
+			_dispatch.onMouseOut(d, this);
 		},
 		onClick: function(d, i) {
-			_dispatch.onclick(d, this);
+			_dispatch.onClick(d, this);
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
@@ -102,20 +131,22 @@ function sentio_chart_donut() {
 	 * Updates all the elements that depend on the size of the various components
 	 */
 	_instance.resize = function() {
+		var chartWidth = _width - _margin.right - _margin.left;
+		var chartHeight = _height - _margin.top - _margin.bottom;
+		_radius = (Math.min(chartHeight, chartWidth))/2;
+
 		_element.svg
 			.attr('width', _width)
 			.attr('height', _height);
 
 		_element.gChart
-			.attr('transform', 'translate(' + (_width / 2) + ',' + (_height / 2) + ')');
+			.attr('transform', 'translate(' + (_margin.left + _radius) + ',' + (_margin.top + _radius) + ')');
 
-		// The outer radius is half of the width of the chart itself
-		var radius = _width/2;
-		_layout.arc.innerRadius(radius * _innerRadiusRatio).outerRadius(radius);
+		// The outer radius is half of the lesser of the two (chartWidth/chartHeight)
+		_layout.arc.innerRadius(_radius * _innerRadiusRatio).outerRadius(_radius);
 
 		// Update legend positioning
-		_element.gLegend.selectAll('g.legend-group')
-			.attr('transform', legendTransform);
+		_element.gLegend.attr('transform', legendTransform());
 
 		return _instance;
 	};
@@ -142,7 +173,7 @@ function sentio_chart_donut() {
 		 * Join the data
 		 */
 		var g = _element.gChart.selectAll('path.arc')
-			.data(_layout.pie(_data), function(d) { return _fn.key(d.data); });
+			.data(_layout.pie(_data), function(d, i) { return _fn.key(d.data, i); });
 
 		/*
 		 * Update Only
@@ -173,28 +204,27 @@ function sentio_chart_donut() {
 				};
 			});
 
-		g.attr('key', function(d) { return _fn.key(d.data); })
-			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data)); });
+		g.attr('key', function(d, i) { return _fn.key(d.data, i); })
+			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data, i)); });
 
 		g.exit().remove();
 	}
 
-	function legendTransform(d, i) {
-		var height, vert;
-		var offset = 0;
-		height = _legend.markSize + 2;
-		horz = _legend.markSize;
+	function legendTransform() {
+		var entrySpan = _legend.markSize + _legend.markMargin;
 
 		// Only option is 'center' for now
 		if (_legend.position === 'center') {
-			var centerHeight = _height/2;
+			// The center position of the chart
+			var centerX = _margin.left + _radius;
+			var centerY = _margin.top + _radius;
+			var legendWidth = (null == _element.gLegend._maxWidth)? 0 : _element.gLegend._maxWidth;
+			var legendHeight = entrySpan*_data.length + _legend.markMargin;
 
-			offset = centerHeight - height * _scale.color.domain().length / 2;
+			var offsetX = legendWidth/2;
+			var offsetY = legendHeight/2;
 
-			var centerWidth = _width/2;
-			var horz = centerWidth - _element.gLegend._maxWidth/2;
-			vert = (i * height) + offset;
-			return 'translate(' + horz + ',' + vert + ')';
+			return 'translate(' + (centerX - offsetX) + ',' + (centerY - offsetY) + ')';
 		} else {
 			// TODO
 		}
@@ -204,21 +234,21 @@ function sentio_chart_donut() {
 		/*
 		 * Join the data
 		 */
-		var gLegendGroup = _element.gLegend.selectAll('g.legend-group')
-			.data(_data, function(d) { return _fn.key(d); });
+		var gLegendGroup = _element.gLegend.selectAll('g.entry')
+			.data(_data, function(d, i) { return _fn.key(d, i); });
 
 		/*
 		 * Enter Only
 		 * Create a g (gLegendGroup) to add the rect & text label,
 		 * register the callbacks, apply the transform to position each gLegendGroup
 		 */
-		var gLegendGroupEnter = gLegendGroup.enter()
-			.append('g')
-			.attr('class', 'legend-group');
+		var gLegendGroupEnter = gLegendGroup.enter().append('g')
+			.attr('class', 'entry')
+			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } );
 
 		// Add the legend's rect
 		var rect = gLegendGroupEnter
-			.append("rect")
+			.append('rect')
 			.attr('width', _legend.markSize)
 			.attr('height', _legend.markSize)
 			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
@@ -226,9 +256,9 @@ function sentio_chart_donut() {
 		// Add the legend text
 		gLegendGroupEnter
 			.append('text')
-			.attr('x', _legend.markSize + 2)
-			.attr('y', _legend.markSize - 2)
-			.text(function(d) { return _fn.key(d); });
+			.attr('x', _legend.markSize + _legend.markMargin)
+			.attr('y', _legend.markSize - _legend.labelOffset)
+			.text(function(d, i) { return _fn.label(d, i); });
 
 		// Set up events
 		gLegendGroupEnter
@@ -237,7 +267,6 @@ function sentio_chart_donut() {
 			.on('click', _fn.onClick);
 
 		// Position each rect on both enter and update to fully account for changing widths and sizes
-		var height, vert;
 		gLegendGroupEnter
 			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
 			.each(function(d, i) {
@@ -247,8 +276,10 @@ function sentio_chart_donut() {
 				} else {
 					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
 				}
-			})
-			.attr('transform', legendTransform);
+			});
+
+		// Reassert the legend position
+		_element.gLegend.attr('transform', legendTransform());
 
 	}
 
