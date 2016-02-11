@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.0-rc2 */
+/*! sentio Version: 0.7.1 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -1044,7 +1044,10 @@ function sentio_chart_donut() {
 		 */
 		var gLegendGroupEnter = gLegendGroup.enter().append('g')
 			.attr('class', 'entry')
-			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } );
+			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } )
+			.on('mouseover', _fn.onMouseOver)
+			.on('mouseout', _fn.onMouseOut)
+			.on('click', _fn.onClick);
 
 		// Add the legend's rect
 		var rect = gLegendGroupEnter
@@ -1057,17 +1060,16 @@ function sentio_chart_donut() {
 		gLegendGroupEnter
 			.append('text')
 			.attr('x', _legend.markSize + _legend.markMargin)
-			.attr('y', _legend.markSize - _legend.labelOffset)
+			.attr('y', _legend.markSize - _legend.labelOffset);
+
+		/*
+		 * Enter + Update
+		 */
+		gLegendGroup.select('text')
 			.text(function(d, i) { return _fn.label(d, i); });
 
-		// Set up events
-		gLegendGroupEnter
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
-
 		// Position each rect on both enter and update to fully account for changing widths and sizes
-		gLegendGroupEnter
+		gLegendGroup
 			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
 			.each(function(d, i) {
 				if (i === 0) {
