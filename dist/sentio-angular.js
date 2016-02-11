@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.3 */
+/*! sentio Version: 0.7.5 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window', '$timeout', '$log',
@@ -463,7 +463,7 @@ function($document, $window, $timeout, $log) {
 			scope.$watchCollection('xExtent', function(n, o){
 				if(null == o && null == n){ return; }
 
-				timeline.xExtent(n).overrideValue(n);
+				timeline.xExtent().overrideValue(n);
 				redraw();
 			});
 

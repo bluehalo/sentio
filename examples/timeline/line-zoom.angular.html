@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html data-ng-app="demoapp">
+
+<head>
+	<title>Static timeline. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../src/lib/angular/angular.js"></script>
+	<script src="../../src/lib/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+	<script src="../../dist/sentio-angular.js" charset="utf-8"></script>
+
+	<script>
+		var app = angular.module("demoapp", ["sentio"]);
+		app.controller("DemoController", [ "$scope", "$timeout", function($scope, $timeout) {
+
+			$scope.model = [];
+
+			var interval = 60000;
+			var binSize = 1000;
+			var hwm = Date.now();
+
+			$scope.generateData = function(start) {
+				var toReturn = [];
+				for(var i=0; i<interval/binSize; i++) {
+					toReturn.push([start + i * binSize, Math.random() * 10]);
+				}
+				return toReturn;
+			};
+
+			$scope.updateData = function() {
+				hwm = Date.now();
+				$scope.model = [{ key: 'series1', data: $scope.generateData(hwm - interval) }];
+			}
+
+			$scope.$watch('filterState', function(n, o) {
+				if(null == $scope.filterState || $scope.filterState[0]) {
+					$scope.xExtent = [undefined, undefined];
+				}
+				else {
+					$scope.xExtent = [$scope.filterState[1], $scope.filterState[2]];
+				}
+			});
+
+			$scope.updateData();
+
+		}]);
+
+	</script>
+
+	<style>
+	</style>
+
+</head>
+<body data-ng-controller="DemoController">
+	<h1>Static timeline example</h1>
+	<p>AngularJS integrated D3 static timeline example</p>
+	<div data-sentio-timeline style="height:250px;"
+		data-sentio-model="model"
+		data-sentio-x-extent="xExtent"
+		data-sentio-resize-width=""></div>
+
+	<div data-sentio-timeline style="height:100px;"
+		data-sentio-model="model"
+		data-sentio-resize-width=""
+		data-sentio-filter-state="filterState"></div>
+</body>
+	
+</html>
+
