@@ -281,8 +281,9 @@ function sentio_chart_donut() {
 			});
 
 		// Reassert the legend position
-		_element.gLegend.attr('transform', legendTransform());
+		gLegendGroup.attr('transform', legendTransform());
 
+		gLegendGroup.exit().remove();
 	}
 
 	// Basic Getters/Setters
