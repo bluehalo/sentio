@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.0-rc1 */
+/*! sentio Version: 0.7.0-rc2 */
 describe('Realtime Bins Controller', function() {
 	'use strict';
 

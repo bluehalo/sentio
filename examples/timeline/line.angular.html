@@ -50,8 +50,10 @@
 				console.log(filterState);
 			};
 
-			$scope.markerClicked = function(marker) {
-				console.log(marker);
+			$scope.configure = function(chart) {
+				chart.markers().on('onclick', function(marker) {
+					console.log(marker);
+				});
 			};
 
 			$scope.updateFilter = function() {
@@ -83,11 +85,11 @@
 	<div data-sentio-timeline style="height:250px;"
 		data-sentio-model="model"
 		data-sentio-markers="markers"
-		data-sentio-marker-clicked="markerClicked(m)"
 		data-sentio-y-extent="yExtent"
 		data-sentio-resize-width=""
 		data-sentio-filter-fn="filter(filterState)"
-		data-sentio-filter-state="filterState"></div>
+		data-sentio-filter-state="filterState"
+		data-sentio-configure-fn="configure(timeline)"></div>
 
 	<button data-ng-click="updateData()">Update Data</button>
 	<button data-ng-click="updateFilter()">Update Filter</button>

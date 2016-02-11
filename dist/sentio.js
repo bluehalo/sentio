@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.0-rc1 */
+/*! sentio Version: 0.7.0-rc2 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
