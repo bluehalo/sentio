@@ -281,7 +281,7 @@ function sentio_chart_donut() {
 			});
 
 		// Reassert the legend position
-		gLegendGroup.attr('transform', legendTransform());
+		_element.gLegend.attr('transform', legendTransform());
 
 		gLegendGroup.exit().remove();
 	}

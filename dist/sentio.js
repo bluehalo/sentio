@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.2 */
+/*! sentio Version: 0.7.3 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -1081,7 +1081,7 @@ function sentio_chart_donut() {
 			});
 
 		// Reassert the legend position
-		gLegendGroup.attr('transform', legendTransform());
+		_element.gLegend.attr('transform', legendTransform());
 
 		gLegendGroup.exit().remove();
 	}

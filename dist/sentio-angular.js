@@ -1,4 +1,4 @@
-/*! sentio Version: 0.7.2 */
+/*! sentio Version: 0.7.3 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window', '$timeout', '$log',
