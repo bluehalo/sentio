@@ -1,6 +1,6 @@
 {
   "name": "sentio",
-  "version": "0.7.5",
+  "version": "0.7.6",
   "repository": {
     "type": "git",
     "url": "https://github.com/Asymmetrik/sentio.git"
@@ -26,5 +26,11 @@
     "mocha": "2.3",
     "run-sequence": "1.1",
     "should": "8.1"
+  },
+  "jspm": {
+    "main": "dist",
+    "files": [
+      "dist"
+    ]
   }
 }
