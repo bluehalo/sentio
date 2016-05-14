@@ -253,8 +253,7 @@ function sentio_chart_donut() {
 		var rect = gLegendGroupEnter
 			.append('rect')
 			.attr('width', _legend.markSize)
-			.attr('height', _legend.markSize)
-			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
+			.attr('height', _legend.markSize);
 
 		// Add the legend text
 		gLegendGroupEnter
@@ -267,6 +266,9 @@ function sentio_chart_donut() {
 		 */
 		gLegendGroup.select('text')
 			.text(function(d, i) { return _fn.label(d, i); });
+
+		gLegendGroup.select('rect')
+			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
 
 		// Position each rect on both enter and update to fully account for changing widths and sizes
 		gLegendGroup
