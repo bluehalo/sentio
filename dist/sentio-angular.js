@@ -1,4 +1,3 @@
-/*! sentio Version: 0.7.7 */
 angular.module('sentio', []);
 angular.module('sentio.realtime', []);
 angular.module('sentio').directive('sentioDonutChart', [ '$document', '$window', '$timeout', '$log',
@@ -676,3 +675,5 @@ function($document, $window, $timeout, $log) {
 		}
 	};
 }]);
+
+//# sourceMappingURL=sentio-angular.js.map

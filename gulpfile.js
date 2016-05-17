@@ -1,159 +1,196 @@
 'use strict';
 
-var glob = require('glob'),
-	runSequence = require('run-sequence'),
+var _ = require('lodash'),
+	chalk = require('chalk'),
+	del = require('del'),
+	fs = require('fs'),
+	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
+	path = require('path'),
+	q = require('q'),
+	runSequence = require('run-sequence'),
+
 	plugins = gulpLoadPlugins(),
-	p = require('./package.json');
+	pkg = require('./package.json'),
+	assets = require('./config/assets');
 
-var banner = '/*! ' + p.name + ' Version: ' + p.version + ' */\n';
 
-var src = {
-	js: [
-		'src/js/sentio/sentio.js',
+// Banner for the top of generated artifacts
+var banner = '/*! ' + pkg.name + ' Version: ' + pkg.version + ' Copyright Asymmetrik, Ltd. 2015 - All Rights Reserved.*/\n';
 
-		'src/js/sentio/util/util.js',
-		'src/js/sentio/util/**/*.js',
+/*
+ * Helpers
+ */
 
-		'src/js/sentio/model/model.js',
-		'src/js/sentio/model/**/*.js',
 
-		'src/js/sentio/controller/controller.js',
-		'src/js/sentio/controller/**/*.js',
 
-		'src/js/sentio/chart/chart.js',
-		'src/js/sentio/chart/**/*.js',
+// TS Lint
+function tsLint(sourceArr) {
+	return gulp.src(sourceArr)
+		.pipe(plugins.tslint('./config/tslint.conf.json'))
+		.pipe(plugins.tslint.report(
+			require('tslint-stylish'), {
+				emitError: false,
+				sort: true,
+				bell: true
+			}
+		));
+}
 
-		'src/js/sentio/timeline/timeline.js',
-		'src/js/sentio/timeline/**/*.js',
+// Sass Lint
+function sassLint(sourceArr) {
 
-		'src/js/sentio/realtime/realtime.js',
-		'src/js/sentio/realtime/**/*.js',
+}
 
-		'src/js/sentio/**/*.js'
-	],
-	angular: [
-		'src/js/support/angular/sentio.js',
-		'src/js/support/angular/realtime.js',
-		'src/js/support/angular/**/*.js'
-	],
-	css: 'src/css/**/*.css',
-	tests: [
-		'test/**/*.js',
-	]
-};
+// Install Typings
+function installTypings(sourceArr) {
+	return gulp.src(sourceArr)
+		.pipe(plugins.typings());
+}
 
-gulp.task('default', ['build']);
+// Compile Typescript
+function compileTypescript(sourceArr, tsConfig) {
+	var tsResult = gulp.src(sourceArr, { base: './' })
+		.pipe(plugins.sourcemaps.init())
+		.pipe(plugins.typescript(plugins.typescript.createProject(tsConfig)));
 
-gulp.task('watch', ['build'], function() {
-	gulp.watch(['test/**/*', 'src/**/*', '!/src/lib/**/*'], ['build']);
-});
-
-gulp.task('build', function(done) {
-	runSequence(['js', 'js-angular', 'css', 'js-test'], 'test', done);
-});
-
-gulp.task('js', function() {
-	var jsFiles = [];
-	src.js.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
-	});
-
-	return gulp.src(jsFiles)
-
-		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-
-		// Concatenate
-		.pipe(plugins.concat(p.name + '.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-
-		// Uglify
-		.pipe(plugins.uglify())
-		.pipe(plugins.rename(p.name + '.min.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
+	return tsResult.js
+		.pipe(plugins.sourcemaps.write('.'))
+		.pipe(gulp.dest(tsConfig.outDir))
 		.on('error', plugins.util.log);
+}
+
+
+/*
+ * Sentio
+ */
+gulp.task('build-sentio', ['build-sentio-js', 'build-sentio-css', 'build-sentio-tests']);
+
+// Version
+gulp.task('build-version', [], function() {
+	return plugins.file('version.md', banner, { src: true })
+		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('js-angular', function(){
-	var jsFiles = [];
-	src.angular.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
+// JS
+gulp.task('build-sentio-js', ['build-version'], function() {
+	// Generate a list of the sources in a deterministic manner
+	var sourceArr = [ './dist/version.js' ];
+	assets.src.sentio.js.forEach(function(f) {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
-	return gulp.src(jsFiles)
+	gulp.src(sourceArr)
 
-		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
+		// JSHint
+		.pipe(plugins.jshint('./config/jshint.conf.json'))
 		.pipe(plugins.jshint.reporter('jshint-stylish'))
+		.pipe(plugins.jshint.reporter('fail'))
 
-		// Concatenate
-		.pipe(plugins.concat(p.name + '-angular.js'))
-		.pipe(plugins.insert.prepend(banner))
+		// Concat (w/sourcemaps)
+		.pipe(plugins.sourcemaps.init())
+			.pipe(plugins.concat(pkg.name + '.js'))
+		.pipe(plugins.sourcemaps.write('./'))
 		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
 
-		// Uglify
-		.pipe(plugins.uglify({
-			mangle: false
+		// Uglify (wo/sourcemaps)
+		.pipe(plugins.filter([ 'dist/version.js', 'dist/' + pkg.name + '.js' ]))
+		.pipe(plugins.uglify({ preserveComments: 'license' }))
+		.pipe(plugins.rename(pkg.name + '.min.js'))
+		.pipe(gulp.dest('dist'));
+});
+
+// SASS
+gulp.task('build-sentio-css', ['build-version'], function() {
+	// Generate a list of the sources in a deterministic manner
+	var sourceArr = [];
+	assets.src.sentio.sass.forEach(function(f) {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
+	});
+
+	return gulp.src(sourceArr)
+
+		// Lint the Sass
+		.pipe(plugins.sassLint({
+			formatter: 'stylish',
+			rules: require('./config/sasslint.conf.js')
 		}))
-		.pipe(plugins.rename(p.name + '-angular.min.js'))
-		.pipe(plugins.insert.prepend(banner))
+		.pipe(plugins.sassLint.format())
+		.pipe(plugins.sassLint.failOnError())
+
+		// Compile and concat the sass (w/sourcemaps)
+		.pipe(plugins.sourcemaps.init())
+			.pipe(plugins.sass())
+			.pipe(plugins.concat(pkg.name + '.css'))
+			.pipe(plugins.insert.prepend(banner))
+		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
+
+		// Clean the CSS
+		.pipe(plugins.filter([ 'dist/version.js', 'dist/' + pkg.name + '.css' ]))
+		.pipe(plugins.cleanCss())
+		.pipe(plugins.rename(pkg.name + '.min.css'))
+		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('js-test', function(){
-	var jsFiles = [];
-	src.tests.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
+// Tests
+gulp.task('build-sentio-tests', ['build-version'], function() {
+	// Generate a list of the test sources in a deterministic manner
+	var sourceArr = [ './dist/version.js' ];
+	assets.tests.sentio.js.forEach(function(f) {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
-	return gulp.src(jsFiles)
+	gulp.src(sourceArr)
+
+		// JSHint
+		.pipe(plugins.jshint('./config/jshint.conf.json'))
+		.pipe(plugins.jshint.reporter('jshint-stylish'))
+		.pipe(plugins.jshint.reporter('fail'))
+
+		// Concat
+		.pipe(plugins.concat(pkg.name + '-tests.js'))
+		.pipe(gulp.dest('dist'));
+});
+
+
+// Build Angular Support
+gulp.task('build-ng', ['build-version'], function() {
+	var sourceArr = [ './dist/version.js' ];
+	assets.src.ng.js.forEach(function(f) {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
+	});
+
+	return gulp.src(sourceArr)
 
 		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
+		.pipe(plugins.jshint('./config/jshint.conf.json'))
 		.pipe(plugins.jshint.reporter('jshint-stylish'))
+		.pipe(plugins.jshint.reporter('fail'))
 
 		// Concatenate
-		.pipe(plugins.concat(p.name + '-tests.js'))
-		.pipe(plugins.insert.prepend(banner))
+		.pipe(plugins.sourcemaps.init())
+			.pipe(plugins.concat(pkg.name + '-angular.js'))
+		.pipe(plugins.sourcemaps.write('./'))
 		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
-});
-
-gulp.task('css', function(){
-	return gulp.src(src.css)
-
-		// CSS
-		.pipe(plugins.csslint('.csslintrc'))
-		.pipe(plugins.csslint.reporter('text'))
-
-		// Concatenate
-		.pipe(plugins.sort())
-		.pipe(plugins.concat(p.name + '.css'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
 
 		// Uglify
-		.pipe(plugins.cssnano())
-		.pipe(plugins.rename(p.name + '.min.css'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
+		.pipe(plugins.filter([ 'dist/version.js', 'dist/' + pkg.name + '-angular.js' ]))
+		.pipe(plugins.uglify({ preserveComments: 'license' }))
+		.pipe(plugins.rename(pkg.name + '-angular.min.js'))
+		.pipe(gulp.dest('dist'));
 });
 
-gulp.task('test', function () {
+// Build Angular 2 Support
+gulp.task('build-ng2', ['build-version'], function(done) {
+});
+
+
+
+gulp.task('test', ['build-sentio-js', 'build-sentio-tests'], function() {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
 });
+
+gulp.task('build', ['build-sentio', 'build-ng', 'build-ng2']);

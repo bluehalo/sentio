@@ -1,4 +1,3 @@
-/*! sentio Version: 0.7.7 */
 if(null == sentio) { var sentio = {}; }
 var sentio_util = sentio.util = {};
 sentio.util.extent = sentio_util_extent;
@@ -2321,3 +2320,4 @@ function sentio_realtime_timeline() {
 
 	return _instance;
 }
+//# sourceMappingURL=sentio.js.map

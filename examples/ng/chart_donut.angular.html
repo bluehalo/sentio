@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+
+<html data-ng-app="demoapp">
+
+<head>
+	<title>Static Donut chart. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+
+	<script src="../../node_modules/angular/angular.js"></script>
+	<script src="../../node_modules/d3/d3.js" charset="utf-8"></script>
+	<script src="../../dist/sentio.js" charset="utf-8"></script>
+	<script src="../../dist/sentio-angular.js" charset="utf-8"></script>
+
+	<script>
+		var app = angular.module('demoapp', ['sentio']);
+		app.controller('DemoController', [ '$scope', '$timeout', function($scope, $timeout) {
+
+			$scope.model = [];
+
+			$scope.configureDonutChart = function(chart) {
+				chart.label(function(d) {
+					return d.key + '(' + d.value + ')';
+				});
+
+				// Create custom color scale
+				var color = d3.scale.ordinal()
+					.range(['#a6cee3', '#1f78b4', '#b2df8a', '#33a02c']);
+
+				chart.color(color);
+
+			};
+
+			$scope.updateData = function() {
+				var data = [];
+				for(var i=0; i<4; i++){
+					var d = {
+						key: 'key' + i,
+						value: Math.floor(Math.random() * 10)
+					};
+					if (i==2) {
+						d.key = 'long test key'
+					}
+					data.push(d);
+				}
+
+				$scope.model = data;
+			}
+
+			$scope.updateData();
+
+		}]);
+
+	</script>
+
+	<style>
+	</style>
+
+</head>
+<body data-ng-controller="DemoController">
+	<h1>Donut Chart Example</h1>
+	<p>AngularJS integrated D3 donut chart</p>
+	<div data-sentio-donut-chart style="width:300px;height:300px;"
+		data-sentio-model="model"
+		data-sentio-configure-fn="configureDonutChart(chart)"
+		data-sentio-resize-width=""
+		data-sentio-resize-height=""></div>
+
+	<button data-ng-click="updateData()">Update Data</button>
+</body>
+	
+</html>
