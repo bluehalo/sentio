@@ -193,4 +193,10 @@ gulp.task('test', ['build-sentio-js', 'build-sentio-tests'], function() {
 		.pipe(plugins.mochaPhantomjs());
 });
 
-gulp.task('build', ['build-sentio', 'build-ng', 'build-ng2']);
+gulp.task('build', function(done) {
+	runSequence(['build-sentio', 'build-ng', 'build-ng2'], done);
+});
+
+gulp.task('default', function(done) {
+	runSequence('build', 'test', done);
+});
