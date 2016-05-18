@@ -135,12 +135,12 @@ gulp.task('build-sentio-tests', function() {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
-	gulp.src(sourceArr)
+	return gulp.src(sourceArr)
 
-		// JSHint
-		.pipe(plugins.jshint('./config/jshint.conf.json'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-		.pipe(plugins.jshint.reporter('fail'))
+		// ESLint
+		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint.format())
+		.pipe(plugins.eslint.failAfterError())
 
 		// Concat
 		.pipe(plugins.concat(pkg.name + '-tests.js'))
@@ -157,10 +157,10 @@ gulp.task('build-ng', function() {
 
 	return gulp.src(sourceArr)
 
-		// JS Hint
-		.pipe(plugins.jshint('./config/jshint.conf.json'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-		.pipe(plugins.jshint.reporter('fail'))
+		// ESLint
+		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint.format())
+		.pipe(plugins.eslint.failAfterError())
 
 		// Concatenate
 		.pipe(plugins.sourcemaps.init())
@@ -180,16 +180,10 @@ gulp.task('build-ng2', function(done) {
 });
 
 
-
 gulp.task('test', ['build-sentio-js', 'build-sentio-tests'], function() {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
 });
 
-gulp.task('build', function(done) {
-	runSequence(['build-sentio', 'build-ng', 'build-ng2'], done);
-});
-
-gulp.task('default', function(done) {
-	runSequence('build', 'test', done);
-});
+gulp.task('build', ['build-sentio', 'build-ng', 'build-ng2']);
+gulp.task('default', ['build', 'test']);
