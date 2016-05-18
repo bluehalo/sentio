@@ -10,20 +10,19 @@ var _ = require('lodash'),
 	path = require('path'),
 	q = require('q'),
 	runSequence = require('run-sequence'),
+	webpack = require('webpack-stream'),
 
 	plugins = gulpLoadPlugins(),
 	pkg = require('./package.json'),
 	assets = require('./config/assets');
 
 
-// Banner for the top of generated artifacts
-var banner = '/*! ' + pkg.name + ' Version: ' + pkg.version + ' Copyright Asymmetrik, Ltd. 2015 - All Rights Reserved.*/\n';
+// banner info
+var bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
 
 /*
  * Helpers
  */
-
-
 
 // TS Lint
 function tsLint(sourceArr) {
@@ -67,42 +66,37 @@ function compileTypescript(sourceArr, tsConfig) {
  */
 gulp.task('build-sentio', ['build-sentio-js', 'build-sentio-css', 'build-sentio-tests']);
 
-// Version
-gulp.task('build-version', [], function() {
-	return plugins.file('version.md', banner, { src: true })
-		.pipe(gulp.dest('dist'));
-});
-
 // JS
-gulp.task('build-sentio-js', ['build-version'], function() {
-	// Generate a list of the sources in a deterministic manner
-	var sourceArr = [ './dist/version.js' ];
-	assets.src.sentio.js.forEach(function(f) {
-		sourceArr = sourceArr.concat(glob.sync(f).sort());
-	});
+gulp.task('build-sentio-js', function() {
 
-	gulp.src(sourceArr)
+	gulp.src(assets.src.sentio.js)
 
-		// JSHint
-		.pipe(plugins.jshint('./config/jshint.conf.json'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-		.pipe(plugins.jshint.reporter('fail'))
+		// ESLint
+		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint.format())
+		.pipe(plugins.eslint.failAfterError())
 
-		// Concat (w/sourcemaps)
-		.pipe(plugins.sourcemaps.init())
-			.pipe(plugins.concat(pkg.name + '.js'))
-		.pipe(plugins.sourcemaps.write('./'))
+		// Package using Rollup
+		.pipe(plugins.rollup({
+			format: 'iife',
+			moduleName: 'sentio',
+			sourceMap: true,
+			banner: bannerString
+		}))
+		.pipe(plugins.rename(pkg.name + '.js'))
+		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
 
-		// Uglify (wo/sourcemaps)
-		.pipe(plugins.filter([ 'dist/version.js', 'dist/' + pkg.name + '.js' ]))
+		// Uglify
+		.pipe(plugins.filter('**/' + pkg.name + '.js'))
 		.pipe(plugins.uglify({ preserveComments: 'license' }))
 		.pipe(plugins.rename(pkg.name + '.min.js'))
 		.pipe(gulp.dest('dist'));
+
 });
 
 // SASS
-gulp.task('build-sentio-css', ['build-version'], function() {
+gulp.task('build-sentio-css', function() {
 	// Generate a list of the sources in a deterministic manner
 	var sourceArr = [];
 	assets.src.sentio.sass.forEach(function(f) {
@@ -123,7 +117,7 @@ gulp.task('build-sentio-css', ['build-version'], function() {
 		.pipe(plugins.sourcemaps.init())
 			.pipe(plugins.sass())
 			.pipe(plugins.concat(pkg.name + '.css'))
-			.pipe(plugins.insert.prepend(banner))
+			.pipe(plugins.insert.prepend(bannerString))
 		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
 
@@ -135,7 +129,7 @@ gulp.task('build-sentio-css', ['build-version'], function() {
 });
 
 // Tests
-gulp.task('build-sentio-tests', ['build-version'], function() {
+gulp.task('build-sentio-tests', function() {
 	// Generate a list of the test sources in a deterministic manner
 	var sourceArr = [ './dist/version.js' ];
 	assets.tests.sentio.js.forEach(function(f) {
@@ -156,7 +150,7 @@ gulp.task('build-sentio-tests', ['build-version'], function() {
 
 
 // Build Angular Support
-gulp.task('build-ng', ['build-version'], function() {
+gulp.task('build-ng', function() {
 	var sourceArr = [ './dist/version.js' ];
 	assets.src.ng.js.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
@@ -183,7 +177,7 @@ gulp.task('build-ng', ['build-version'], function() {
 });
 
 // Build Angular 2 Support
-gulp.task('build-ng2', ['build-version'], function(done) {
+gulp.task('build-ng2', function(done) {
 });
 
 

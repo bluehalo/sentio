@@ -1,7 +1,6 @@
-sentio.timeline.line = sentio_timeline_line;
+import {default as extent} from '../util/extent';
 
-function sentio_timeline_line() {
-	'use strict';
+export default function() {
 
 	// Layout properties
 	var _id = 'timeline_line_' + Date.now();
@@ -16,8 +15,8 @@ function sentio_timeline_line() {
 
 	// Default accessors for the dimensions of the data
 	var _value = {
-		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; }
+		x: function(d) { return d[0]; },
+		y: function(d) { return d[1]; }
 	};
 
 	// Accessors for the positions of the markers
@@ -28,11 +27,11 @@ function sentio_timeline_line() {
 
 	var now = Date.now();
 	var _extent = {
-		x: sentio.util.extent({
+		x: extent({
 			defaultValue: [now - 60000*5, now],
 			getValue: function(d) { return d[0]; }
 		}),
-		y: sentio.util.extent({
+		y: extent({
 			getValue: function(d) { return d[1]; }
 		})
 	};

@@ -1,6 +1,7 @@
 {
   "name": "sentio",
   "version": "0.7.7",
+  "copyright": "Copyright Asymmetrik, Ltd. 2015 - All Rights Reserved.",
   "repository": {
     "type": "git",
     "url": "https://github.com/Asymmetrik/sentio.git"
@@ -14,6 +15,7 @@
     "gulp-clean-css": "2.0",
     "gulp-concat": "2.6",
     "gulp-coverage": "0.3",
+    "gulp-eslint": "^2.0.0",
     "gulp-file": "^0.3.0",
     "gulp-filesize": "0.0",
     "gulp-filter": "^4.0.0",
@@ -29,6 +31,7 @@
     "gulp-nodemon": "2.0",
     "gulp-protractor": "2.3",
     "gulp-rename": "1.2",
+    "gulp-rollup": "^1.9.0",
     "gulp-sass": "2.3",
     "gulp-sass-lint": "1.1",
     "gulp-sort": "2.0",
@@ -44,8 +47,7 @@
     "mocha": "2.4",
     "run-sequence": "1.1",
     "should": "8.3",
-    "tslint": "3.10",
-    "webpack": "1.13"
+    "tslint": "3.10"
   },
   "jspm": {
     "main": "dist",

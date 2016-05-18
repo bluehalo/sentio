@@ -1,7 +1,4 @@
-sentio.model.bins = sentio_model_bins;
-
-function sentio_model_bins(config) {
-	'use strict';
+export default function(config) {
 
 	/**
 	 * Private variables

@@ -1,11 +1,8 @@
-sentio.controller.rtBins = sentio_controller_rtBins;
-
 /*
  * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
  * Every time binSize elapses, updates the lwm to keep the bins shifting.
  */
-function sentio_controller_rtBins(config) {
-	'use strict';
+export default function(config) {
 
 	/**
 	 * Private variables

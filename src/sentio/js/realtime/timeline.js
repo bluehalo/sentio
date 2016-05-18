@@ -1,7 +1,6 @@
-sentio.realtime.timeline = sentio_realtime_timeline;
+import {default as line} from '../timeline/line';
 
-function sentio_realtime_timeline() {
-	'use strict';
+export default function() {
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
 	var _delay = 0;
@@ -16,7 +15,7 @@ function sentio_realtime_timeline() {
 	// What is the refresh rate?
 	var _fps = 32;
 
-	var _instance = sentio.timeline.line();
+	var _instance = line();
 	_instance.yExtent().filter(function(d) {
 		var x = _instance.xValue()(d);
 		var xExtent = _instance.xExtent().getExtent();

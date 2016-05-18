@@ -1,7 +1,4 @@
-sentio.chart.donut = sentio_chart_donut;
-
-function sentio_chart_donut() {
-	'use strict';
+export default function() {
 
 	// Chart height/width
 	var _width = 400;

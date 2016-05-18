@@ -1,10 +1,6 @@
-sentio.chart.verticalBars = sentio_chart_vertical_bars;
-
-function sentio_chart_vertical_bars() {
-	'use strict';
+export default function() {
 
 	// Layout properties
-	var _id = 'vertical_bars_' + Date.now();
 	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
 	var _width = 100;
 	var _barHeight = 24;
@@ -27,9 +23,9 @@ function sentio_chart_vertical_bars() {
 
 	// Default accessors for the dimensions of the data
 	var _value = {
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; },
+		label: function(d) { return d.key + ' (' + d.value + ')'; }
 	};
 
 	// Default scales for x and y dimensions

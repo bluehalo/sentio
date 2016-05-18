@@ -1,7 +1,4 @@
-sentio.util.extent = sentio_util_extent;
-
-function sentio_util_extent(config) {
-	'use strict';
+export default function(config) {
 
 	/**
 	 * Private variables
@@ -13,8 +10,8 @@ function sentio_util_extent(config) {
 	};
 
 	var _fn = {
-		getValue: function(d, i) { return d; },
-		filter: function(d, i) { return true; }
+		getValue: function(d) { return d; },
+		filter: function() { return true; }
 	};
 
 

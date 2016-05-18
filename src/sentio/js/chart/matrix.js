@@ -1,7 +1,4 @@
-sentio.chart.matrix = sentio_chart_matrix;
-
-function sentio_chart_matrix() {
-	'use strict';
+export default function() {
 
 	// Chart dimensions
 	var _cellSize = 16;
@@ -49,11 +46,11 @@ function sentio_chart_matrix() {
 		onClickCell: function(d, i) {
 			_dispatch.onClickCell(d, this);
 		},
-		seriesKey: function(d, i) { return d.key; },
-		seriesLabel: function(d, i) { return d.label; },
-		seriesValues: function(d, i) { return d.values; },
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; }
+		seriesKey: function(d) { return d.key; },
+		seriesLabel: function(d) { return d.label; },
+		seriesValues: function(d) { return d.values; },
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; }
 	};
 
 	// Extents

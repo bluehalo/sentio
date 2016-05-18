@@ -1,7 +1,11 @@
 {
-	"eqnull": true,
-	"undef": "true",
-	"strict": "true",
+	"parserOptions": {
+		"sourceType": "module"
+	},
+
+	"ecmaFeatures": {
+		"modules": true
+	},
 
 	"globals": {
 		"angular": true,

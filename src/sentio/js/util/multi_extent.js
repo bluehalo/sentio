@@ -1,7 +1,6 @@
-sentio.util.multiExtent = sentio_util_multi_extent;
+import {default as extent} from './extent';
 
-function sentio_util_multi_extent(config) {
-	'use strict';
+export default function(config) {
 
 	/**
 	 * Private variables
@@ -11,7 +10,7 @@ function sentio_util_multi_extent(config) {
 		values: function(d) { return d.values; }
 	};
 
-	var _extent = sentio.util.extent();
+	var _extent = extent();
 
 	/**
 	 * Private Functions
