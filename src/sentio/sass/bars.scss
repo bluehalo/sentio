@@ -1,28 +1,27 @@
 // =======================================
-//  Vertical Bar Chart
+//	Vertical Bar Chart
 //=======================================
 
-
 .sentio.bars-vertical {
-  position: relative;
+	position: relative;
 }
 
 .sentio.bars-vertical .bar {
-  background-color: #ddd;
-  color: #000;
-  font: 12px sans-serif;
-  overflow: visible;
-  position: absolute;
-  white-space: nowrap;
+	background-color: #ddd;
+	color: #000;
+	font: 12px sans-serif;
+	overflow: visible;
+	position: absolute;
+	white-space: nowrap;
 }
 
 .sentio.bars-vertical .bar:hover {
-  background-color: #bbb;
+	background-color: #bbb;
 }
 
 .sentio.bars-vertical .bar-label {
-  display: inline-block;
-  margin: 5px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+	display: inline-block;
+	margin: 5px;
+	overflow: hidden;
+	text-overflow: ellipsis;
 }

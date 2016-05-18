@@ -177,6 +177,7 @@ gulp.task('build-ng', function() {
 
 // Build Angular 2 Support
 gulp.task('build-ng2', function(done) {
+	
 });
 
 
