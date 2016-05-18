@@ -10,7 +10,6 @@ var _ = require('lodash'),
 	path = require('path'),
 	q = require('q'),
 	runSequence = require('run-sequence'),
-	webpack = require('webpack-stream'),
 
 	plugins = gulpLoadPlugins(),
 	pkg = require('./package.json'),
