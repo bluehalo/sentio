@@ -1,0 +1,27 @@
+/*
+=======================================
+	Line Chart
+=======================================
+*/
+
+.sentio.line .marker line {
+	stroke-width: 1;
+}
+
+.sentio.line .marker:hover {
+	cursor:hand;
+	cursor:pointer;
+}
+
+.sentio.line .axis path,
+.sentio.line .axis line {
+	fill: none;
+	stroke: #000;
+	shape-rendering: crispEdges;
+}
+
+.sentio.line .brush .extent {
+	stroke: #fff;
+	fill-opacity: .125;
+	shape-rendering: crispEdges;
+}
