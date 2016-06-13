@@ -429,11 +429,11 @@ function sentio_line_line() {
 			.on('click', function(d, i) {
 				// Toggle data visibility
 				var targetPath = d3.select('#path-'+d.key);
-				targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') === 0 ? 0.9 : 0);
+				targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
 				var targetArea = d3.select('#area-'+d.key);
-				targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') === 0 ? 0.05 : 0);
+				targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
 				var targetPoints = d3.selectAll('.pt-'+d.key);
-				targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') === 0 ? 1 : 0);
+				targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
 
 				// Toggle legend visibility
 				var legendRect = legendEnter.select('#lRect-'+i);
@@ -524,9 +524,10 @@ function sentio_line_line() {
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('r', 3)
 			.attr('stroke', 'white')
+			.attr('stroke-opacity', '1')
 			.attr('stroke-width', 2)
 			.attr('fill', 'white')
-			.attr('fill-opacity', '0')
+			.attr('fill-opacity', 0)
 			.on("mouseover", function(d) {
 				tooltip.html(invokePointCallback({d: d}));
 				return tooltip.style("visibility", "visible");
