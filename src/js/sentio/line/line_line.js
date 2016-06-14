@@ -378,7 +378,9 @@ function sentio_line_line() {
 	 		...	
 	 *	]
 	 */
+	
 	function updateLine() {
+
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
@@ -395,24 +397,42 @@ function sentio_line_line() {
 			.attr('stroke-width', '2px')
 			.attr('stroke-opacity', '0.9')
 			.attr('fill', 'none');
+			// .datum(function(d) { 
+			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
+			// }).attr('d', _line);
 		plotEnter.append('g').append('path')
 			.attr('class', 'blank-area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
 			.attr('fill', function(d) { return _scale.color(d.key); })
 			.attr('fill-opacity', '0.05');
+			// .datum(function(d) { 
+			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
+			// }).attr('d', _area.y0(_scale.y.range()[0]));
 
 
 		var lineUpdate = plotJoin.select('.blank-line');
 		var areaUpdate = plotJoin.select('.blank-area');
 
-		// Update
+		// // Update
 		lineUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _line);
 		areaUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _area.y0(_scale.y.range()[0]));
 
+		plotJoin.exit().select('.blank-line')
+			// .datum(function(d) { 
+			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
+			// }).transition().duration(500)
+			.attr('d', _line);
+
+		plotJoin.exit().select('.blank-area')
+			// .datum(function(d) { 
+			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
+			// }).transition().duration(500)
+			.attr('d', _area.y0(_scale.y.range()[0]));
+
 		// Exit
-		var plotExit = plotJoin.exit();
-		plotExit.remove();
+		var plotExit = plotJoin.exit()
+			.transition().duration(500).remove();
 	}
 
 	function updateLegend() {
@@ -537,10 +557,10 @@ function sentio_line_line() {
 			})
 			.on("mouseout", function() {
 				return tooltip.style("visibility", "hidden");
-			})
-			.attr('cx', 0)
-			.transition().duration(500)		// slide point from left
-			.attr('cx', function(d) {return _scale.x(_pointValue.x(d));});
+			});
+			// .attr('cx', 0)
+			// .transition().duration(500)		// slide point from left
+			// .attr('cx', function(d) {return _scale.x(_pointValue.x(d));});
 
 		circleUpdate.transition().duration(500)
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
@@ -548,16 +568,16 @@ function sentio_line_line() {
 			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));});
 
 
-		pointJoin.exit()
-			.select('circle')
-			.transition()
-			.duration(500)
-			.attr('cx', 0);
+		// pointJoin.exit()
+		// 	.select('circle')
+		// 	.transition()
+		// 	.duration(500)
+		// 	.attr('cx', 0);
 
 		//exit
 		pointJoin.exit()
-			.transition()
-			.duration(500)
+			// .transition()
+			// .duration(500)
 			.remove();
 	}
 
