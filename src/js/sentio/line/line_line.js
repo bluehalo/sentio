@@ -4,11 +4,11 @@ function sentio_line_line() {
 
 	// Layout properties
 	var _id = 'line_line_' + Date.now();
-	var _margin = { top: 20, right: 150, bottom: 50, left: 40 };
-	var _height = 100, _width = 600;
+	var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
+	var _height = 100, _width = 800;
 
 	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
-	var lockedY = 1000;		// Set default max Y axis value.
+	var lockedY = 1;		// Set default max Y axis value.
 	var stacked = false;	// Set whether different series will stack on top of eachother rather than overlay.
 	var max_ticks = 30;		// Set default max number of ticks for the x axis.
 	var x_ticks = 30;		// Set default number of ticks for the x axis.
@@ -369,11 +369,15 @@ function sentio_line_line() {
 	/*
 	 * Line data format:
 	 * 	_line = [
-	 *		{ key: 'series1',
-	 		  data: [[x1,y1], [x2,y2], ...]
+	 *		{ key: 'series_1',
+	 		  data: [[x1,y1], [x2,y2], ...],
+	 		  name: 'series 1',
+	 		  total: 1000
 	 		},
-	 		{ key: 'series2'
-	 		  data: [[x3,y3], ...]
+	 		{ key: 'series_2'
+	 		  data: [[x3,y3], ...],
+			  name: 'series 2',
+			  total: 3000
 	 		},
 	 		...	
 	 *	]
@@ -460,6 +464,16 @@ function sentio_line_line() {
 				var legendLabel = legendEnter.select('#lLbl-'+i);
 				legendRect.transition().style('opacity', legendRect.style('opacity') == 0.5 ? 1 : 0.5);
 				legendLabel.transition().style('opacity', legendLabel.style('opacity') == 0.5 ? 1 : 0.5);
+			})
+			.on("mouseover", function(d) {
+				tooltip.html(d.name + ' ('+d.total+')');
+				return tooltip.style("visibility", "visible");
+			})
+			.on("mousemove", function() {
+				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
+			})
+			.on("mouseout", function() {
+				return tooltip.style("visibility", "hidden");
 			});
 
 		var rectEnter = legendEnter.append('rect');
@@ -467,6 +481,18 @@ function sentio_line_line() {
 
 		var rectUpdate = legendJoin.select('rect');
 		var labelUpdate = legendJoin.select('text');
+
+		labelEnter
+			.attr('id', function(d, i) { return 'lLbl-'+i; })
+			.attr('opacity', 1)
+			.attr('x', (_width - _margin.right)+70)
+			.attr('font-size', 13)
+			.text(function(d) { return d.name + ' ('+d.total+')'; })
+			.attr('y', 0)
+			.transition().duration(200)
+			.attr('y', function(d, i) { 
+				return 27+(i * 20); 
+			});
 
 		rectEnter
 			.attr('id', function(d, i) { return 'lRect-'+i; })
@@ -480,21 +506,12 @@ function sentio_line_line() {
 			.transition().duration(200)
 			.attr('y', function(d, i) { return 15+(i * 20); });
 
-		labelEnter
-			.attr('id', function(d, i) { return 'lLbl-'+i; })
-			.attr('opacity', 1)
-			.attr('x', (_width - _margin.right)+70)
-			.attr('font-size', 13)
-			.html(function(d) { return d.key; })
-			.attr('y', 0)
-			.transition().duration(200)
-			.attr('y', function(d, i) { return 27+(i * 20); });
-
 		rectUpdate.transition().duration(500)
 			.attr('x', (_width - _margin.right)+20)
 			.attr('y', function(d, i) { return 15+(i * 20); });
 
 		labelUpdate.transition().duration(500)
+			.text(function(d) { return d.name + ' ('+d.total+')'; })
 			.attr('x', (_width - _margin.right)+70)
 			.attr('y', function(d, i) { return 27+(i * 20); });
 
@@ -514,8 +531,8 @@ function sentio_line_line() {
 	/*
 	 * _points format (After conversion from line data)
 	 * 	_points = [
-	 *				[x1, y1, 'series1'],
-	 *				[x2, y2, 'series2'],
+	 *				[x1, y1, 'series_1', 'series 1'],
+	 *				[x2, y2, 'series_2', 'series 2'],
 	 *				...
 	 *	]
 	 */
@@ -524,7 +541,7 @@ function sentio_line_line() {
 		_points = [];
 		for (var i = 0; i < _data.length; i++) {
 			for (var j = 0; j < _data[i].data.length; j++) {
-				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].key]);
+				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].key, _data[i].name]);
 			}
 		}
 
@@ -586,8 +603,8 @@ function sentio_line_line() {
 	 * 	_marker = {
 	 *		values: 
 	 *			[
-	 *				['label1', x1, 'slug1'],
-	 *				['label2', x2, 'slug2'],
+	 *				['label1', x1, 'slug_1'],
+	 *				['label2', x2, 'slug_2'],
 	 *				...
 	 *			]
 	 *  }
