@@ -37,7 +37,7 @@ function($document, $window, $timeout, $log) {
 			}
 			var height = element[0].style.height;
 			if(null != height && '' !== height) {
-				height = parseFloat(height.substring(0, height.length-2) - 150);
+				height = parseFloat(height.substring(0, height.length-2));
 				if(null != height && !isNaN(height)) { line.height(height); }
 			}
 
@@ -82,6 +82,10 @@ function($document, $window, $timeout, $log) {
 
 			line.init(lineElement);
 			line.interpolation(scope.interpolation);
+
+			scope.$on('legend-toggle', function(evt, param) {
+				line.toggleSeries(param);
+			});
 
 			scope.$watch('xTicks', function(n, o) {
 				if (null === 0 && null == n) {return; }

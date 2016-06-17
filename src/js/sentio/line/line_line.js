@@ -88,14 +88,9 @@ function sentio_line_line() {
 			points: undefined,
 			brush: undefined
 		},
-		legend_g: {
-			container: undefined,
-			legends: undefined
-		},
 		plotClipPath: undefined,
 		markerClipPath: undefined,
-		pointClipPath: undefined,
-		legendClipPath: undefined
+		pointClipPath: undefined
 	};
 
 	// Line generator for the plot
@@ -233,7 +228,6 @@ function sentio_line_line() {
 		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
-		_element.legendClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'legend_' + _id).append('rect');
 
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g')
@@ -265,8 +259,6 @@ function sentio_line_line() {
 			.style('stroke-width', '1.5')
 			.style('display', 'none');
 
-		_element.legend_g.container = _element.svg.append('g');
-
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
@@ -274,7 +266,6 @@ function sentio_line_line() {
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		_element.g.points = _element.g.container.append('g').attr('class', 'points').attr('clip-path', 'url(#point_' + _id + ')');
-		_element.legend_g.legends = _element.legend_g.container.append('g').attr('class', 'legends').attr('clip-path', 'url(#legend_' + _id + ')');
 
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
@@ -375,11 +366,6 @@ function sentio_line_line() {
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 5))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 
-		_element.legendClipPath
-			.attr('transform', 'translate(0, ' + (_height) + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 5))
-			.attr('height', 150);
-
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
 
@@ -436,7 +422,7 @@ function sentio_line_line() {
 		updateLine();
 		updateMarkers();
 		updatePoints();
-		updateLegendPassback();
+		updateLegend2();
 		// updateLegend();
 		updateFilter(filterExtent);
 
@@ -612,8 +598,16 @@ function sentio_line_line() {
 			.transition().duration(200).remove();
 	}
 
-	function updateLegendPassback() {
-		invokeLegendCallback({d: 'hey'});
+	var legend_content = {
+		series: undefined,
+		markers: undefined,
+	}
+	function updateLegend2() {
+		legend_content.series = _data.map(function(series) {
+			return [series.key, series.name, series.total, _scale.color(series.key)];
+		})
+
+		invokeLegendCallback({d: legend_content});
 	}
 
 	/*
@@ -857,6 +851,17 @@ function sentio_line_line() {
 					.attr('height', _height - _margin.top - _margin.bottom + 7);
 		}
 	}
+
+	_instance.toggleSeries = function(s) {
+
+		var targetPath = d3.select('#path-'+s);
+		targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
+		var targetArea = d3.select('#area-'+s);
+		targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
+		var targetPoints = d3.selectAll('.pt-'+s);
+		targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
+
+	};
 
 	// Basic Getters/Setters
 	_instance.xTicks = function(t) {
