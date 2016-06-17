@@ -19,8 +19,10 @@ function($document, $window, $timeout, $log) {
 			filterState: '=sentioFilterState',
 			interpolation: '@sentioInterpolation',
 			pointHoverFn: '&sentioPointHoverFn',
+			legendFn: '&sentioLegendFn',
 			yLock: '=sentioYLock',
-			stacked: '=sentioStacked'
+			stacked: '=sentioStacked',
+			showMarkers: '=sentioShowMarkers'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -35,7 +37,7 @@ function($document, $window, $timeout, $log) {
 			}
 			var height = element[0].style.height;
 			if(null != height && '' !== height) {
-				height = parseFloat(height.substring(0, height.length-2));
+				height = parseFloat(height.substring(0, height.length-2) - 150);
 				if(null != height && !isNaN(height)) { line.height(height); }
 			}
 
@@ -91,6 +93,11 @@ function($document, $window, $timeout, $log) {
 				line.stacked(n);
 			});
 
+			scope.$watch('showMarkers', function(n, o) {
+				if (null === 0 && null == n) {return; }
+				line.showMarkers(n);
+			})
+
 			scope.$watch('yLock', function(n, o) {
 				if (null === 0 && null == n) {return; }
 				line.yLock(n);
@@ -105,6 +112,12 @@ function($document, $window, $timeout, $log) {
 			scope.$watch('pointHoverFn', function(n, o) {
 				if (null != scope.pointHoverFn) {
 					line.pointHover(scope.pointHoverFn);
+				}
+			});
+
+			scope.$watch('legendFn', function(n, o) {
+				if (null != scope.legendFn) {
+					line.legendFn(scope.legendFn);
 				}
 			});
 

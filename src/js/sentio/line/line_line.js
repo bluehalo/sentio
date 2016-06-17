@@ -4,12 +4,15 @@ function sentio_line_line() {
 
 	// Layout properties
 	var _id = 'line_line_' + Date.now();
-	var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
+	// var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
+
+	var _margin = { top: 20, right: 40, bottom: 50, left: 40 };
 	var _height = 100, _width = 800;
 
 	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
 	var lockedY = 1;		// Set default max Y axis value.
 	var stacked = false;	// Set whether different series will stack on top of eachother rather than overlay.
+	var showMarkers = true;	// Set default boolean for showing markers
 	var max_ticks = 30;		// Set default max number of ticks for the x axis.
 	var x_ticks = 30;		// Set default number of ticks for the x axis.
 
@@ -23,6 +26,8 @@ function sentio_line_line() {
 	 * Callback function for hovers over plot points.
 	 */
 	var _pointCallback = null;
+
+	var _legendCallback = null;
 
 	// Default accessors for the dimensions of the data
 	var _value = {
@@ -39,8 +44,9 @@ function sentio_line_line() {
 	// Accessors for the positions of the markers
 	var _markerValue = {
 		label: function(d, i) { return d[0]; },
-		x: function(d, i) { return d[1]; },
-		slug: function(d, i) { return d[2]; }
+		slug: function(d, i) { return d[1]; },
+		start: function(d, i) { return d[2]; },
+		end: function(d, i) { return d[3]; }
 	};
 
 	var now = Date.now();
@@ -72,11 +78,13 @@ function sentio_line_line() {
 	var _element = {
 		svg: undefined,
 		g: {
+			clickCapture: undefined,
+			clickLine: undefined,
 			container: undefined,
+			markers: undefined,
 			plots: undefined,
 			xAxis: undefined,
 			yAxis: undefined,
-			markers: undefined,
 			points: undefined,
 			brush: undefined
 		},
@@ -162,10 +170,53 @@ function sentio_line_line() {
 	    .style("visibility", "hidden")
 	    .style('background-color', 'rgba(0,0,0,0.8')
 	    .style('border-radius', '5px')
-	    .style('padding', '3px');
+	    .style('padding', '3px')
+	    .style('pointer-events', 'none');
 
 	// Chart create/init method
 	function _instance(selection){}
+
+	var cx, cy, targetX;
+	var selected = {
+		points: [],
+		markers: []
+	};
+	function handleMouseMove() {
+		cx = d3.event.offsetX;
+		cy = d3.event.y;
+		targetX = cx;
+		selected.points = [];
+		selected.markers = [];
+
+		// bind to a point if it exists
+		d3.selectAll('.point')
+			.each(function(d) {
+				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
+					targetX = _scale.x(_pointValue.x(d));
+					selected.points.push(d);
+				}
+			});
+
+		// Find any markers in that range
+		d3.selectAll('.marker')
+			.each(function(d) {
+				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
+					selected.markers.push(d);
+				}
+			});
+
+		if (selected.points.length > 0) {
+			tooltip.style("visibility", "visible");
+			tooltip.style("top", cy+"px").style("left",d3.event.x+"px");
+			tooltip.html(invokePointCallback({d: selected}));
+		} else {
+			tooltip.style("visibility", "hidden");
+		}
+
+		_element.g.clickLine
+			.attr('x1', targetX)
+			.attr('x2', targetX);
+	}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
@@ -179,14 +230,45 @@ function sentio_line_line() {
 		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
 		_element.legendClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'legend_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
 		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
+		_element.g.container = _element.svg.append('g')
+			.attr('class', 'g-main')
+			.on("mousemove", function () {
+				handleMouseMove();
+			})
+			.on("mouseover", function () {
+				_element.g.clickLine.style('display', 'block');
+			})
+			.on("mouseout", function () {
+				_element.g.clickLine.style('display', 'none');
+				tooltip.style("visibility", "hidden");
+			})
+
+		_element.g.clickCapture = _element.g.container.append('rect')
+			.attr('class', 'click-capture')
+			.style('visibility', 'hidden')
+			.attr('x', '0')
+			.attr('y', '0');
+
+		_element.g.clickLine = _element.g.container.append('line')
+			.attr('class', 'line-over')
+			.attr('x1', '10')
+			.attr('y1', '0')
+			.attr('x2', '10')
+			.style('stroke', 'gray')
+			.attr('stroke-dasharray', ('5,5'))
+			.style('stroke-width', '1.5')
+			.style('display', 'none');
+
 		_element.legend_g.container = _element.svg.append('g');
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
@@ -204,9 +286,6 @@ function sentio_line_line() {
 				.on('brushstart', brushstart)
 				.on('brush', brush);
 		}
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
@@ -258,6 +337,12 @@ function sentio_line_line() {
 		}
 	}
 
+	function invokeLegendCallback(d) {
+		if (null != _legendCallback) {
+			return _legendCallback(d);
+		}
+	}
+
 	/*
 	 * Updates all the elements that depend on the size of the various components
 	 */
@@ -267,6 +352,14 @@ function sentio_line_line() {
 		// Set up the scales
 		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
 		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
+
+		_element.g.clickCapture
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		_element.g.clickLine
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
 
 		// Append the clip path
 		_element.plotClipPath
@@ -283,9 +376,9 @@ function sentio_line_line() {
 			.attr('height', Math.max(0, _height - _margin.bottom));
 
 		_element.legendClipPath
-			.attr('transform', 'translate('+(_width-_margin.right)+', -' + _margin.top + ')')
-			.attr('width', Math.max(0, _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
+			.attr('transform', 'translate(0, ' + (_height) + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 5))
+			.attr('height', 150);
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
@@ -343,7 +436,8 @@ function sentio_line_line() {
 		updateLine();
 		updateMarkers();
 		updatePoints();
-		updateLegend();
+		updateLegendPassback();
+		// updateLegend();
 		updateFilter(filterExtent);
 
 		return _instance;
@@ -464,16 +558,6 @@ function sentio_line_line() {
 				var legendLabel = legendEnter.select('#lLbl-'+i);
 				legendRect.transition().style('opacity', legendRect.style('opacity') == 0.5 ? 1 : 0.5);
 				legendLabel.transition().style('opacity', legendLabel.style('opacity') == 0.5 ? 1 : 0.5);
-			})
-			.on("mouseover", function(d) {
-				tooltip.html(d.name + ' ('+d.total+')');
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
 			});
 
 		var rectEnter = legendEnter.append('rect');
@@ -528,6 +612,10 @@ function sentio_line_line() {
 			.transition().duration(200).remove();
 	}
 
+	function updateLegendPassback() {
+		invokeLegendCallback({d: 'hey'});
+	}
+
 	/*
 	 * _points format (After conversion from line data)
 	 * 	_points = [
@@ -564,17 +652,7 @@ function sentio_line_line() {
 			.attr('stroke-opacity', '1')
 			.attr('stroke-width', 2)
 			.attr('fill', 'white')
-			.attr('fill-opacity', 0)
-			.on("mouseover", function(d) {
-				tooltip.html(invokePointCallback({d: d}));
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
-			});
+			.attr('fill-opacity', 0);
 			// .attr('cx', 0)
 			// .transition().duration(500)		// slide point from left
 			// .attr('cx', function(d) {return _scale.x(_pointValue.x(d));});
@@ -598,13 +676,20 @@ function sentio_line_line() {
 			.remove();
 	}
 
+	function toggleMarkers() {
+		_element.g.markers
+			.selectAll('.marker')
+			.transition().duration(200)
+			.attr('opacity', showMarkers ? '1' : '0');
+	}
+
 	/* 
 	 * _marker format:
 	 * 	_marker = {
 	 *		values: 
 	 *			[
-	 *				['label1', x1, 'slug_1'],
-	 *				['label2', x2, 'slug_2'],
+	 *				['label1', 'slug_1', start_x1, end_x1],
+	 *				['label2', 'slug_2', start_x2, end_x2]
 	 *				...
 	 *			]
 	 *  }
@@ -614,37 +699,90 @@ function sentio_line_line() {
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
 			.data(_markers.values, function(d) {
-				return 'mk-'+_markerValue.slug(d)+'-'+_markerValue.x(d); 
+				return _markerValue.slug(d); 
 			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', function(d) {
-				tooltip.html('<b>'+_markerValue.label(d)+'</b>');
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
-			})
-			.on('click', markerClicked);
+			.attr('class', 'marker');
 
-		var lineEnter = markerEnter.append('line');
+		var areaEnter = markerEnter.append('rect');
+		var startEnter = markerEnter.append('line');
+		var endEnter = markerEnter.append('line');
+		var startIndEnter = markerEnter.append('circle');
+		var endIndEnter = markerEnter.append('circle');
 
-		var lineUpdate = markerJoin.select('line');
+		var areaUpdate = markerJoin.select('rect');
+		var startUpdate = markerJoin.select('.start');
+		var endUpdate = markerJoin.select('.end');
+		var startIndUpdate = markerJoin.select('.start-ind');
+		var endIndUpdate = markerJoin.select('.end-ind');
 
-		lineEnter
+		startIndEnter
+			.attr('class', 'start-ind')
+			.attr('r', '3')
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke-opacity', '1')
+			.attr('stroke-width', '2')
+			.attr('fill', 'white')
+			.attr('fill-opacity', '0')
+			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endIndEnter
+			.attr('class', 'end-ind')
+			.attr('r', '3')
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke-opacity', '1')
+			.attr('stroke-width', '2')
+			.attr('fill', 'white')
+			.attr('fill-opacity', '0')
+			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		startEnter
+			.attr('class', 'start')
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; })
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endEnter
+			.attr('class', 'end')
+			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); })
 			.attr('y1', function(d) { return _scale.y.range()[1]; })
 			.attr('y2', function(d) { return _scale.y.range()[0]; })
 			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));});
 
-		// Update
-		lineUpdate.transition().duration(500)
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
+		areaEnter
+			.attr('y', '0')
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('width', function(d) { 
+				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
+			})
+			.attr('height', function(d) { return _scale.y.range()[0]; })
+			.attr('fill', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('fill-opacity', '0.1');
+
+		startIndUpdate.transition().duration(500)
+			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endIndUpdate.transition().duration(500)
+			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		startUpdate.transition().duration(500)
+			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endUpdate.transition().duration(500)
+			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		areaUpdate.transition().duration(500)
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('width', function(d) { 
+				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
+			});
 
 		// Exit
 		var markerExit = markerJoin.exit().remove();
@@ -738,6 +876,12 @@ function sentio_line_line() {
 		_instance.redraw();
 		return _instance;
 	};
+	_instance.showMarkers = function(b) {
+		if (!arguments.length) { return showEvents; }
+		showMarkers = b;
+		toggleMarkers();
+		return _instance;
+	}
 	_instance.width = function(v){
 		if(!arguments.length) { return _width; }
 		_width = v;
@@ -825,6 +969,11 @@ function sentio_line_line() {
 		_pointCallback = v;
 		return _instance;
 	};
+	_instance.legendFn = function(v) {
+		if (!arguments.length) { return _legendCallback; }
+		_legendCallback = v;
+		return _instance;
+	}
 	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.dispatch; }
 		_filter.enabled = v;
