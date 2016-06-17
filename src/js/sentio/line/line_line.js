@@ -16,6 +16,8 @@ function sentio_line_line() {
 	var max_ticks = 30;		// Set default max number of ticks for the x axis.
 	var x_ticks = 30;		// Set default number of ticks for the x axis.
 
+	var hidden_series = [];
+
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
 	 * with the data from the marker payload
@@ -171,14 +173,16 @@ function sentio_line_line() {
 	// Chart create/init method
 	function _instance(selection){}
 
-	var cx, cy, targetX;
+	var cx, cy, y, targetX;
 	var selected = {
 		points: [],
 		markers: []
 	};
 	function handleMouseMove() {
 		cx = d3.event.offsetX;
-		cy = d3.event.y;
+		cy = d3.event.offsetY;
+		y = d3.event.y;
+
 		targetX = cx;
 		selected.points = [];
 		selected.markers = [];
@@ -200,9 +204,9 @@ function sentio_line_line() {
 				}
 			});
 
-		if (selected.points.length > 0) {
+		if (selected.points.length > 0 && cx > 0 && cy > 0) {
 			tooltip.style("visibility", "visible");
-			tooltip.style("top", cy+"px").style("left",d3.event.x+"px");
+			tooltip.style("top", y+"px").style("left",d3.event.x+"px");
 			tooltip.html(invokePointCallback({d: selected}));
 		} else {
 			tooltip.style("visibility", "hidden");
@@ -236,7 +240,9 @@ function sentio_line_line() {
 				handleMouseMove();
 			})
 			.on("mouseover", function () {
-				_element.g.clickLine.style('display', 'block');
+				if (d3.event.offsetX > 0 && d3.event.offsetY > 0) {
+					_element.g.clickLine.style('display', 'block');
+				}
 			})
 			.on("mouseout", function () {
 				_element.g.clickLine.style('display', 'none');
@@ -259,6 +265,10 @@ function sentio_line_line() {
 			.style('stroke-width', '1.5')
 			.style('display', 'none');
 
+		// Append groups for the axes
+		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
+		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
@@ -277,10 +287,6 @@ function sentio_line_line() {
 				.on('brushstart', brushstart)
 				.on('brush', brush);
 		}
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
 
 		_instance.resize();
 
@@ -362,9 +368,9 @@ function sentio_line_line() {
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.pointClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 5))
-			.attr('height', Math.max(0, _height - _margin.bottom));
+			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
+			.attr('height', Math.max(0, _height - _margin.bottom + 5));
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
@@ -392,7 +398,6 @@ function sentio_line_line() {
 	_instance.redraw = function() {
 		// Need to grab the filter extent before we change anything
 		var filterExtent = getFilter();
-
 
 		//stack data when needed and assign to data container
 		if (stacked) {
@@ -422,8 +427,7 @@ function sentio_line_line() {
 		updateLine();
 		updateMarkers();
 		updatePoints();
-		updateLegend2();
-		// updateLegend();
+		updateLegend();
 		updateFilter(filterExtent);
 
 		return _instance;
@@ -432,6 +436,7 @@ function sentio_line_line() {
 	function updateAxes() {
 		// Prevent x axis labels from overlapping by limiting tick count.
 		_axis.x = _axis.x.ticks(x_ticks > max_ticks ? max_ticks : x_ticks);
+		_axis.y = _axis.y.ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
 
 		if(null != _axis.x) {
 			_element.g.xAxis
@@ -519,90 +524,11 @@ function sentio_line_line() {
 			.transition().duration(500).remove();
 	}
 
-	function updateLegend() {
-		var legendJoin = _element.legend_g.legends
-			.selectAll('.legend')
-			.data(_data, function(d) {
-				return d.key;
-			});
-
-		var legendEnter = legendJoin.enter().append('g')
-			.attr('class', 'legend');
-
-		legendEnter
-			.on('click', function(d, i) {
-				// Toggle data visibility
-				var targetPath = d3.select('#path-'+d.key);
-				targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
-				var targetArea = d3.select('#area-'+d.key);
-				targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
-				var targetPoints = d3.selectAll('.pt-'+d.key);
-				targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
-
-				// Toggle legend visibility
-				var legendRect = legendEnter.select('#lRect-'+i);
-				var legendLabel = legendEnter.select('#lLbl-'+i);
-				legendRect.transition().style('opacity', legendRect.style('opacity') == 0.5 ? 1 : 0.5);
-				legendLabel.transition().style('opacity', legendLabel.style('opacity') == 0.5 ? 1 : 0.5);
-			});
-
-		var rectEnter = legendEnter.append('rect');
-		var labelEnter = legendEnter.append('text');
-
-		var rectUpdate = legendJoin.select('rect');
-		var labelUpdate = legendJoin.select('text');
-
-		labelEnter
-			.attr('id', function(d, i) { return 'lLbl-'+i; })
-			.attr('opacity', 1)
-			.attr('x', (_width - _margin.right)+70)
-			.attr('font-size', 13)
-			.text(function(d) { return d.name + ' ('+d.total+')'; })
-			.attr('y', 0)
-			.transition().duration(200)
-			.attr('y', function(d, i) { 
-				return 27+(i * 20); 
-			});
-
-		rectEnter
-			.attr('id', function(d, i) { return 'lRect-'+i; })
-			.attr('opacity', 1)
-			.attr('x', (_width - _margin.right)+20)
-			.attr('width', 40)
-			.attr('height', 15)
-			.attr('stroke', function(d) {return _scale.color(d.key);})
-			.attr('fill', function(d) {return _scale.color(d.key);})
-			.attr('y', 0)
-			.transition().duration(200)
-			.attr('y', function(d, i) { return 15+(i * 20); });
-
-		rectUpdate.transition().duration(500)
-			.attr('x', (_width - _margin.right)+20)
-			.attr('y', function(d, i) { return 15+(i * 20); });
-
-		labelUpdate.transition().duration(500)
-			.text(function(d) { return d.name + ' ('+d.total+')'; })
-			.attr('x', (_width - _margin.right)+70)
-			.attr('y', function(d, i) { return 27+(i * 20); });
-
-		// exit
-		legendJoin.exit().select('rect')
-			.transition().duration(200)
-			.attr('y', 0);
-
-		legendJoin.exit().select('text')
-			.transition().duration(200)
-			.attr('y', 0);
-
-		var legendExit = legendJoin.exit()
-			.transition().duration(200).remove();
-	}
-
 	var legend_content = {
 		series: undefined,
 		markers: undefined,
 	}
-	function updateLegend2() {
+	function updateLegend() {
 		legend_content.series = _data.map(function(series) {
 			return [series.key, series.name, series.total, _scale.color(series.key)];
 		})
@@ -643,30 +569,20 @@ function sentio_line_line() {
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('r', 3)
 			.attr('stroke', 'white')
-			.attr('stroke-opacity', '1')
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0';
+			})
 			.attr('stroke-width', 2)
 			.attr('fill', 'white')
 			.attr('fill-opacity', 0);
-			// .attr('cx', 0)
-			// .transition().duration(500)		// slide point from left
-			// .attr('cx', function(d) {return _scale.x(_pointValue.x(d));});
 
 		circleUpdate.transition().duration(500)
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('cx', function(d) {return _scale.x(_pointValue.x(d));})
 			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));});
 
-
-		// pointJoin.exit()
-		// 	.select('circle')
-		// 	.transition()
-		// 	.duration(500)
-		// 	.attr('cx', 0);
-
 		//exit
 		pointJoin.exit()
-			// .transition()
-			// .duration(500)
 			.remove();
 	}
 
@@ -860,6 +776,13 @@ function sentio_line_line() {
 		targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
 		var targetPoints = d3.selectAll('.pt-'+s);
 		targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
+
+		var index = hidden_series.indexOf(s);
+		if (index === -1) {
+			hidden_series.push(s);
+		} else {
+			hidden_series.splice(index, 1);
+		}
 
 	};
 
