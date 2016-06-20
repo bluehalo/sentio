@@ -100,7 +100,7 @@ function($document, $window, $timeout, $log) {
 			scope.$watch('showMarkers', function(n, o) {
 				if (null === 0 && null == n) {return; }
 				line.showMarkers(n);
-			})
+			});
 
 			scope.$watch('yLock', function(n, o) {
 				if (null === 0 && null == n) {return; }

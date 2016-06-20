@@ -2328,14 +2328,19 @@ function sentio_line_line() {
 
 	// Layout properties
 	var _id = 'line_line_' + Date.now();
-	var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
+	// var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
+
+	var _margin = { top: 20, right: 40, bottom: 50, left: 40 };
 	var _height = 100, _width = 800;
 
 	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
 	var lockedY = 1;		// Set default max Y axis value.
 	var stacked = false;	// Set whether different series will stack on top of eachother rather than overlay.
+	var showMarkers = true;	// Set default boolean for showing markers
 	var max_ticks = 30;		// Set default max number of ticks for the x axis.
 	var x_ticks = 30;		// Set default number of ticks for the x axis.
+
+	var hidden_series = [];
 
 	/*
 	 * Callback function for hovers over the markers. Invokes this function
@@ -2348,6 +2353,8 @@ function sentio_line_line() {
 	 */
 	var _pointCallback = null;
 
+	var _legendCallback = null;
+
 	// Default accessors for the dimensions of the data
 	var _value = {
 		x: function(d, i) { return d[0]; },
@@ -2356,15 +2363,17 @@ function sentio_line_line() {
 
 	var _pointValue = {
 		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; },
-		series: function(d, i) { return d[2]; }
+		y: function(d, i) { return stacked ? d[2] : d[1]; },
+		series: function(d, i) { return d[3]; },
+		slug: function(d, i) { return d[4]; }
 	};
 
 	// Accessors for the positions of the markers
 	var _markerValue = {
 		label: function(d, i) { return d[0]; },
-		x: function(d, i) { return d[1]; },
-		slug: function(d, i) { return d[2]; }
+		slug: function(d, i) { return d[1]; },
+		start: function(d, i) { return d[2]; },
+		end: function(d, i) { return d[3]; }
 	};
 
 	var now = Date.now();
@@ -2374,7 +2383,7 @@ function sentio_line_line() {
 			getValue: function(d) { return d[0]; }
 		}),
 		y: sentio.util.extent({
-			getValue: function(d) { return d[1]; }
+			getValue: function(d) { return stacked ? d[2] : d[1]; }
 		})
 	};
 	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
@@ -2396,22 +2405,19 @@ function sentio_line_line() {
 	var _element = {
 		svg: undefined,
 		g: {
+			clickCapture: undefined,
+			clickLine: undefined,
 			container: undefined,
+			markers: undefined,
 			plots: undefined,
 			xAxis: undefined,
 			yAxis: undefined,
-			markers: undefined,
 			points: undefined,
 			brush: undefined
 		},
-		legend_g: {
-			container: undefined,
-			legends: undefined
-		},
 		plotClipPath: undefined,
 		markerClipPath: undefined,
-		pointClipPath: undefined,
-		legendClipPath: undefined
+		pointClipPath: undefined
 	};
 
 	// Line generator for the plot
@@ -2420,7 +2426,7 @@ function sentio_line_line() {
 		return _scale.x(_value.x(d, i));
 	});
 	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
 	});
 
 	// Area generator for the plot
@@ -2429,7 +2435,7 @@ function sentio_line_line() {
 		return _scale.x(_value.x(d, i));
 	});
 	_area.y1(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
 	});
 
 	// Brush filter
@@ -2441,8 +2447,6 @@ function sentio_line_line() {
 
 	// Array for various plot data
 	var _data = [];
-	var _raw_data = [];
-	var _stack_data = [];
 
 	var _points = [];
 
@@ -2486,10 +2490,55 @@ function sentio_line_line() {
 	    .style("visibility", "hidden")
 	    .style('background-color', 'rgba(0,0,0,0.8')
 	    .style('border-radius', '5px')
-	    .style('padding', '3px');
+	    .style('padding', '3px')
+	    .style('pointer-events', 'none');
 
 	// Chart create/init method
 	function _instance(selection){}
+
+	var cx, cy, y, targetX;
+	var selected = {
+		points: [],
+		markers: []
+	};
+	function handleMouseMove() {
+		cx = d3.event.offsetX;
+		cy = d3.event.offsetY;
+		y = d3.event.y;
+
+		targetX = cx;
+		selected.points = [];
+		selected.markers = [];
+
+		// bind to a point if it exists
+		d3.selectAll('.point')
+			.each(function(d) {
+				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
+					targetX = _scale.x(_pointValue.x(d));
+					selected.points.push(d);
+				}
+			});
+
+		// Find any markers in that range
+		d3.selectAll('.marker')
+			.each(function(d) {
+				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
+					selected.markers.push(d);
+				}
+			});
+
+		if (selected.points.length > 0 && cx > 0 && cy > 0) {
+			tooltip.style("visibility", "visible");
+			tooltip.style("top", y+"px").style("left",d3.event.x+"px");
+			tooltip.html(invokePointCallback({d: selected}));
+		} else {
+			tooltip.style("visibility", "hidden");
+		}
+
+		_element.g.clickLine
+			.attr('x1', targetX)
+			.attr('x2', targetX);
+	}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
@@ -2503,20 +2552,53 @@ function sentio_line_line() {
 		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
-		_element.legendClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'legend_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
 		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
-		_element.legend_g.container = _element.svg.append('g');
+		_element.g.container = _element.svg.append('g')
+			.attr('class', 'g-main')
+			.on("mousemove", function () {
+				handleMouseMove();
+			})
+			.on("mouseover", function () {
+				if (d3.event.offsetX > 0 && d3.event.offsetY > 0) {
+					_element.g.clickLine.style('display', 'block');
+				}
+			})
+			.on("mouseout", function () {
+				_element.g.clickLine.style('display', 'none');
+				tooltip.style("visibility", "hidden");
+			});
+
+		_element.g.clickCapture = _element.g.container.append('rect')
+			.attr('class', 'click-capture')
+			.style('visibility', 'hidden')
+			.attr('x', '0')
+			.attr('y', '0');
+
+		_element.g.clickLine = _element.g.container.append('line')
+			.attr('class', 'line-over')
+			.attr('x1', '10')
+			.attr('y1', '0')
+			.attr('x2', '10')
+			.style('stroke', 'gray')
+			.attr('stroke-dasharray', ('5,5'))
+			.style('stroke-width', '1.5')
+			.style('display', 'none');
+
+		// Append groups for the axes
+		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
+		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		_element.g.points = _element.g.container.append('g').attr('class', 'points').attr('clip-path', 'url(#point_' + _id + ')');
-		_element.legend_g.legends = _element.legend_g.container.append('g').attr('class', 'legends').attr('clip-path', 'url(#legend_' + _id + ')');
 
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
@@ -2529,24 +2611,37 @@ function sentio_line_line() {
 				.on('brush', brush);
 		}
 
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
 		_instance.resize();
 
 		return _instance;
 	};
 
+	function stack() {
+		for (var i = 0; i < _data.length; i++) {
+			for (var j = 0; j < _data[i].data.length; j++) {
+				_data[i].data[j].push(i === 0 ? _data[i].data[j][1] : (_data[i-1].data[j][2] + _data[i].data[j][1]));
+			}
+		}
+	}
+
+	function generatePoints() {
+		_points = [];
+		for (var i = 0; i < _data.length; i++) {
+			for (var j = 0; j < _data[i].data.length; j++) {
+				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].data[j][2], _data[i].key, _data[i].name]);
+			}
+		}
+	}
+
 	/*
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
-		if(!arguments.length) { return _raw_data; }
-		_raw_data = v;
+		if(!arguments.length) { return _data; }
+		_data = v;
+		stack();
+
+		generatePoints();
 
 		return _instance;
 	};
@@ -2582,6 +2677,12 @@ function sentio_line_line() {
 		}
 	}
 
+	function invokeLegendCallback(d) {
+		if (null != _legendCallback) {
+			return _legendCallback(d);
+		}
+	}
+
 	/*
 	 * Updates all the elements that depend on the size of the various components
 	 */
@@ -2591,6 +2692,14 @@ function sentio_line_line() {
 		// Set up the scales
 		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
 		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
+
+		_element.g.clickCapture
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		_element.g.clickLine
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
 
 		// Append the clip path
 		_element.plotClipPath
@@ -2602,14 +2711,9 @@ function sentio_line_line() {
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.pointClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 5))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		_element.legendClipPath
-			.attr('transform', 'translate('+(_width-_margin.right)+', -' + _margin.top + ')')
-			.attr('width', Math.max(0, _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
+			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
+			.attr('height', Math.max(0, _height - _margin.bottom + 5));
 
 		// Now update the size of the svg pane
 		_element.svg.attr('width', _width).attr('height', _height);
@@ -2638,21 +2742,6 @@ function sentio_line_line() {
 		// Need to grab the filter extent before we change anything
 		var filterExtent = getFilter();
 
-
-		//stack data when needed and assign to data container
-		if (stacked) {
-			_stack_data = JSON.parse(JSON.stringify(_raw_data));
-			for (var i = 0; i < _stack_data.length; i++) {
-				if (i === 0) continue;
-				for (var j = 0; j < _stack_data[i].data.length; j++) {
-					_stack_data[i].data[j][1] += _stack_data[i-1].data[j][1];
-				}
-			}
-			_data = _stack_data;
-		} else {
-			_data = _raw_data;
-		}
-
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(multiExtent(_data, _extent.x));
 
@@ -2676,6 +2765,7 @@ function sentio_line_line() {
 	function updateAxes() {
 		// Prevent x axis labels from overlapping by limiting tick count.
 		_axis.x = _axis.x.ticks(x_ticks > max_ticks ? max_ticks : x_ticks);
+		_axis.y = _axis.y.ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
 
 		if(null != _axis.x) {
 			_element.g.xAxis
@@ -2725,18 +2815,12 @@ function sentio_line_line() {
 			.attr('stroke-width', '2px')
 			.attr('stroke-opacity', '0.9')
 			.attr('fill', 'none');
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).attr('d', _line);
 		plotEnter.append('g').append('path')
 			.attr('class', 'blank-area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
 			.attr('fill', function(d) { return _scale.color(d.key); })
 			.attr('fill-opacity', '0.05');
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).attr('d', _area.y0(_scale.y.range()[0]));
 
 
 		var lineUpdate = plotJoin.select('.blank-line');
@@ -2747,15 +2831,9 @@ function sentio_line_line() {
 		areaUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _area.y0(_scale.y.range()[0]));
 
 		plotJoin.exit().select('.blank-line')
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).transition().duration(500)
 			.attr('d', _line);
 
 		plotJoin.exit().select('.blank-area')
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).transition().duration(500)
 			.attr('d', _area.y0(_scale.y.range()[0]));
 
 		// Exit
@@ -2763,93 +2841,16 @@ function sentio_line_line() {
 			.transition().duration(500).remove();
 	}
 
+	var legend_content = {
+		series: undefined,
+		markers: undefined,
+	};
 	function updateLegend() {
-		var legendJoin = _element.legend_g.legends
-			.selectAll('.legend')
-			.data(_data, function(d) {
-				return d.key;
-			});
+		legend_content.series = _data.map(function(series) {
+			return [series.key, series.name, series.total, _scale.color(series.key)];
+		});
 
-		var legendEnter = legendJoin.enter().append('g')
-			.attr('class', 'legend');
-
-		legendEnter
-			.on('click', function(d, i) {
-				// Toggle data visibility
-				var targetPath = d3.select('#path-'+d.key);
-				targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
-				var targetArea = d3.select('#area-'+d.key);
-				targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
-				var targetPoints = d3.selectAll('.pt-'+d.key);
-				targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
-
-				// Toggle legend visibility
-				var legendRect = legendEnter.select('#lRect-'+i);
-				var legendLabel = legendEnter.select('#lLbl-'+i);
-				legendRect.transition().style('opacity', legendRect.style('opacity') == 0.5 ? 1 : 0.5);
-				legendLabel.transition().style('opacity', legendLabel.style('opacity') == 0.5 ? 1 : 0.5);
-			})
-			.on("mouseover", function(d) {
-				tooltip.html(d.name + ' ('+d.total+')');
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
-			});
-
-		var rectEnter = legendEnter.append('rect');
-		var labelEnter = legendEnter.append('text');
-
-		var rectUpdate = legendJoin.select('rect');
-		var labelUpdate = legendJoin.select('text');
-
-		labelEnter
-			.attr('id', function(d, i) { return 'lLbl-'+i; })
-			.attr('opacity', 1)
-			.attr('x', (_width - _margin.right)+70)
-			.attr('font-size', 13)
-			.text(function(d) { return d.name + ' ('+d.total+')'; })
-			.attr('y', 0)
-			.transition().duration(200)
-			.attr('y', function(d, i) { 
-				return 27+(i * 20); 
-			});
-
-		rectEnter
-			.attr('id', function(d, i) { return 'lRect-'+i; })
-			.attr('opacity', 1)
-			.attr('x', (_width - _margin.right)+20)
-			.attr('width', 40)
-			.attr('height', 15)
-			.attr('stroke', function(d) {return _scale.color(d.key);})
-			.attr('fill', function(d) {return _scale.color(d.key);})
-			.attr('y', 0)
-			.transition().duration(200)
-			.attr('y', function(d, i) { return 15+(i * 20); });
-
-		rectUpdate.transition().duration(500)
-			.attr('x', (_width - _margin.right)+20)
-			.attr('y', function(d, i) { return 15+(i * 20); });
-
-		labelUpdate.transition().duration(500)
-			.text(function(d) { return d.name + ' ('+d.total+')'; })
-			.attr('x', (_width - _margin.right)+70)
-			.attr('y', function(d, i) { return 27+(i * 20); });
-
-		// exit
-		legendJoin.exit().select('rect')
-			.transition().duration(200)
-			.attr('y', 0);
-
-		legendJoin.exit().select('text')
-			.transition().duration(200)
-			.attr('y', 0);
-
-		var legendExit = legendJoin.exit()
-			.transition().duration(200).remove();
+		invokeLegendCallback({d: legend_content});
 	}
 
 	/*
@@ -2861,13 +2862,6 @@ function sentio_line_line() {
 	 *	]
 	 */
 	function updatePoints() {
-		// Create points from line data 
-		_points = [];
-		for (var i = 0; i < _data.length; i++) {
-			for (var j = 0; j < _data[i].data.length; j++) {
-				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].key, _data[i].name]);
-			}
-		}
 
 		var pointJoin = _element.g.points
 			.selectAll('.point')
@@ -2885,41 +2879,28 @@ function sentio_line_line() {
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('r', 3)
 			.attr('stroke', 'white')
-			.attr('stroke-opacity', '1')
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0';
+			})
 			.attr('stroke-width', 2)
 			.attr('fill', 'white')
-			.attr('fill-opacity', 0)
-			.on("mouseover", function(d) {
-				tooltip.html(invokePointCallback({d: d}));
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
-			});
-			// .attr('cx', 0)
-			// .transition().duration(500)		// slide point from left
-			// .attr('cx', function(d) {return _scale.x(_pointValue.x(d));});
+			.attr('fill-opacity', 0);
 
 		circleUpdate.transition().duration(500)
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('cx', function(d) {return _scale.x(_pointValue.x(d));})
 			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));});
 
-
-		// pointJoin.exit()
-		// 	.select('circle')
-		// 	.transition()
-		// 	.duration(500)
-		// 	.attr('cx', 0);
-
 		//exit
 		pointJoin.exit()
-			// .transition()
-			// .duration(500)
 			.remove();
+	}
+
+	function toggleMarkers() {
+		_element.g.markers
+			.selectAll('.marker')
+			.transition().duration(200)
+			.attr('opacity', showMarkers ? '1' : '0');
 	}
 
 	/* 
@@ -2927,8 +2908,8 @@ function sentio_line_line() {
 	 * 	_marker = {
 	 *		values: 
 	 *			[
-	 *				['label1', x1, 'slug_1'],
-	 *				['label2', x2, 'slug_2'],
+	 *				['label1', 'slug_1', start_x1, end_x1],
+	 *				['label2', 'slug_2', start_x2, end_x2]
 	 *				...
 	 *			]
 	 *  }
@@ -2938,37 +2919,90 @@ function sentio_line_line() {
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
 			.data(_markers.values, function(d) {
-				return 'mk-'+_markerValue.slug(d)+'-'+_markerValue.x(d); 
+				return _markerValue.slug(d); 
 			});
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', function(d) {
-				tooltip.html('<b>'+_markerValue.label(d)+'</b>');
-				return tooltip.style("visibility", "visible");
-			})
-			.on("mousemove", function() {
-				return tooltip.style("top", (d3.event.pageY-10)+"px").style("left",(d3.event.pageX+10)+"px");
-			})
-			.on("mouseout", function() {
-				return tooltip.style("visibility", "hidden");
-			})
-			.on('click', markerClicked);
+			.attr('class', 'marker');
 
-		var lineEnter = markerEnter.append('line');
+		var areaEnter = markerEnter.append('rect');
+		var startEnter = markerEnter.append('line');
+		var endEnter = markerEnter.append('line');
+		var startIndEnter = markerEnter.append('circle');
+		var endIndEnter = markerEnter.append('circle');
 
-		var lineUpdate = markerJoin.select('line');
+		var areaUpdate = markerJoin.select('rect');
+		var startUpdate = markerJoin.select('.start');
+		var endUpdate = markerJoin.select('.end');
+		var startIndUpdate = markerJoin.select('.start-ind');
+		var endIndUpdate = markerJoin.select('.end-ind');
 
-		lineEnter
+		startIndEnter
+			.attr('class', 'start-ind')
+			.attr('r', '3')
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke-opacity', '1')
+			.attr('stroke-width', '2')
+			.attr('fill', 'white')
+			.attr('fill-opacity', '0')
+			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endIndEnter
+			.attr('class', 'end-ind')
+			.attr('r', '3')
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke-opacity', '1')
+			.attr('stroke-width', '2')
+			.attr('fill', 'white')
+			.attr('fill-opacity', '0')
+			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		startEnter
+			.attr('class', 'start')
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; })
+			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endEnter
+			.attr('class', 'end')
+			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); })
 			.attr('y1', function(d) { return _scale.y.range()[1]; })
 			.attr('y2', function(d) { return _scale.y.range()[0]; })
 			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));});
 
-		// Update
-		lineUpdate.transition().duration(500)
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
+		areaEnter
+			.attr('y', '0')
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('width', function(d) { 
+				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
+			})
+			.attr('height', function(d) { return _scale.y.range()[0]; })
+			.attr('fill', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('fill-opacity', '0.1');
+
+		startIndUpdate.transition().duration(500)
+			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endIndUpdate.transition().duration(500)
+			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		startUpdate.transition().duration(500)
+			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
+
+		endUpdate.transition().duration(500)
+			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
+			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); });
+
+		areaUpdate.transition().duration(500)
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
+			.attr('width', function(d) { 
+				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
+			});
 
 		// Exit
 		var markerExit = markerJoin.exit().remove();
@@ -3044,6 +3078,44 @@ function sentio_line_line() {
 		}
 	}
 
+	_instance.toggleSeries = function(s) {
+		var index = -1;
+		var h_index = hidden_series.indexOf(s);
+
+		for (var i = 0; i < _data.length; i++) {
+			if (index !== -1) {
+				if (h_index == -1) {
+					for (var j = 0; j < _data[i].data.length; j++) {
+						_data[i].data[j][2] -= _data[index].data[j][1];
+					}
+				} else {
+					for (var k = 0; k < _data[i].data.length; k++) {
+						_data[i].data[k][2] += _data[index].data[k][1];
+					}
+				}
+			} else if (_data[i].key === s) {
+				index = i;
+			}
+		}
+
+		if (h_index == -1) {
+			hidden_series.push(s);
+		} else {
+			hidden_series.splice(h_index, 1);
+		}
+
+		generatePoints();
+
+		_instance.redraw();
+
+		var targetPath = d3.select('#path-'+s);
+		targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
+		var targetArea = d3.select('#area-'+s);
+		targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
+		var targetPoints = d3.selectAll('.pt-'+s);
+		targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
+	};
+
 	// Basic Getters/Setters
 	_instance.xTicks = function(t) {
 		if(!arguments.length) { return x_ticks; }
@@ -3060,6 +3132,12 @@ function sentio_line_line() {
 		if(!arguments.length) { return stacked; }
 		stacked = s;
 		_instance.redraw();
+		return _instance;
+	};
+	_instance.showMarkers = function(b) {
+		if (!arguments.length) { return showMarkers; }
+		showMarkers = b;
+		toggleMarkers();
 		return _instance;
 	};
 	_instance.width = function(v){
@@ -3147,6 +3225,11 @@ function sentio_line_line() {
 	_instance.pointHover = function(v) {
 		if(!arguments.length) { return _pointCallback; }
 		_pointCallback = v;
+		return _instance;
+	};
+	_instance.legendFn = function(v) {
+		if (!arguments.length) { return _legendCallback; }
+		_legendCallback = v;
 		return _instance;
 	};
 	_instance.filter = function(v) {

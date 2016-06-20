@@ -246,7 +246,7 @@ function sentio_line_line() {
 			.on("mouseout", function () {
 				_element.g.clickLine.style('display', 'none');
 				tooltip.style("visibility", "hidden");
-			})
+			});
 
 		_element.g.clickCapture = _element.g.container.append('rect')
 			.attr('class', 'click-capture')
@@ -520,11 +520,11 @@ function sentio_line_line() {
 	var legend_content = {
 		series: undefined,
 		markers: undefined,
-	}
+	};
 	function updateLegend() {
 		legend_content.series = _data.map(function(series) {
 			return [series.key, series.name, series.total, _scale.color(series.key)];
-		})
+		});
 
 		invokeLegendCallback({d: legend_content});
 	}
@@ -765,8 +765,8 @@ function sentio_line_line() {
 						_data[i].data[j][2] -= _data[index].data[j][1];
 					}
 				} else {
-					for (var j = 0; j < _data[i].data.length; j++) {
-						_data[i].data[j][2] += _data[index].data[j][1];
+					for (var k = 0; k < _data[i].data.length; k++) {
+						_data[i].data[k][2] += _data[index].data[k][1];
 					}
 				}
 			} else if (_data[i].key === s) {
@@ -811,11 +811,11 @@ function sentio_line_line() {
 		return _instance;
 	};
 	_instance.showMarkers = function(b) {
-		if (!arguments.length) { return showEvents; }
+		if (!arguments.length) { return showMarkers; }
 		showMarkers = b;
 		toggleMarkers();
 		return _instance;
-	}
+	};
 	_instance.width = function(v){
 		if(!arguments.length) { return _width; }
 		_width = v;
@@ -907,7 +907,7 @@ function sentio_line_line() {
 		if (!arguments.length) { return _legendCallback; }
 		_legendCallback = v;
 		return _instance;
-	}
+	};
 	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.dispatch; }
 		_filter.enabled = v;

@@ -167,8 +167,10 @@ function($document, $window, $timeout, $log) {
 			filterState: '=sentioFilterState',
 			interpolation: '@sentioInterpolation',
 			pointHoverFn: '&sentioPointHoverFn',
+			legendFn: '&sentioLegendFn',
 			yLock: '=sentioYLock',
-			stacked: '=sentioStacked'
+			stacked: '=sentioStacked',
+			showMarkers: '=sentioShowMarkers'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -229,6 +231,10 @@ function($document, $window, $timeout, $log) {
 			line.init(lineElement);
 			line.interpolation(scope.interpolation);
 
+			scope.$on('legend-toggle', function(evt, param) {
+				line.toggleSeries(param);
+			});
+
 			scope.$watch('xTicks', function(n, o) {
 				if (null === 0 && null == n) {return; }
 				line.xTicks(n);
@@ -237,6 +243,11 @@ function($document, $window, $timeout, $log) {
 			scope.$watch('stacked', function(n, o) {
 				if (null === 0 && null == n) {return; }
 				line.stacked(n);
+			});
+
+			scope.$watch('showMarkers', function(n, o) {
+				if (null === 0 && null == n) {return; }
+				line.showMarkers(n);
 			});
 
 			scope.$watch('yLock', function(n, o) {
@@ -253,6 +264,12 @@ function($document, $window, $timeout, $log) {
 			scope.$watch('pointHoverFn', function(n, o) {
 				if (null != scope.pointHoverFn) {
 					line.pointHover(scope.pointHoverFn);
+				}
+			});
+
+			scope.$watch('legendFn', function(n, o) {
+				if (null != scope.legendFn) {
+					line.legendFn(scope.legendFn);
 				}
 			});
 
