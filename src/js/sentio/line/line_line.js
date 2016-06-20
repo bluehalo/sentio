@@ -39,8 +39,9 @@ function sentio_line_line() {
 
 	var _pointValue = {
 		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; },
-		series: function(d, i) { return d[2]; }
+		y: function(d, i) { return stacked ? d[2] : d[1]; },
+		series: function(d, i) { return d[3]; },
+		slug: function(d, i) { return d[4]; }
 	};
 
 	// Accessors for the positions of the markers
@@ -58,7 +59,7 @@ function sentio_line_line() {
 			getValue: function(d) { return d[0]; }
 		}),
 		y: sentio.util.extent({
-			getValue: function(d) { return d[1]; }
+			getValue: function(d) { return stacked ? d[2] : d[1]; }
 		})
 	};
 	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
@@ -101,7 +102,7 @@ function sentio_line_line() {
 		return _scale.x(_value.x(d, i));
 	});
 	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
 	});
 
 	// Area generator for the plot
@@ -110,7 +111,7 @@ function sentio_line_line() {
 		return _scale.x(_value.x(d, i));
 	});
 	_area.y1(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
 	});
 
 	// Brush filter
@@ -122,8 +123,6 @@ function sentio_line_line() {
 
 	// Array for various plot data
 	var _data = [];
-	var _raw_data = [];
-	var _stack_data = [];
 
 	var _points = [];
 
@@ -293,12 +292,32 @@ function sentio_line_line() {
 		return _instance;
 	};
 
+	function stack() {
+		for (var i = 0; i < _data.length; i++) {
+			for (var j = 0; j < _data[i].data.length; j++) {
+				_data[i].data[j].push(i === 0 ? _data[i].data[j][1] : (_data[i-1].data[j][2] + _data[i].data[j][1]));
+			}
+		}
+	}
+
+	function generatePoints() {
+		_points = [];
+		for (var i = 0; i < _data.length; i++) {
+			for (var j = 0; j < _data[i].data.length; j++) {
+				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].data[j][2], _data[i].key, _data[i].name]);
+			}
+		}
+	}
+
 	/*
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
-		if(!arguments.length) { return _raw_data; }
-		_raw_data = v;
+		if(!arguments.length) { return _data; }
+		_data = v;
+		stack();
+
+		generatePoints();
 
 		return _instance;
 	};
@@ -399,20 +418,6 @@ function sentio_line_line() {
 		// Need to grab the filter extent before we change anything
 		var filterExtent = getFilter();
 
-		//stack data when needed and assign to data container
-		if (stacked) {
-			_stack_data = JSON.parse(JSON.stringify(_raw_data));
-			for (var i = 0; i < _stack_data.length; i++) {
-				if (i === 0) continue;
-				for (var j = 0; j < _stack_data[i].data.length; j++) {
-					_stack_data[i].data[j][1] += _stack_data[i-1].data[j][1];
-				}
-			}
-			_data = _stack_data;
-		} else {
-			_data = _raw_data;
-		}
-
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(multiExtent(_data, _extent.x));
 
@@ -486,18 +491,12 @@ function sentio_line_line() {
 			.attr('stroke-width', '2px')
 			.attr('stroke-opacity', '0.9')
 			.attr('fill', 'none');
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).attr('d', _line);
 		plotEnter.append('g').append('path')
 			.attr('class', 'blank-area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
 			.attr('fill', function(d) { return _scale.color(d.key); })
 			.attr('fill-opacity', '0.05');
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).attr('d', _area.y0(_scale.y.range()[0]));
 
 
 		var lineUpdate = plotJoin.select('.blank-line');
@@ -508,15 +507,9 @@ function sentio_line_line() {
 		areaUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _area.y0(_scale.y.range()[0]));
 
 		plotJoin.exit().select('.blank-line')
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).transition().duration(500)
 			.attr('d', _line);
 
 		plotJoin.exit().select('.blank-area')
-			// .datum(function(d) { 
-			// 	return d.data.map(function(p) { return [d.data[d.data.length-1][0], p[1]]; }); 
-			// }).transition().duration(500)
 			.attr('d', _area.y0(_scale.y.range()[0]));
 
 		// Exit
@@ -545,13 +538,6 @@ function sentio_line_line() {
 	 *	]
 	 */
 	function updatePoints() {
-		// Create points from line data 
-		_points = [];
-		for (var i = 0; i < _data.length; i++) {
-			for (var j = 0; j < _data[i].data.length; j++) {
-				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].key, _data[i].name]);
-			}
-		}
 
 		var pointJoin = _element.g.points
 			.selectAll('.point')
@@ -769,6 +755,34 @@ function sentio_line_line() {
 	}
 
 	_instance.toggleSeries = function(s) {
+		var index = -1;
+		var h_index = hidden_series.indexOf(s);
+
+		for (var i = 0; i < _data.length; i++) {
+			if (index !== -1) {
+				if (h_index == -1) {
+					for (var j = 0; j < _data[i].data.length; j++) {
+						_data[i].data[j][2] -= _data[index].data[j][1];
+					}
+				} else {
+					for (var j = 0; j < _data[i].data.length; j++) {
+						_data[i].data[j][2] += _data[index].data[j][1];
+					}
+				}
+			} else if (_data[i].key === s) {
+				index = i;
+			}
+		}
+
+		if (h_index == -1) {
+			hidden_series.push(s);
+		} else {
+			hidden_series.splice(h_index, 1);
+		}
+
+		generatePoints();
+
+		_instance.redraw();
 
 		var targetPath = d3.select('#path-'+s);
 		targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
@@ -776,14 +790,6 @@ function sentio_line_line() {
 		targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
 		var targetPoints = d3.selectAll('.pt-'+s);
 		targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
-
-		var index = hidden_series.indexOf(s);
-		if (index === -1) {
-			hidden_series.push(s);
-		} else {
-			hidden_series.splice(index, 1);
-		}
-
 	};
 
 	// Basic Getters/Setters
