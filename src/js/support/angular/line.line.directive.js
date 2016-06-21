@@ -83,6 +83,7 @@ function($document, $window, $timeout, $log) {
 			line.init(lineElement);
 			line.interpolation(scope.interpolation);
 
+			// Triggered when legend element is clicked in the view.
 			scope.$on('legend-toggle', function(evt, param) {
 				line.toggleSeries(param);
 			});

@@ -16,6 +16,22 @@ function sentio_line_line() {
 	var max_ticks = 30;		// Set default max number of ticks for the x axis.
 	var x_ticks = 30;		// Set default number of ticks for the x axis.
 
+	// Values for tracking mouse movements on graph and selected elements.
+	var cx, cy, y, targetX;
+	var selected = {
+		points: [],
+		markers: []
+	};
+
+	// Container for legend information to be passed out of sentio.
+	var legend_content = {
+		series: undefined,
+		markers: undefined,
+	};
+
+	/*
+	 * Array of series slugs that are hidden from the user.
+	 */
 	var hidden_series = [];
 
 	/*
@@ -27,8 +43,11 @@ function sentio_line_line() {
 	/*
 	 * Callback function for hovers over plot points.
 	 */
-	var _pointCallback = null;
+	var _hoverCallback = null;
 
+	/*
+	 * Callback function to pass legend information
+	 */
 	var _legendCallback = null;
 
 	// Default accessors for the dimensions of the data
@@ -37,6 +56,7 @@ function sentio_line_line() {
 		y: function(d, i) { return d[1]; }
 	};
 
+	// Default accessors for point information.
 	var _pointValue = {
 		x: function(d, i) { return d[0]; },
 		y: function(d, i) { return stacked ? d[2] : d[1]; },
@@ -81,8 +101,8 @@ function sentio_line_line() {
 	var _element = {
 		svg: undefined,
 		g: {
-			clickCapture: undefined,
-			clickLine: undefined,
+			mouseContainer: undefined,
+			hoverLine: undefined,
 			container: undefined,
 			markers: undefined,
 			plots: undefined,
@@ -159,6 +179,7 @@ function sentio_line_line() {
 		_filter.dispatch.filterend([isEmpty, min, max]);
 	}
 
+	// Default attributes for configurable tooltip
 	var tooltip = d3.select("body")
 	    .append("div")
 	    .style("position", "absolute")
@@ -171,50 +192,6 @@ function sentio_line_line() {
 
 	// Chart create/init method
 	function _instance(selection){}
-
-	var cx, cy, y, targetX;
-	var selected = {
-		points: [],
-		markers: []
-	};
-	function handleMouseMove() {
-		cx = d3.event.offsetX;
-		cy = d3.event.offsetY;
-		y = d3.event.y;
-
-		targetX = cx;
-		selected.points = [];
-		selected.markers = [];
-
-		// bind to a point if it exists
-		d3.selectAll('.point')
-			.each(function(d) {
-				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
-					targetX = _scale.x(_pointValue.x(d));
-					selected.points.push(d);
-				}
-			});
-
-		// Find any markers in that range
-		d3.selectAll('.marker')
-			.each(function(d) {
-				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
-					selected.markers.push(d);
-				}
-			});
-
-		if (selected.points.length > 0 && cx > 0 && cy > 0) {
-			tooltip.style("visibility", "visible");
-			tooltip.style("top", y+"px").style("left",d3.event.x+"px");
-			tooltip.html(invokePointCallback({d: selected}));
-		} else {
-			tooltip.style("visibility", "hidden");
-		}
-
-		_element.g.clickLine
-			.attr('x1', targetX)
-			.attr('x2', targetX);
-	}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
@@ -232,30 +209,31 @@ function sentio_line_line() {
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
 
-		// Append a container for everything
+		// Append a container for everything as well as mouse handlers
 		_element.g.container = _element.svg.append('g')
 			.attr('class', 'g-main')
 			.on("mousemove", function () {
 				handleMouseMove();
 			})
 			.on("mouseover", function () {
+				// Prevents triggering when over graph margins and axes
 				if (d3.event.offsetX > 0 && d3.event.offsetY > 0) {
-					_element.g.clickLine.style('display', 'block');
+					_element.g.hoverLine.style('display', 'block');
 				}
 			})
 			.on("mouseout", function () {
-				_element.g.clickLine.style('display', 'none');
+				_element.g.hoverLine.style('display', 'none');
 				tooltip.style("visibility", "hidden");
 			});
 
-		_element.g.clickCapture = _element.g.container.append('rect')
-			.attr('class', 'click-capture')
+		// Append elements for capturing mouse events.
+		_element.g.mouseContainer = _element.g.container.append('rect')
+			.attr('class', 'mouse-container')
 			.style('visibility', 'hidden')
 			.attr('x', '0')
 			.attr('y', '0');
-
-		_element.g.clickLine = _element.g.container.append('line')
-			.attr('class', 'line-over')
+		_element.g.hoverLine = _element.g.container.append('line')
+			.attr('class', 'hover-line')
 			.attr('x1', '10')
 			.attr('y1', '0')
 			.attr('x2', '10')
@@ -292,6 +270,9 @@ function sentio_line_line() {
 		return _instance;
 	};
 
+	/* 
+	 * Generates stacked y values in the order that _data arrives in.
+	 */
 	function stack() {
 		for (var i = 0; i < _data.length; i++) {
 			for (var j = 0; j < _data[i].data.length; j++) {
@@ -300,6 +281,9 @@ function sentio_line_line() {
 		}
 	}
 
+	/*
+	 * Generates point values from data.  Each point is a unique set of data with x, y, and series information.
+	 */
 	function generatePoints() {
 		_points = [];
 		for (var i = 0; i < _data.length; i++) {
@@ -310,13 +294,24 @@ function sentio_line_line() {
 	}
 
 	/*
+	 * Hide all markers on the graph.
+	 */
+	function toggleMarkers() {
+		_element.g.markers
+			.selectAll('.marker')
+			.transition().duration(200)
+			.attr('opacity', showMarkers ? '1' : '0');
+	}
+
+	/*
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
 		_data = v;
-		stack();
 
+		// Update stacked and point data every time it is available.
+		stack();
 		generatePoints();
 
 		return _instance;
@@ -347,16 +342,71 @@ function sentio_line_line() {
 		_markers.dispatch.onclick(d);
 	}
 
-	function invokePointCallback(d) {
-		if(null != _pointCallback) {
-			return _pointCallback(d);
+	/*
+	 * Accepts object of selected elements and attempts to call
+	 * the callback function. 
+	 */
+	function invokeHoverCallback(d) {
+		if(null != _hoverCallback) {
+			return _hoverCallback(d);
 		}
 	}
 
+	/*
+	 * Accepts series information and attempts to call
+	 * the callback function.
+	 */
 	function invokeLegendCallback(d) {
 		if (null != _legendCallback) {
 			return _legendCallback(d);
 		}
+	}
+
+	/*
+	 * Function to handle mouse movement on the graph and gather selected elements.
+	 */
+	function handleMouseMove() {
+		// Grab current mouse position information.
+		cx = d3.event.offsetX;
+		cy = d3.event.offsetY;
+		y = d3.event.y;
+
+		// Set initial values
+		targetX = cx;
+		selected.points = [];
+		selected.markers = [];
+
+		// bind to a point if it exists
+		d3.selectAll('.point')
+			.each(function(d) {
+				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
+					targetX = _scale.x(_pointValue.x(d));
+					selected.points.push(d);
+				}
+			});
+
+		// Find any markers in that range
+		d3.selectAll('.marker')
+			.each(function(d) {
+				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
+					selected.markers.push(d);
+				}
+			});
+
+		// Adjust position of tooltip and pass selected elements to callback function.
+		if (selected.points.length > 0 && cx > 0 && cy > 0) {
+			tooltip.style("visibility", "visible");
+			tooltip.style("top", y+"px").style("left",d3.event.x+"px");
+			tooltip.html(invokeHoverCallback({d: selected}));
+		} else {
+			// Hide tooltip if no elements are selected.
+			tooltip.style("visibility", "hidden");
+		}
+
+		// Update position of hover line.
+		_element.g.hoverLine
+			.attr('x1', targetX)
+			.attr('x2', targetX);
 	}
 
 	/*
@@ -369,12 +419,12 @@ function sentio_line_line() {
 		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
 		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
 
-		_element.g.clickCapture
+		// Update mouse capture elements
+		_element.g.mouseContainer
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		_element.g.clickLine
+		_element.g.hoverLine
 			.attr('y2', function(d) { return _scale.y.range()[0]; });
 
 		// Append the clip path
@@ -401,6 +451,7 @@ function sentio_line_line() {
 		// update the margins on the main draw group
 		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
 
+		// Restrict count of x axis ticks based off of element width.
 		max_ticks = parseInt(_width / 20);
 
 		return _instance;
@@ -422,6 +473,7 @@ function sentio_line_line() {
 		_scale.x.domain(multiExtent(_data, _extent.x));
 
 		// Update the y domain (based on configuration and data)
+		// When locked, the y axis will change if the extent is larger.
 		var y = multiExtent(_data, _extent.y)[1];
 		if (lockYAxis) { y = y > lockedY ? y : lockedY; }
 		lockedY = y;
@@ -443,6 +495,7 @@ function sentio_line_line() {
 		_axis.x = _axis.x.ticks(x_ticks > max_ticks ? max_ticks : x_ticks);
 		_axis.y = _axis.y.ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
 
+		// Rotate axis labels by default to prevent overlap.
 		if(null != _axis.x) {
 			_element.g.xAxis
 				.transition().call(_axis.x)
@@ -485,31 +538,30 @@ function sentio_line_line() {
 
 		// Enter
 		plotEnter.append('g').append('path')
-			.attr('class', 'blank-line')
+			.attr('class', 'line')
 			.attr('id', function(d) { return 'path-'+d.key; })
 			.attr('stroke', function(d) { return _scale.color(d.key); })
 			.attr('stroke-width', '2px')
 			.attr('stroke-opacity', '0.9')
 			.attr('fill', 'none');
 		plotEnter.append('g').append('path')
-			.attr('class', 'blank-area')
+			.attr('class', 'area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
 			.attr('fill', function(d) { return _scale.color(d.key); })
 			.attr('fill-opacity', '0.05');
 
-
-		var lineUpdate = plotJoin.select('.blank-line');
-		var areaUpdate = plotJoin.select('.blank-area');
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
 
 		// // Update
 		lineUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _line);
 		areaUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _area.y0(_scale.y.range()[0]));
 
-		plotJoin.exit().select('.blank-line')
+		plotJoin.exit().select('.line')
 			.attr('d', _line);
 
-		plotJoin.exit().select('.blank-area')
+		plotJoin.exit().select('.area')
 			.attr('d', _area.y0(_scale.y.range()[0]));
 
 		// Exit
@@ -517,10 +569,9 @@ function sentio_line_line() {
 			.transition().duration(500).remove();
 	}
 
-	var legend_content = {
-		series: undefined,
-		markers: undefined,
-	};
+	/*
+	 * Stores legend information from data series.
+	 */
 	function updateLegend() {
 		legend_content.series = _data.map(function(series) {
 			return [series.key, series.name, series.total, _scale.color(series.key)];
@@ -556,7 +607,7 @@ function sentio_line_line() {
 			.attr('r', 3)
 			.attr('stroke', 'white')
 			.attr('stroke-opacity', function(d) {
-				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0';
+				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0'; // Hide points if related series is hidden.
 			})
 			.attr('stroke-width', 2)
 			.attr('fill', 'white')
@@ -572,14 +623,12 @@ function sentio_line_line() {
 			.remove();
 	}
 
-	function toggleMarkers() {
-		_element.g.markers
-			.selectAll('.marker')
-			.transition().duration(200)
-			.attr('opacity', showMarkers ? '1' : '0');
-	}
-
 	/* 
+	 * Marker update function
+	 *
+	 * There are five child elements to each marker element:
+	 * 	Start line, end line, start point, end point, and marker area.
+	 *
 	 * _marker format:
 	 * 	_marker = {
 	 *		values: 
@@ -605,16 +654,16 @@ function sentio_line_line() {
 		var areaEnter = markerEnter.append('rect');
 		var startEnter = markerEnter.append('line');
 		var endEnter = markerEnter.append('line');
-		var startIndEnter = markerEnter.append('circle');
-		var endIndEnter = markerEnter.append('circle');
+		var startPointEnter = markerEnter.append('circle');
+		var endPointEnter = markerEnter.append('circle');
 
 		var areaUpdate = markerJoin.select('rect');
 		var startUpdate = markerJoin.select('.start');
 		var endUpdate = markerJoin.select('.end');
-		var startIndUpdate = markerJoin.select('.start-ind');
-		var endIndUpdate = markerJoin.select('.end-ind');
+		var startPointUpdate = markerJoin.select('.start-ind');
+		var endPointUpdate = markerJoin.select('.end-ind');
 
-		startIndEnter
+		startPointEnter
 			.attr('class', 'start-ind')
 			.attr('r', '3')
 			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
@@ -624,7 +673,7 @@ function sentio_line_line() {
 			.attr('fill-opacity', '0')
 			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
 
-		endIndEnter
+		endPointEnter
 			.attr('class', 'end-ind')
 			.attr('r', '3')
 			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
@@ -660,10 +709,10 @@ function sentio_line_line() {
 			.attr('fill', function(d) {return _scale.color(_markerValue.slug(d));})
 			.attr('fill-opacity', '0.1');
 
-		startIndUpdate.transition().duration(500)
+		startPointUpdate.transition().duration(500)
 			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
 
-		endIndUpdate.transition().duration(500)
+		endPointUpdate.transition().duration(500)
 			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
 
 		startUpdate.transition().duration(500)
@@ -754,10 +803,22 @@ function sentio_line_line() {
 		}
 	}
 
+	/*
+	 * Updates series and marker visuals when toggled to hide or show.
+	 *
+	 * Also updates stacked values for the data to show updated stack data when a series is hidden.
+	 */
 	_instance.toggleSeries = function(s) {
 		var index = -1;
-		var h_index = hidden_series.indexOf(s);
+		var h_index = hidden_series.indexOf(s); // Determines if series is already hidden or not.
 
+		/*
+		 * Iterates through each data series to update values.  It first finds the index of the toggled series
+		 * based off of the input key.  Then every subsequent series has its stacked values added or subtracted by 
+		 * the toggled series to update values.
+		 * 
+		 * Probably a better way to do this.  There might be incorrect behavior depending on the order of toggled series.
+		 */
 		for (var i = 0; i < _data.length; i++) {
 			if (index !== -1) {
 				if (h_index == -1) {
@@ -774,16 +835,19 @@ function sentio_line_line() {
 			}
 		}
 
+		// Update hidden series array 
 		if (h_index == -1) {
 			hidden_series.push(s);
 		} else {
 			hidden_series.splice(h_index, 1);
 		}
 
+		// Regenerate values for points.
 		generatePoints();
 
 		_instance.redraw();
 
+		// Show or hide series and points.
 		var targetPath = d3.select('#path-'+s);
 		targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
 		var targetArea = d3.select('#area-'+s);
@@ -899,8 +963,8 @@ function sentio_line_line() {
 		return _instance;
 	};
 	_instance.pointHover = function(v) {
-		if(!arguments.length) { return _pointCallback; }
-		_pointCallback = v;
+		if(!arguments.length) { return _hoverCallback; }
+		_hoverCallback = v;
 		return _instance;
 	};
 	_instance.legendFn = function(v) {
