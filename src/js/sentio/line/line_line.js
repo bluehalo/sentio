@@ -377,7 +377,7 @@ function sentio_line_line() {
 		selected.markers = [];
 
 		// bind to a point if it exists
-		d3.selectAll('.point')
+		_element.g.points.selectAll('.point')
 			.each(function(d) {
 				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
 					targetX = _scale.x(_pointValue.x(d));
@@ -386,7 +386,7 @@ function sentio_line_line() {
 			});
 
 		// Find any markers in that range
-		d3.selectAll('.marker')
+		_element.g.markers.selectAll('.marker')
 			.each(function(d) {
 				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
 					selected.markers.push(d);
@@ -542,14 +542,18 @@ function sentio_line_line() {
 			.attr('id', function(d) { return 'path-'+d.key; })
 			.attr('stroke', function(d) { return _scale.color(d.key); })
 			.attr('stroke-width', '2px')
-			.attr('stroke-opacity', '0.9')
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.9' : '0';
+			})
 			.attr('fill', 'none');
 		plotEnter.append('g').append('path')
 			.attr('class', 'area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
 			.attr('fill', function(d) { return _scale.color(d.key); })
-			.attr('fill-opacity', '0.05');
+			.attr('fill-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.05' : '0';
+			});
 
 		var lineUpdate = plotJoin.select('.line');
 		var areaUpdate = plotJoin.select('.area');
