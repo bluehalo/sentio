@@ -92,6 +92,9 @@ function sentio_line_line() {
 		marker_color: d3.scale.category20()
 	};
 
+	// Bisector for hover line
+	var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
+
 	// Default Axis definitions
 	var _axis = {
 		x: d3.svg.axis().scale(_scale.x).orient('bottom').ticks(x_ticks).tickFormat(d3.time.format("%m/%d/%y")),
@@ -213,9 +216,7 @@ function sentio_line_line() {
 		// Append a container for everything as well as mouse handlers
 		_element.g.container = _element.svg.append('g')
 			.attr('class', 'g-main')
-			.on("mousemove", function () {
-				handleMouseMove();
-			})
+			.on("mousemove", handleMouseMove)
 			.on("mouseover", function () {
 				// Prevents triggering when over graph margins and axes
 				if (d3.event.offsetX > 0 && d3.event.offsetY > 0) {
@@ -365,46 +366,52 @@ function sentio_line_line() {
 
 	/*
 	 * Function to handle mouse movement on the graph and gather selected elements.
+	 *
+	 * Adapted from: http://bl.ocks.org/mikehadlow/93b471e569e31af07cd3
 	 */
-	function handleMouseMove() {
-		// Grab current mouse position information.
-		cx = d3.event.offsetX;
-		cy = d3.event.offsetY;
-		y = d3.event.y;
 
-		// Set initial values
-		targetX = cx;
+	function handleMouseMove() {
+		if (!_data[0]) {return;}
+
 		selected.points = [];
 		selected.markers = [];
 
-		// bind to a point if it exists
-		_element.g.points.selectAll('.point')
-			.each(function(d) {
-				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
-					targetX = _scale.x(_pointValue.x(d));
-					selected.points.push(d);
-				}
-			});
+		var mouse = d3.mouse(this);
+		var mouseDate = _scale.x.invert(mouse[0]);
+		var targetX = mouse[0];
+		var index = bisectDate(_data[0].data, mouseDate); // Probably should store x axis info instead
 
-		// Find any markers in that range
-		_element.g.markers.selectAll('.marker')
-			.each(function(d) {
-				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
-					selected.markers.push(d);
-				}
-			});
+		var d0 = _data[0].data[index - 1];
+		var d1 = _data[0].data[index];
 
-		// Adjust position of tooltip and pass selected elements to callback function.
-		if (selected.points.length > 0 && cx > 0 && cy > 0) {
+		if (!d1 || !d0) { return; }
+
+		var d = mouseDate - d0[0] > d1[0] - mouseDate ? d1 : d0;
+		if (Math.abs(mouse[0] - _scale.x(d[0])) < 5) {
+			targetX = _scale.x(d[0]);
+
+			for (var i = 0; i < _data.length; i++) {
+				var pnt = _data[i].data.find(function(p) {
+					return p[0] === d[0];
+				});
+				if (pnt) {
+					selected.points.push(pnt.concat([_data[i].key, _data[i].name]));
+				}
+			}
+
+			for (var j = 0; j < _markers.values.length; j++) {
+				if (d[0] >= _markers.values[j][2] && d[0] <= _markers.values[j][3]) {
+					selected.markers.push(_markers.values[j]);	
+				}
+			}
+
 			tooltip.style("visibility", "visible");
-			tooltip.style("top", y+"px").style("left",d3.event.x+"px");
+			tooltip.style("top", d3.event.y+"px").style("left",d3.event.x+"px");
 			tooltip.html(invokeHoverCallback({d: selected}));
 		} else {
-			// Hide tooltip if no elements are selected.
 			tooltip.style("visibility", "hidden");
 		}
 
-		// Update position of hover line.
 		_element.g.hoverLine
 			.attr('x1', targetX)
 			.attr('x2', targetX);
