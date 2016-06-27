@@ -2513,7 +2513,7 @@ function sentio_line_line() {
 	    .style("position", "absolute")
 	    .style("z-index", "10")
 	    .style("visibility", "hidden")
-	    .style('background-color', 'rgba(0,0,0,0.8')
+	    .style('background-color', 'rgba(0,0,0,0.8)')
 	    .style('border-radius', '5px')
 	    .style('padding', '3px')
 	    .style('pointer-events', 'none');
