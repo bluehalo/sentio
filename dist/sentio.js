@@ -2412,7 +2412,8 @@ function sentio_line_line() {
 	var _scale = {
 		x: d3.time.scale(),
 		y: d3.scale.linear(),
-		color: d3.scale.category20()
+		color: d3.scale.category10(),
+		marker_color: d3.scale.category20()
 	};
 
 	// Default Axis definitions
@@ -2701,7 +2702,7 @@ function sentio_line_line() {
 		selected.markers = [];
 
 		// bind to a point if it exists
-		d3.selectAll('.point')
+		_element.g.points.selectAll('.point')
 			.each(function(d) {
 				if (Math.abs(_scale.x(_pointValue.x(d)) - cx) < 5) {
 					targetX = _scale.x(_pointValue.x(d));
@@ -2710,7 +2711,7 @@ function sentio_line_line() {
 			});
 
 		// Find any markers in that range
-		d3.selectAll('.marker')
+		_element.g.markers.selectAll('.marker')
 			.each(function(d) {
 				if (targetX >= _scale.x(_markerValue.start(d)) && targetX <= _scale.x(_markerValue.end(d))) {
 					selected.markers.push(d);
@@ -2864,16 +2865,20 @@ function sentio_line_line() {
 		plotEnter.append('g').append('path')
 			.attr('class', 'line')
 			.attr('id', function(d) { return 'path-'+d.key; })
-			.attr('stroke', function(d) { return _scale.color(d.key); })
+			.attr('stroke', function(d, i) { return _scale.color(i); })
 			.attr('stroke-width', '2px')
-			.attr('stroke-opacity', '0.9')
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.9' : '0';
+			})
 			.attr('fill', 'none');
 		plotEnter.append('g').append('path')
 			.attr('class', 'area')
 			.attr('id', function(d) { return 'area-'+d.key; })
 			.attr('stroke', 'none')
-			.attr('fill', function(d) { return _scale.color(d.key); })
-			.attr('fill-opacity', '0.05');
+			.attr('fill', function(d, i) { return _scale.color(i); })
+			.attr('fill-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.05' : '0';
+			});
 
 		var lineUpdate = plotJoin.select('.line');
 		var areaUpdate = plotJoin.select('.area');
@@ -2897,8 +2902,8 @@ function sentio_line_line() {
 	 * Stores legend information from data series.
 	 */
 	function updateLegend() {
-		legend_content.series = _data.map(function(series) {
-			return [series.key, series.name, series.total, _scale.color(series.key)];
+		legend_content.series = _data.map(function(series, i) {
+			return [series.key, series.name, series.total, _scale.color(i)];
 		});
 
 		invokeLegendCallback({d: legend_content});
@@ -2990,7 +2995,7 @@ function sentio_line_line() {
 		startPointEnter
 			.attr('class', 'start-ind')
 			.attr('r', '3')
-			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
 			.attr('stroke-opacity', '1')
 			.attr('stroke-width', '2')
 			.attr('fill', 'white')
@@ -3000,7 +3005,7 @@ function sentio_line_line() {
 		endPointEnter
 			.attr('class', 'end-ind')
 			.attr('r', '3')
-			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
 			.attr('stroke-opacity', '1')
 			.attr('stroke-width', '2')
 			.attr('fill', 'white')
@@ -3011,7 +3016,7 @@ function sentio_line_line() {
 			.attr('class', 'start')
 			.attr('y1', function(d) { return _scale.y.range()[1]; })
 			.attr('y2', function(d) { return _scale.y.range()[0]; })
-			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
 			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
 			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
 
@@ -3021,7 +3026,7 @@ function sentio_line_line() {
 			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); })
 			.attr('y1', function(d) { return _scale.y.range()[1]; })
 			.attr('y2', function(d) { return _scale.y.range()[0]; })
-			.attr('stroke', function(d) {return _scale.color(_markerValue.slug(d));});
+			.attr('stroke', function(d, i) {return _scale.marker_color(i);});
 
 		areaEnter
 			.attr('y', '0')
@@ -3030,7 +3035,7 @@ function sentio_line_line() {
 				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
 			})
 			.attr('height', function(d) { return _scale.y.range()[0]; })
-			.attr('fill', function(d) {return _scale.color(_markerValue.slug(d));})
+			.attr('fill', function(d, i) {return _scale.marker_color(i);})
 			.attr('fill-opacity', '0.1');
 
 		startPointUpdate.transition().duration(500)
