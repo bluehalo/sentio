@@ -13,11 +13,9 @@ function sentio_line_line() {
 	var lockedY = 1;		// Set default max Y axis value.
 	var stacked = false;	// Set whether different series will stack on top of eachother rather than overlay.
 	var showMarkers = true;	// Set default boolean for showing markers
-	var max_ticks = 30;		// Set default max number of ticks for the x axis.
-	var x_ticks = 30;		// Set default number of ticks for the x axis.
 
 	// Values for tracking mouse movements on graph and selected elements.
-	var cx, cy, y, targetX;
+	var targetX;
 	var selected = {
 		points: [],
 		markers: []
@@ -52,16 +50,17 @@ function sentio_line_line() {
 
 	// Default accessors for the dimensions of the data
 	var _value = {
-		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; }
+		x: function(d) { return d[0]; },
+		y: function(d) { return d[1]; },
+		y_stacked: function(d) { return d[2]; }
 	};
 
 	// Default accessors for point information.
 	var _pointValue = {
-		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return stacked ? d[2] : d[1]; },
-		series: function(d, i) { return d[3]; },
-		slug: function(d, i) { return d[4]; }
+		x: function(d) { return d[0]; },
+		y: function(d) { return stacked ? d[2] : d[1]; },
+		series: function(d) { return d[3]; },
+		slug: function(d) { return d[4]; }
 	};
 
 	// Accessors for the positions of the markers
@@ -97,21 +96,30 @@ function sentio_line_line() {
 
 	// Default Axis definitions
 	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('bottom').ticks(x_ticks).tickFormat(d3.time.format("%m/%d/%y")),
-		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(10)
+		x: d3.svg.axis()
+			.scale(_scale.x)
+			.orient('bottom')
+			.innerTickSize(-_height)
+			.ticks(7)
+			.tickFormat(d3.time.format("%m/%d")),
+		y: d3.svg.axis()
+			.scale(_scale.y)
+			.orient('left')
+			.innerTickSize(-_width)
+			.ticks(10)
 	};
 
 	// g elements
 	var _element = {
 		svg: undefined,
 		g: {
+			xAxis: undefined,
+			yAxis: undefined,
 			mouseContainer: undefined,
 			hoverLine: undefined,
 			container: undefined,
 			markers: undefined,
 			plots: undefined,
-			xAxis: undefined,
-			yAxis: undefined,
 			points: undefined,
 			brush: undefined
 		},
@@ -122,20 +130,20 @@ function sentio_line_line() {
 
 	// Line generator for the plot
 	var _line = d3.svg.line().interpolate('basis');
-	_line.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
+	_line.x(function(d) {
+		return _scale.x(_value.x(d));
 	});
-	_line.y(function(d, i) {
-		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
+	_line.y(function(d) {
+		return stacked ? _scale.y(_value.y_stacked(d)) : _scale.y(_value.y(d));
 	});
 
 	// Area generator for the plot
 	var _area = d3.svg.area().interpolate('basis');
-	_area.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
+	_area.x(function(d) {
+		return _scale.x(_value.x(d));
 	});
-	_area.y1(function(d, i) {
-		return stacked ? _scale.y(d[2]) : _scale.y(_value.y(d, i));
+	_area.y1(function(d) {
+		return stacked ? _scale.y(_value.y_stacked(d)) : _scale.y(_value.y(d));
 	});
 
 	// Brush filter
@@ -184,15 +192,8 @@ function sentio_line_line() {
 	}
 
 	// Default attributes for configurable tooltip
-	var tooltip = d3.select("body")
-	    .append("div")
-	    .style("position", "absolute")
-	    .style("z-index", "10")
-	    .style("visibility", "hidden")
-	    .style('background-color', 'rgba(0,0,0,0.8)')
-	    .style('border-radius', '5px')
-	    .style('padding', '3px')
-	    .style('pointer-events', 'none');
+	var tooltip = d3.select("body").append("div")
+		.attr('class', 'line_tooltip');
 
 	// Chart create/init method
 	function _instance(selection){}
@@ -228,25 +229,20 @@ function sentio_line_line() {
 				tooltip.style("visibility", "hidden");
 			});
 
+		// Append groups for the axes
+		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
+		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
 		// Append elements for capturing mouse events.
 		_element.g.mouseContainer = _element.g.container.append('rect')
-			.attr('class', 'mouse-container')
-			.style('visibility', 'hidden')
-			.attr('x', '0')
-			.attr('y', '0');
+			.attr('class', 'mouse-container');
 		_element.g.hoverLine = _element.g.container.append('line')
 			.attr('class', 'hover-line')
 			.attr('x1', '10')
 			.attr('y1', '0')
 			.attr('x2', '10')
-			.style('stroke', 'gray')
 			.attr('stroke-dasharray', ('5,5'))
-			.style('stroke-width', '1.5')
 			.style('display', 'none');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
@@ -301,7 +297,7 @@ function sentio_line_line() {
 	function toggleMarkers() {
 		_element.g.markers
 			.selectAll('.marker')
-			.transition().duration(200)
+			.transition()
 			.attr('opacity', showMarkers ? '1' : '0');
 	}
 
@@ -376,6 +372,7 @@ function sentio_line_line() {
 		selected.points = [];
 		selected.markers = [];
 
+		/*jshint validthis: true */
 		var mouse = d3.mouse(this);
 		var mouseDate = _scale.x.invert(mouse[0]);
 		var targetX = mouse[0];
@@ -387,13 +384,15 @@ function sentio_line_line() {
 		if (!d1 || !d0) { return; }
 
 		var d = mouseDate - d0[0] > d1[0] - mouseDate ? d1 : d0;
+
+		// Callback function to check point time equality.
+		var pntEql = function(p) { return p[0] === d[0]; };
+
 		if (Math.abs(mouse[0] - _scale.x(d[0])) < 5) {
 			targetX = _scale.x(d[0]);
 
 			for (var i = 0; i < _data.length; i++) {
-				var pnt = _data[i].data.find(function(p) {
-					return p[0] === d[0];
-				});
+				var pnt = _data[i].data.find(pntEql);
 				if (pnt) {
 					selected.points.push(pnt.concat([_data[i].key, _data[i].name]));
 				}
@@ -441,9 +440,9 @@ function sentio_line_line() {
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
+			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
+			.attr('height', Math.max(0, _height - _margin.bottom + 5));
 		_element.pointClipPath
 			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
@@ -458,9 +457,6 @@ function sentio_line_line() {
 
 		// update the margins on the main draw group
 		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
-
-		// Restrict count of x axis ticks based off of element width.
-		max_ticks = parseInt(_width / 20);
 
 		return _instance;
 	};
@@ -478,7 +474,8 @@ function sentio_line_line() {
 		var filterExtent = getFilter();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(multiExtent(_data, _extent.x));
+		var x = multiExtent(_data, _extent.x);
+		_scale.x.domain(x);
 
 		// Update the y domain (based on configuration and data)
 		// When locked, the y axis will change if the extent is larger.
@@ -488,7 +485,7 @@ function sentio_line_line() {
 		_scale.y.domain([0,y]);
 
 		// Update the plot elements
-		updateAxes();
+		updateAxes(x);
 		updateLine();
 		updateMarkers();
 		updatePoints();
@@ -498,22 +495,35 @@ function sentio_line_line() {
 		return _instance;
 	};
 
-	function updateAxes() {
-		// Prevent x axis labels from overlapping by limiting tick count.
-		_axis.x = _axis.x.ticks(x_ticks > max_ticks ? max_ticks : x_ticks);
-		_axis.y = _axis.y.ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
+	var oneDay = 24*60*60*1000;
 
-		// Rotate axis labels by default to prevent overlap.
+	function updateAxes(x) {
+		var dayCount = Math.ceil(Math.abs((x[1] - x[0]) / oneDay)) + 1;
+
+		// Change tick type depending on concentration of ticks to prevent overlapping labels and compressed graphs
+		var concentration = _width / dayCount;
+		if (concentration > 35) { // One tick label is about 35 pixels wide.  Use day spans here.
+			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.day);
+		} else if (concentration > 5) { // Weeks are used when days would overlap
+			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.week);
+		} else {
+			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.month);
+		}
+		// Limit y axis ticks if max value is less than 10 to prevent decimal ticks.
+		_axis.y = _axis.y.innerTickSize(-_width+60).ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
+
+		// Shift labels away from axis to clear up graph.
 		if(null != _axis.x) {
 			_element.g.xAxis
 				.transition().call(_axis.x)
 				.selectAll("text")
-				.style("text-anchor", "end")
-				.attr("transform", "rotate(-45)");
+				.attr('y', 10);
 		}
 		if(null != _axis.y) {
 			_element.g.yAxis
-				.transition().call(_axis.y);
+				.transition().call(_axis.y)
+				.selectAll("text")
+				.attr('x', -10);
 		}
 	}
 
@@ -567,8 +577,16 @@ function sentio_line_line() {
 		var areaUpdate = plotJoin.select('.area');
 
 		// // Update
-		lineUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _line);
-		areaUpdate.datum(function(d) { return d.data; }).transition().duration(500).attr('d', _area.y0(_scale.y.range()[0]));
+		lineUpdate.transition()
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.9' : '0';
+			})
+			.attr('d', function(d) { return _line(d.data); });
+		areaUpdate.transition()
+			.attr('fill-opacity', function(d) {
+				return hidden_series.indexOf(d.key) === -1 ? '0.05' : '0';
+			})
+			.attr('d', function(d) { return _area.y0(_scale.y.range()[0])(d.data); });
 
 		plotJoin.exit().select('.line')
 			.attr('d', _line);
@@ -578,7 +596,7 @@ function sentio_line_line() {
 
 		// Exit
 		var plotExit = plotJoin.exit()
-			.transition().duration(500).remove();
+			.transition().remove();
 	}
 
 	/*
@@ -625,10 +643,13 @@ function sentio_line_line() {
 			.attr('fill', 'white')
 			.attr('fill-opacity', 0);
 
-		circleUpdate.transition().duration(500)
+		circleUpdate.transition()
 			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
 			.attr('cx', function(d) {return _scale.x(_pointValue.x(d));})
-			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));});
+			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));})
+			.attr('stroke-opacity', function(d) {
+				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0'; // Hide points if related series is hidden.
+			});
 
 		//exit
 		pointJoin.exit()
@@ -719,7 +740,7 @@ function sentio_line_line() {
 			})
 			.attr('height', function(d) { return _scale.y.range()[0]; })
 			.attr('fill', function(d, i) {return _scale.marker_color(i);})
-			.attr('fill-opacity', '0.1');
+			.attr('fill-opacity', '0.05');
 
 		startPointUpdate.transition().duration(500)
 			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
@@ -858,22 +879,9 @@ function sentio_line_line() {
 		generatePoints();
 
 		_instance.redraw();
-
-		// Show or hide series and points.
-		var targetPath = d3.select('#path-'+s);
-		targetPath.transition().style('stroke-opacity', targetPath.style('stroke-opacity') == '0' ? '0.9' : '0');
-		var targetArea = d3.select('#area-'+s);
-		targetArea.transition().style('fill-opacity', targetArea.style('fill-opacity') == '0' ? '0.05' : '0');
-		var targetPoints = d3.selectAll('.pt-'+s);
-		targetPoints.transition().style('stroke-opacity', targetPoints.style('stroke-opacity') == '0' ? '1' : '0');
 	};
 
 	// Basic Getters/Setters
-	_instance.xTicks = function(t) {
-		if(!arguments.length) { return x_ticks; }
-		x_ticks = t;
-		return _instance;
-	};
 	_instance.yLock = function(l) {
 		if(!arguments.length) { return lockYAxis; }
 		lockYAxis = l;

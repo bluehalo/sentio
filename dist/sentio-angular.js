@@ -157,7 +157,6 @@ function($document, $window, $timeout, $log) {
 			markers: '=sentioMarkers',
 			yExtent: '=sentioYExtent',
 			xExtent: '=sentioXExtent',
-			xTicks: '=sentioXTicks',
 			duration: '=sentioDuration',
 			api: '=sentioApi',
 			resizeWidth: '@sentioResizeWidth',
@@ -234,11 +233,6 @@ function($document, $window, $timeout, $log) {
 			// Triggered when legend element is clicked in the view.
 			scope.$on('legend-toggle', function(evt, param) {
 				line.toggleSeries(param);
-			});
-
-			scope.$watch('xTicks', function(n, o) {
-				if (null === 0 && null == n) {return; }
-				line.xTicks(n);
 			});
 
 			scope.$watch('stacked', function(n, o) {

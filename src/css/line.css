@@ -1,3 +1,5 @@
+
+
 /*
 =======================================
 	Line Chart
@@ -23,4 +25,36 @@
 
 .sentio.line .g-main {
 	pointer-events: all;
+}
+
+.sentio.line .mouse-container {
+	visibility: hidden;
+}
+
+.sentio.line .hover-line {
+	stroke: gray;
+	stroke-width: 1.5;
+}
+
+.line_tooltip {
+	visibility: hidden;
+	position: absolute;
+	z-index: 10;
+	background-color: black;
+	background-color: rgba(0,0,0,0.8);
+	border-radius: 5px;
+	padding: 3px;
+	pointer-events: none;
+}
+
+.sentio.line .axis line {
+	stroke: rgba(150, 150, 150, 0.1);
+}
+
+.sentio.line .axis text {
+	pointer-events: none;
+}
+
+.sentio.line .axis path {
+	stroke: rgba(128, 128, 128, 1);
 }
