@@ -123,6 +123,7 @@ function sentio_line_line() {
 			points: undefined,
 			brush: undefined
 		},
+		tooltip: undefined,
 		plotClipPath: undefined,
 		markerClipPath: undefined,
 		pointClipPath: undefined
@@ -191,10 +192,6 @@ function sentio_line_line() {
 		_filter.dispatch.filterend([isEmpty, min, max]);
 	}
 
-	// Default attributes for configurable tooltip
-	var tooltip = d3.select("body").append("div")
-		.attr('class', 'line_tooltip');
-
 	// Chart create/init method
 	function _instance(selection){}
 
@@ -209,40 +206,20 @@ function sentio_line_line() {
 		// Create the SVG element
 		_element.svg = _element.div.append('svg');
 
+		_element.tooltip = _element.div.append('div').attr('class', 'line_tooltip');
+
 		// Add the defs and add the clip path definition
 		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
 		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
 
-		// Append a container for everything as well as mouse handlers
+		// Append a container for everything
 		_element.g.container = _element.svg.append('g')
-			.attr('class', 'g-main')
-			.on("mousemove", handleMouseMove)
-			.on("mouseover", function () {
-				// Prevents triggering when over graph margins and axes
-				if (d3.event.offsetX > 0 && d3.event.offsetY > 0) {
-					_element.g.hoverLine.style('display', 'block');
-				}
-			})
-			.on("mouseout", function () {
-				_element.g.hoverLine.style('display', 'none');
-				tooltip.style("visibility", "hidden");
-			});
+			.attr('class', 'g-main');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
 		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		// Append elements for capturing mouse events.
-		_element.g.mouseContainer = _element.g.container.append('rect')
-			.attr('class', 'mouse-container');
-		_element.g.hoverLine = _element.g.container.append('line')
-			.attr('class', 'hover-line')
-			.attr('x1', '10')
-			.attr('y1', '0')
-			.attr('x2', '10')
-			.attr('stroke-dasharray', ('5,5'))
-			.style('display', 'none');
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
@@ -251,6 +228,25 @@ function sentio_line_line() {
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
 		_element.g.points = _element.g.container.append('g').attr('class', 'points').attr('clip-path', 'url(#point_' + _id + ')');
+
+		// Append elements for capturing mouse events.
+		_element.g.mouseContainer = _element.g.container.append('rect')
+			.attr('class', 'mouse-container')
+			.on("mousemove", handleMouseMove)
+			.on("mouseover", function () {
+				_element.g.hoverLine.style('display', 'block');
+			})
+			.on("mouseout", function () {
+				_element.g.hoverLine.style('display', 'none');
+				_element.tooltip.style("visibility", "hidden");
+			});
+		_element.g.hoverLine = _element.g.container.append('line')
+			.attr('class', 'hover-line')
+			.attr('x1', '10')
+			.attr('y1', '0')
+			.attr('x2', '10')
+			.attr('stroke-dasharray', ('5,5'))
+			.style('display', 'none');
 
 		// If the filter is enabled, add it
 		if(_filter.enabled) {
@@ -404,11 +400,12 @@ function sentio_line_line() {
 				}
 			}
 
-			tooltip.style("visibility", "visible");
-			tooltip.style("top", d3.event.y+"px").style("left",d3.event.x+"px");
-			tooltip.html(invokeHoverCallback({d: selected}));
+			_element.tooltip.html(invokeHoverCallback({d: selected}));
+			var tooltip_width = _element.tooltip.node().getBoundingClientRect().width;
+			_element.tooltip.style("top", (mouse[1]+10)+"px").style("left",(mouse[0]+40-(tooltip_width/2))+"px");
+			_element.tooltip.style("visibility", "visible");
 		} else {
-			tooltip.style("visibility", "hidden");
+			_element.tooltip.style("visibility", "hidden");
 		}
 
 		_element.g.hoverLine
