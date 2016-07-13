@@ -7,7 +7,7 @@ function sentio_line_line() {
 	// var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
 
 	var _margin = { top: 20, right: 40, bottom: 50, left: 40 };
-	var _height = 100, _width = 800;
+	var _height = 500, _width = 800;
 
 	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
 	var lockedY = 1;		// Set default max Y axis value.
@@ -17,6 +17,7 @@ function sentio_line_line() {
 	// Values for tracking mouse movements on graph and selected elements.
 	var targetX;
 	var selected = {
+		time: 0,
 		points: [],
 		markers: []
 	};
@@ -199,7 +200,7 @@ function sentio_line_line() {
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create a container div
 		_element.div = container.append('div').attr('class', 'sentio line');
 
@@ -237,6 +238,9 @@ function sentio_line_line() {
 				_element.g.hoverLine.style('display', 'block');
 			})
 			.on("mouseout", function () {
+				_element.g.markers.selectAll('.marker-line').transition().duration(100)
+					.attr('fill', 'rgb(132, 60, 57)');
+				// 	.style('stroke', 'rgb(132, 60, 57)');
 				_element.g.hoverLine.style('display', 'none');
 				_element.tooltip.style("visibility", "hidden");
 			});
@@ -316,7 +320,37 @@ function sentio_line_line() {
 	 */
 	_instance.markers = function(v) {
 		if(!arguments.length) { return _markers.dispatch; }
-		_markers.values = v;
+		_markers.values = v.map(function(arr) {
+			return arr.slice();
+		});
+
+		// Sort and parse markers for y levels
+		_markers.values.sort(function(a, b) {
+			var aWidth = _markerValue.end(a) - _markerValue.start(a);
+			var bWidth = _markerValue.end(b) - _markerValue.start(b);
+			return bWidth - aWidth;
+		});
+
+		for (var i = 0; i < _markers.values.length; i++) {
+			if (i === 0) { 
+				_markers.values[0].push(0); 
+			} else {
+				var start = _markerValue.start(_markers.values[i]);
+				var end = _markerValue.end(_markers.values[i]);
+				var idx_conflict = -1;
+				for (var j = 0; j < i; j++) {
+					if (_markerValue.start(_markers.values[j]) <= end && _markerValue.end(_markers.values[j]) >= start) {
+						idx_conflict = j;
+					}
+				}
+				if (idx_conflict === -1) {
+					_markers.values[i].push(0);
+				} else {
+					_markers.values[i].push(_markers.values[idx_conflict][4] + 1);
+				}
+			}
+		}
+
 		return _instance;
 	};
 
@@ -356,6 +390,7 @@ function sentio_line_line() {
 		}
 	}
 
+
 	/*
 	 * Function to handle mouse movement on the graph and gather selected elements.
 	 *
@@ -368,39 +403,64 @@ function sentio_line_line() {
 		selected.points = [];
 		selected.markers = [];
 
+		// Calculate nearest point and 
 		/*jshint validthis: true */
 		var mouse = d3.mouse(this);
 		var mouseDate = _scale.x.invert(mouse[0]);
-		var targetX = mouse[0];
 		var index = bisectDate(_data[0].data, mouseDate); // Probably should store x axis info instead
+		var targetX = mouse[0];
+		var onPoint = false;
 
 		var d0 = _data[0].data[index - 1];
 		var d1 = _data[0].data[index];
 
 		if (!d1 || !d0) { return; }
-
 		var d = mouseDate - d0[0] > d1[0] - mouseDate ? d1 : d0;
 
 		// Callback function to check point time equality.
 		var pntEql = function(p) { return p[0] === d[0]; };
+		// Bind to a point when close enough to it.
+		if (Math.abs(mouse[0] - _scale.x(d[0])) < 5) { 
+			targetX = _scale.x(d[0]); 
+			onPoint = true;
+		}
+		// Detect markers using mouse coordinate instead of index.
+		var targetXDate = _scale.x.invert(targetX);
+		selected.time = targetXDate;
 
-		if (Math.abs(mouse[0] - _scale.x(d[0])) < 5) {
-			targetX = _scale.x(d[0]);
+		// End setup for mouse control
 
+		// Retrieve points when over the main graph.
+		if (onPoint && mouse[1] > 45) {
 			for (var i = 0; i < _data.length; i++) {
 				var pnt = _data[i].data.find(pntEql);
 				if (pnt) {
 					selected.points.push(pnt.concat([_data[i].key, _data[i].name]));
 				}
 			}
+		}
 
-			for (var j = 0; j < _markers.values.length; j++) {
-				if (d[0] >= _markers.values[j][2] && d[0] <= _markers.values[j][3]) {
-					selected.markers.push(_markers.values[j]);	
-				}
+		for (var j = _markers.values.length-1; j >= 0; j--) {
+			if (targetXDate >= _markers.values[j][2] && targetXDate <= _markers.values[j][3]) {
+				selected.markers.push(_markers.values[j]);	
 			}
+		}
 
-			_element.tooltip.html(invokeHoverCallback({d: selected}));
+		for (var i = 0; i < _markers.values.length; i++) {
+			var ret = selected.markers.find(markerFindFunction(_markerValue.slug(_markers.values[i])));
+			if (ret) {
+				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[i])).transition().duration(100)
+					.attr('fill', 'rgb(230,150,154)');
+			} else {
+				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[i])).transition().duration(100)
+					.attr('fill', 'rgb(132, 60, 57)');
+			}
+		}
+
+		// if (selected.points.length > 0) {
+		_element.tooltip.html(invokeHoverCallback({d: selected}));
+		// }
+		if (selected.points.length > 0 || mouse[1] < 45) {
 			var tooltip_width = _element.tooltip.node().getBoundingClientRect().width;
 			_element.tooltip.style("top", (mouse[1]+10)+"px").style("left",(mouse[0]+40-(tooltip_width/2))+"px");
 			_element.tooltip.style("visibility", "visible");
@@ -413,6 +473,12 @@ function sentio_line_line() {
 			.attr('x2', targetX);
 	}
 
+	var markerFindFunction = function(toFind) {
+		return function(selected) {
+			return toFind === _markerValue.slug(selected);
+		}
+	};
+
 	/*
 	 * Updates all the elements that depend on the size of the various components
 	 */
@@ -421,11 +487,11 @@ function sentio_line_line() {
 
 		// Set up the scales
 		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
+		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom - 35), 0]); //Offset for marker space
 
 		// Update mouse capture elements
 		_element.g.mouseContainer
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('transform', 'translate(0, -' + (_margin.top+25) + ')')	// Offset for marker container
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.g.hoverLine
@@ -437,9 +503,9 @@ function sentio_line_line() {
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 		_element.markerClipPath
-			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
-			.attr('height', Math.max(0, _height - _margin.bottom + 5));
+			.attr('transform', 'translate(0, -' + (_margin.top + 25) + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', 40);
 		_element.pointClipPath
 			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
@@ -453,7 +519,7 @@ function sentio_line_line() {
 		_element.g.yAxis.attr('class', 'y axis');
 
 		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
+		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + (_margin.top + 25) + ')');
 
 		return _instance;
 	};
@@ -467,6 +533,11 @@ function sentio_line_line() {
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
+
+		if (!_data || _data.length === 0) {
+			return _instance;
+		}
+
 		// Need to grab the filter extent before we change anything
 		var filterExtent = getFilter();
 
@@ -500,11 +571,11 @@ function sentio_line_line() {
 		// Change tick type depending on concentration of ticks to prevent overlapping labels and compressed graphs
 		var concentration = _width / dayCount;
 		if (concentration > 35) { // One tick label is about 35 pixels wide.  Use day spans here.
-			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.day);
+			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.day);
 		} else if (concentration > 5) { // Weeks are used when days would overlap
-			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.week);
+			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.week);
 		} else {
-			_axis.x = _axis.x.innerTickSize(-_height+60).ticks(d3.time.month);
+			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.month);
 		}
 		// Limit y axis ticks if max value is less than 10 to prevent decimal ticks.
 		_axis.y = _axis.y.innerTickSize(-_width+60).ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
@@ -663,8 +734,8 @@ function sentio_line_line() {
 	 * 	_marker = {
 	 *		values: 
 	 *			[
-	 *				['label1', 'slug_1', start_x1, end_x1],
-	 *				['label2', 'slug_2', start_x2, end_x2]
+	 *				['label1', 'slug_1', start_x1, end_x1, y_index],
+	 *				['label2', 'slug_2', start_x2, end_x2, y_index]
 	 *				...
 	 *			]
 	 *  }
@@ -679,85 +750,53 @@ function sentio_line_line() {
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker');
+			.attr('class', 'marker')
+			.attr('opacity', '1');
 
-		var areaEnter = markerEnter.append('rect');
-		var startEnter = markerEnter.append('line');
-		var endEnter = markerEnter.append('line');
-		var startPointEnter = markerEnter.append('circle');
-		var endPointEnter = markerEnter.append('circle');
+		var lineEnter = markerEnter.append('rect');
+		var startEnter = markerEnter.append('rect');
+		var endEnter = markerEnter.append('rect');
 
-		var areaUpdate = markerJoin.select('rect');
+		var lineUpdate = markerJoin.select('.marker-line');
 		var startUpdate = markerJoin.select('.start');
 		var endUpdate = markerJoin.select('.end');
-		var startPointUpdate = markerJoin.select('.start-ind');
-		var endPointUpdate = markerJoin.select('.end-ind');
-
-		startPointEnter
-			.attr('class', 'start-ind')
-			.attr('r', '3')
-			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
-			.attr('stroke-opacity', '1')
-			.attr('stroke-width', '2')
-			.attr('fill', 'white')
-			.attr('fill-opacity', '0')
-			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
-
-		endPointEnter
-			.attr('class', 'end-ind')
-			.attr('r', '3')
-			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
-			.attr('stroke-opacity', '1')
-			.attr('stroke-width', '2')
-			.attr('fill', 'white')
-			.attr('fill-opacity', '0')
-			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
 
 		startEnter
 			.attr('class', 'start')
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; })
-			.attr('stroke', function(d, i) {return _scale.marker_color(i);})
-			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); })
+			.attr('width', '4')
+			.attr('height', '4')
+			.attr('fill', 'rgb(132, 60, 57)');
 
 		endEnter
 			.attr('class', 'end')
-			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); })
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; })
-			.attr('stroke', function(d, i) {return _scale.marker_color(i);});
+			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); })
+			.attr('width', '4')
+			.attr('height', '4')
+			.attr('fill', 'rgb(132, 60, 57)');
 
-		areaEnter
-			.attr('y', '0')
+		lineEnter
+			.attr('class', function(d) { return 'marker-line-'+_markerValue.slug(d) + ' marker-line'; })
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('width', function(d) { 
-				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
-			})
-			.attr('height', function(d) { return _scale.y.range()[0]; })
-			.attr('fill', function(d, i) {return _scale.marker_color(i);})
-			.attr('fill-opacity', '0.05');
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 1); })
+			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); })
+			.attr('height', '2')
+			.attr('fill', 'rgb(132, 60, 57)');
 
-		startPointUpdate.transition().duration(500)
-			.attr('cx', function(d) { return _scale.x(_markerValue.start(d)); });
+		startUpdate.transition()
+			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); });
 
-		endPointUpdate.transition().duration(500)
-			.attr('cx', function(d) { return _scale.x(_markerValue.end(d)); });
+		endUpdate.transition()
+			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); });
 
-		startUpdate.transition().duration(500)
-			.attr('x1', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.start(d)); });
-
-		endUpdate.transition().duration(500)
-			.attr('x1', function(d) { return _scale.x(_markerValue.end(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.end(d)); });
-
-		areaUpdate.transition().duration(500)
+		lineUpdate.transition()
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('width', function(d) { 
-				return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d));
-			});
+			.attr('y', function(d) { return (-10 - (5 * d[4]) - 1); })
+			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); });
 
 		// Exit
 		var markerExit = markerJoin.exit().remove();
