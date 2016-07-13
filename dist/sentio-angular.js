@@ -168,8 +168,7 @@ function($document, $window, $timeout, $log) {
 			pointHoverFn: '&sentioPointHoverFn',
 			legendFn: '&sentioLegendFn',
 			yLock: '=sentioYLock',
-			stacked: '=sentioStacked',
-			showMarkers: '=sentioShowMarkers'
+			stacked: '=sentioStacked'
 		},
 		replace : false,
 		link : function(scope, element, attrs, controller) {
@@ -238,11 +237,6 @@ function($document, $window, $timeout, $log) {
 			scope.$watch('stacked', function(n, o) {
 				if (null === 0 && null == n) {return; }
 				line.stacked(n);
-			});
-
-			scope.$watch('showMarkers', function(n, o) {
-				if (null === 0 && null == n) {return; }
-				line.showMarkers(n);
 			});
 
 			scope.$watch('yLock', function(n, o) {
