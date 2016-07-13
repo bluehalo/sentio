@@ -76,20 +76,31 @@ function sentio_line_line() {
 	var _extent = {
 		x: sentio.util.extent({
 			defaultValue: [now - 60000*5, now],
-			getValue: function(d) { return d[0]; }
+			getValue: function(d) { return d[1][0]; }
 		}),
 		y: sentio.util.extent({
-			getValue: function(d) { return stacked ? d[2] : d[1]; }
+			getValue: function(d) { 
+				var ret = 0;
+				if (hidden_series.indexOf(d[0]) === -1) {
+					ret = stacked ? d[1][2] : d[1][1]; 
+				}
+				return ret;
+			}
 		})
 	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
+	var _multiExtent = sentio.util.multiExtent().values(function(d) { 
+		var extentData = d.data.map(function(e) {
+			return [d.key, e];
+		});
+		return extentData; 
+	});
 
 	// Default scales for x and y dimensions
 	var _scale = {
 		x: d3.time.scale(),
 		y: d3.scale.linear(),
 		color: d3.scale.category10(),
-		marker_color: d3.scale.category20()
+		marker_color: ['#2CA02C', '#98DF8A', '#9467BD', '#C5B0D5']
 	};
 
 	// Bisector for hover line
@@ -239,8 +250,7 @@ function sentio_line_line() {
 			})
 			.on("mouseout", function () {
 				_element.g.markers.selectAll('.marker-line').transition().duration(100)
-					.attr('fill', 'rgb(132, 60, 57)');
-				// 	.style('stroke', 'rgb(132, 60, 57)');
+					.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 				_element.g.hoverLine.style('display', 'none');
 				_element.tooltip.style("visibility", "hidden");
 			});
@@ -320,15 +330,14 @@ function sentio_line_line() {
 	 */
 	_instance.markers = function(v) {
 		if(!arguments.length) { return _markers.dispatch; }
-		_markers.values = v.map(function(arr) {
-			return arr.slice();
-		});
+		_markers.values = v.map(function(arr) { return arr.slice(); });
 
 		// Sort and parse markers for y levels
 		_markers.values.sort(function(a, b) {
 			var aWidth = _markerValue.end(a) - _markerValue.start(a);
 			var bWidth = _markerValue.end(b) - _markerValue.start(b);
-			return bWidth - aWidth;
+
+			return a[4] != b[4] ? a[4] - b[4] : bWidth - aWidth;
 		});
 
 		for (var i = 0; i < _markers.values.length; i++) {
@@ -346,7 +355,7 @@ function sentio_line_line() {
 				if (idx_conflict === -1) {
 					_markers.values[i].push(0);
 				} else {
-					_markers.values[i].push(_markers.values[idx_conflict][4] + 1);
+					_markers.values[i].push(_markers.values[idx_conflict][5] + 1);
 				}
 			}
 		}
@@ -446,21 +455,19 @@ function sentio_line_line() {
 			}
 		}
 
-		for (var i = 0; i < _markers.values.length; i++) {
-			var ret = selected.markers.find(markerFindFunction(_markerValue.slug(_markers.values[i])));
+		for (var k = 0; k < _markers.values.length; k++) {
+			var ret = selected.markers.find(markerFindFunction(_markerValue.slug(_markers.values[k])));
 			if (ret) {
-				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[i])).transition().duration(100)
-					.attr('fill', 'rgb(230,150,154)');
+				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
+					.attr('fill', function(d) { return _scale.marker_color[d[4]*2+1]; });
 			} else {
-				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[i])).transition().duration(100)
-					.attr('fill', 'rgb(132, 60, 57)');
+				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
+					.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 			}
 		}
 
-		// if (selected.points.length > 0) {
-		_element.tooltip.html(invokeHoverCallback({d: selected}));
-		// }
-		if (selected.points.length > 0 || mouse[1] < 45) {
+		if (selected.points.length > 0 || (mouse[1] < 45 && selected.markers.length > 0)) {
+			_element.tooltip.html(invokeHoverCallback({d: selected}));
 			var tooltip_width = _element.tooltip.node().getBoundingClientRect().width;
 			_element.tooltip.style("top", (mouse[1]+10)+"px").style("left",(mouse[0]+40-(tooltip_width/2))+"px");
 			_element.tooltip.style("visibility", "visible");
@@ -476,7 +483,7 @@ function sentio_line_line() {
 	var markerFindFunction = function(toFind) {
 		return function(selected) {
 			return toFind === _markerValue.slug(selected);
-		}
+		};
 	};
 
 	/*
@@ -672,7 +679,8 @@ function sentio_line_line() {
 	 */
 	function updateLegend() {
 		legend_content.series = _data.map(function(series, i) {
-			return [series.key, series.name, series.total, _scale.color(i)];
+			var color = _element.g.plots.select('#path-'+series.key).attr('stroke');
+			return [series.key, series.name, series.total, color];
 		});
 
 		invokeLegendCallback({d: legend_content});
@@ -764,38 +772,41 @@ function sentio_line_line() {
 		startEnter
 			.attr('class', 'start')
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); })
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
 			.attr('width', '4')
 			.attr('height', '4')
-			.attr('fill', 'rgb(132, 60, 57)');
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 
 		endEnter
 			.attr('class', 'end')
 			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); })
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
 			.attr('width', '4')
 			.attr('height', '4')
-			.attr('fill', 'rgb(132, 60, 57)');
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 
 		lineEnter
 			.attr('class', function(d) { return 'marker-line-'+_markerValue.slug(d) + ' marker-line'; })
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 1); })
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 1); })
 			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); })
 			.attr('height', '2')
-			.attr('fill', 'rgb(132, 60, 57)');
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 
 		startUpdate.transition()
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); });
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 
 		endUpdate.transition()
 			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 2); });
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
 
 		lineUpdate.transition()
 			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('y', function(d) { return (-10 - (5 * d[4]) - 1); })
+			.attr('y', function(d) { return (-10 - (5 * d[5]) - 1); })
+			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; })
 			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); });
 
 		// Exit
