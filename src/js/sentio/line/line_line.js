@@ -75,13 +75,24 @@ function sentio_line_line() {
 	var _extent = {
 		x: sentio.util.extent({
 			defaultValue: [now - 60000*5, now],
-			getValue: function(d) { return d[0]; }
+			getValue: function(d) { return d[1][0]; }
 		}),
 		y: sentio.util.extent({
-			getValue: function(d) { return stacked ? d[2] : d[1]; }
+			getValue: function(d) { 
+				var ret = 0;
+				if (hidden_series.indexOf(d[0]) === -1) {
+					ret = stacked ? d[1][2] : d[1][1]; 
+				}
+				return ret;
+			}
 		})
 	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
+	var _multiExtent = sentio.util.multiExtent().values(function(d) { 
+		var extentData = d.data.map(function(e) {
+			return [d.key, e];
+		});
+		return extentData; 
+	});
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -399,7 +410,6 @@ function sentio_line_line() {
 					selected.markers.push(_markers.values[j]);	
 				}
 			}
-
 			_element.tooltip.html(invokeHoverCallback({d: selected}));
 			var tooltip_width = _element.tooltip.node().getBoundingClientRect().width;
 			_element.tooltip.style("top", (mouse[1]+10)+"px").style("left",(mouse[0]+40-(tooltip_width/2))+"px");
@@ -601,7 +611,8 @@ function sentio_line_line() {
 	 */
 	function updateLegend() {
 		legend_content.series = _data.map(function(series, i) {
-			return [series.key, series.name, series.total, _scale.color(i)];
+			var color = _element.g.plots.select('#path-'+series.key).attr('stroke');
+			return [series.key, series.name, series.total, color];
 		});
 
 		invokeLegendCallback({d: legend_content});
