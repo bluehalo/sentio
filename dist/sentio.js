@@ -2330,7 +2330,7 @@ function sentio_line_line() {
 	var _id = 'line_line_' + Date.now();
 	// var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
 
-	var _margin = { top: 20, right: 40, bottom: 50, left: 40 };
+	var _margin = { top: 20, right: 60, bottom: 50, left: 60 };
 	var _height = 500, _width = 800;
 
 	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
@@ -2779,14 +2779,22 @@ function sentio_line_line() {
 			}
 		}
 
+		var marker_default_fn = function(d) {
+			return _scale.marker_color[d[4]*2+1];
+		};
+
+		var marker_hover_fn = function(d) {
+			return _scale.marker_color[d[4]*2];
+		};
+
 		for (var k = 0; k < _markers.values.length; k++) {
 			var ret = selected.markers.find(markerFindFunction(_markerValue.slug(_markers.values[k])));
 			if (ret) {
 				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
-					.attr('fill', function(d) { return _scale.marker_color[d[4]*2+1]; });
+					.attr('fill', marker_default_fn );
 			} else {
 				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
-					.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
+					.attr('fill', marker_hover_fn );
 			}
 		}
 
