@@ -3015,7 +3015,6 @@ function sentio_line_line() {
 			return {
 				key: series.key,
 				name: series.name,
-				slug: series.slug,
 				total: series.total,
 				color: color
 			};
