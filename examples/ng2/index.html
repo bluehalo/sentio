@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Angular2 Sentio Examples</title>
+
+	<link rel="stylesheet" href="../../dist/sentio.css" />
+</head>
+
+<body>
+
+	<sentio-examples></sentio-examples>
+
+</body>
+
+<script src="../../dist/sentio.js"></script>
+
+<script src="../../node_modules/systemjs/dist/system.src.js"></script>
+<script src="./config.js"></script>
+
+<script>
+	//bootstrap the Angular2 application
+	System.import('examples/ng2/app').catch(console.log.bind(console));
+</script>
+
+
+</html>

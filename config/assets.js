@@ -32,7 +32,9 @@ module.exports = {
 			]
 		},
 		ng2: {
-			ts: []
+			ts: [
+				'src/ng2/ts/**/*.ts'
+			]
 		}
 	}
 };

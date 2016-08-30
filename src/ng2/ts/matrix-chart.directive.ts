@@ -51,9 +51,7 @@ export class MatrixChart implements AfterContentInit, OnChanges {
 			}
 		}
 
-		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));
 		this.chart.init(this.chartElement);
-		//EventEmitterService.get(this.eventChannel || 'chartInit').emit('done');
 	}
 	delayResize() {
 		if (undefined !== this.resizeTimer) {

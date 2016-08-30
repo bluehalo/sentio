@@ -1,98 +1,72 @@
-import {Directive, ElementRef, EventEmitter, Input, OnChanges, SimpleChange, AfterContentInit} from '@angular/core';
-import * as d3 from 'd3';
+import {Directive, ElementRef, HostListener, Input, OnChanges, SimpleChange} from '@angular/core';
+import {BaseChartDirective} from './base-chart.directive';
 
-declare function sentio_chart_vertical_bars();
+declare var sentio: Object;
 
-@Directive({ selector: 'vertical-bar-chart' })
-export class VerticalBarChart implements AfterContentInit ,OnChanges {
-	private chart;
-	private chartElement;
-	private resizeWidth;
-	private resizeHeight;
-	private resizeTimer;
-	private isInitialized: boolean = false;
+@Directive({
+	selector: 'vertical-bar-chart'
+})
+export class VerticalBarChartDirective
+	extends BaseChartDirective
+	implements OnChanges {
 
-	@Input() configureFn;
-	@Input() model;
-	@Input() sentioResizeWidth;
-	@Input() sentioResizeHeight;
-	@Input() widthExtent;
+	@Input() model : Object[];
+	@Input() widthExtent: Object[];
+
+	@Input('resize') resizeChart: boolean;
+	@Input() duration: number;
+
+	@Input('configure') configureFn: (chart: any) => void;
 
 	constructor(el: ElementRef) {
-		this.chartElement = d3.select(el.nativeElement);
+		super(el, sentio.chart.verticalBars())
 	}
-	ngAfterContentInit() {
-		if (null != this.configureFn) {
-			this.configureFn(this.chart);
+
+	/**
+	 * For The vertical bar chart, we just resize width
+     */
+	setChartDimensions(width: number, height: number): void {
+		if(null != this.chart.width) {
+			if(null != width && this.chart.width() != width) {
+				this.chart.width(width).resize().redraw();
+			}
 		}
 	}
-	ngOnChanges(changes: { [key: string]: SimpleChange }) {
-	  if (!this.isInitialized){
-		  this._init();
-		  this.isInitialized = true;
-	  }
 
-		if (changes['model']) {
-			this.chart.data(changes['model'].currentValue).redraw();
-		}
-		if (changes['widthExtent']) {
-			this.chart.widthExtent().overrideValue(changes['widthExtent'].currentValue);
-		}
-	}
-	_init() {
-		this.chart = sentio_chart_vertical_bars();
-		this.resizeWidth = (null != this.sentioResizeWidth);
-		this.resizeHeight = (null != this.sentioResizeHeight);
-
-		// Extract the width of the chart
-		var width = this.chartElement[0][0].style.width;
-		if (null != width && '' !== width) {
-			width = parseFloat(width.substring(0, width.length - 2));
-			if (null != width && !isNaN(width)) { this.chart.width(width); }
-		}
-
-		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));
-		this.chart.init(this.chartElement);
-		//EventEmitterService.get(this.eventChannel || 'chartInit').emit('done');
-	}
-	doResize() {
-
-		// Get the raw body element
-		var body = document.body;
-
-		// Cache the old overflow style
-		var overflow = body.style.overflow;
-		body.style.overflow = 'hidden';
-
-		// The first element child of our selector should be the <div> we injected
-		var rawElement = this.chartElement[0][0].firstElementChild;
-		// Derive width of the parent (there are several ways to do this depending on the parent)
-		var parentWidth = rawElement.attributes.width | rawElement.style.width | rawElement.clientWidth;
-
-		// Calculate the new width based on the parent and the resize size
-		var width = (this.resizeWidth) ? parentWidth - this.sentioResizeWidth : undefined;
-
-		// Reapply the old overflow setting
-		body.style.overflow = overflow;
-
-		console.debug('resize verticalBars.chart width: ' + width);
-
-		// Apply the new width
-		if (this.resizeWidth) { this.chart.width(width); }
-
-		this.chart.resize();
-		this.chart.redraw();
-	}
-	delayResize() {
-		if (undefined !== this.resizeTimer) {
-			clearTimeout(this.resizeTimer);
-		}
-		this.resizeTimer = setTimeout(() => this.doResize(), 200);
-	}
+	@HostListener('window:resize', ['$event'])
 	onResize(event) {
-		if (this.resizeWidth || this.resizeHeight) {
+		if (this.resizeChart) {
 			this.delayResize();
 		}
 	}
 
-}
+	ngOnInit() {
+		// Call the configure function
+		if (null != this.configureFn) {
+			this.configureFn(this.chart);
+		}
+
+		if (this.resizeChart) {
+			this.resize();
+		}
+	}
+
+	ngOnChanges(changes: { [key: string]: SimpleChange }) {
+		let redraw: boolean = false;
+
+		if (changes['model']) {
+			this.chart.data(changes['model'].currentValue);
+			redraw = true;
+		}
+
+		if (changes['widthExtent']) {
+			this.chart.widthExtent().overrideValue(changes['widthExtent'].currentValue);
+			redraw = true;
+		}
+
+		if(redraw) {
+			this.chart.redraw();
+		}
+	}
+
+};

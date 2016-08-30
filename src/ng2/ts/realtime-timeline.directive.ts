@@ -86,7 +86,6 @@ export class RealtimeTimeline implements AfterContentInit, OnChanges {
 			this.timeline.markerHover(this.markerHover);
 		}
 
-		//EventEmitterService.get('addMarker').subscribe(data => this.addMarker());
 		//EventEmitterService.get('doStart').subscribe(data => this.doStart());
 		//EventEmitterService.get('doStop').subscribe(data => this.doStop());
 		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));

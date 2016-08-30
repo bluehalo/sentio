@@ -1,55 +1,61 @@
-import {Directive, ElementRef, EventEmitter, Input, OnInit, OnChanges, SimpleChange} from '@angular/core';
-import * as d3 from 'd3';
+import {Directive, ElementRef, HostListener, Input, OnChanges, SimpleChange} from '@angular/core';
+import {BaseChartDirective} from './base-chart.directive';
 
-declare function sentio_chart_donut();
+declare var sentio: Object;
 
-@Directive({ selector: 'donut-chart' })
-export class DonutChart implements OnInit, OnChanges {
+@Directive({
+	selector: 'donut-chart'
+})
+export class DonutChartDirective
+	extends BaseChartDirective
+	implements OnChanges {
 
-	private chart;
-	private chartElement;
-	private resizeWidth;
-	private resizeHeight;
-	private resizeTimer;
+	@Input() model: Object[];
+	@Input() colorScale: any;
 
-	@Input() configureFn;
-	@Input() model;
-	@Input() duration;
-	@Input() colorScale;
-	@Input() sentioResizeWidth;
-	@Input() sentioResizeHeight;
+	@Input('resize') resizeChart: boolean;
+	@Input() duration: number;
+
+	@Input('configure') configureFn: (chart: any) => void;
 
 	constructor(el: ElementRef) {
-		this.chartElement = d3.select(el.nativeElement);
-		this.chart = sentio_chart_donut();
+		super(el, sentio.chart.donut())
+	}
 
-		// Extract the width of the chart
-		var width = this.chartElement[0][0].style.width;
-		if (null != width && '' !== width) {
-			width = parseFloat(width.substring(0, width.length - 2));
-			if (null != width && !isNaN(width)) {
-				this.chart.width(width);
-				// set height to match width in this case to keep the donut round
-				this.chart.height(width);
+	/**
+	 * For the donut chart, we pin the height to the width
+	 * to keep the aspect ratio correct
+	 */
+	setChartDimensions(width: number, height: number): void {
+		if(null != this.chart.width) {
+			if(null != width && this.chart.width() != width) {
+				// pin the height to the width
+				this.chart
+					.width(width)
+					.height(width)
+					.resize().redraw();
 			}
 		}
-
-		this.chart.init(this.chartElement);
 	}
+
+	@HostListener('window:resize', ['$event'])
+	onResize(event) {
+		if (this.resizeChart) {
+			this.delayResize();
+		}
+	}
+
 	ngOnInit() {
+		// Call the configure function
 		if (null != this.configureFn) {
 			this.configureFn(this.chart);
 		}
 
-		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));
-		//EventEmitterService.get(this.eventChannel || 'chartInit').emit('done');
-
-		this.resizeWidth = (null != this.sentioResizeWidth);
-		this.resizeHeight = (null != this.sentioResizeHeight);
-
-		this.doResize();
-
+		if (this.resizeChart) {
+			this.resize();
+		}
 	}
+
 	ngOnChanges(changes: { [key: string]: SimpleChange }) {
 		let redraw : boolean = false;
 
@@ -71,56 +77,4 @@ export class DonutChart implements OnInit, OnChanges {
 		}
 	}
 
-	delayResize() {
-		if (undefined !== this.resizeTimer) {
-			clearTimeout(this.resizeTimer);
-		}
-		this.resizeTimer = setTimeout(() => this.doResize(), 200);
-	}
-	onResize(event) {
-		if (this.resizeWidth || this.resizeHeight) {
-			this.delayResize();
-		}
-	}
-	doResize() {
-		// Get the raw body element
-		var body = document.body;
-
-		// Cache the old overflow style
-		var overflow = body.style.overflow;
-		body.style.overflow = 'hidden';
-
-		// The first element child of our selector should be the <div> we injected
-		var rawElement = this.chartElement[0][0].firstElementChild;
-		// Derive width of the parent (there are several ways to do this depending on the parent)
-		var parentWidth = rawElement.attributes.width | rawElement.style.width | rawElement.clientWidth;
-
-		// Calculate the new width based on the parent and the resize size
-		var width = (this.resizeWidth) ? parentWidth - this.sentioResizeWidth : undefined;
-
-		// Set height to match width to keep donut round
-		var height = width;
-
-		// Reapply the old overflow setting
-		body.style.overflow = overflow;
-
-		// Get the old widths and heights
-		var oldHeight = this.chart.height();
-		var oldWidth = this.chart.width();
-
-		if (height !== oldHeight || width !== oldWidth) {
-			console.debug('resize donut.chart width: ' + width);
-			console.debug('resize donut.chart height: ' + height);
-
-			// Apply the new height
-			if (this.sentioResizeWidth) {
-				this.chart.height(height);
-				this.chart.width(width);
-			}
-			this.chart.resize().redraw();
-		} else {
-			console.debug('resize donut.chart width unchanged: ' + width);
-			console.debug('resize donut.chart height unchanged: ' + height);
-		}
-	}
 }

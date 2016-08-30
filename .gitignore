@@ -3,7 +3,7 @@
 ###################
 
 /config/typings
-/lib
+/examples/ng2/jspm_packages
 
 
 ###################

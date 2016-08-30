@@ -106,7 +106,7 @@ export class TimelineLine implements AfterContentInit, OnChanges {
 		this.timeline.filter().on('filterend', fs => {
 			// Regular angular2 style
 			this.filterChanged.emit(fs);
-			
+
 			setTimeout(() => {
 				// Call the function callback
 				if (undefined != this.filterFn) {
@@ -120,10 +120,7 @@ export class TimelineLine implements AfterContentInit, OnChanges {
 			this.timeline.filter(true);
 		}
 
-		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));
-
 		this.timeline.init(this.timelineElement);
-		//EventEmitterService.get(this.eventChannel || 'timelineInit').emit('done');
 	}
 	doResize() {
 		// Get the raw body element
