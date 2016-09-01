@@ -75,8 +75,22 @@ export class TimelineLineDirective
 		// register for the filter end event
 		this.chart.filter().on("filterend", (fs) => {
 			// If the filter actually changed, emit the event
-			if(this.filterChanged(fs, this.filterState)) {
-				this.filterChange.emit((null != fs && !fs[0])? fs : undefined)
+			if(this.didFilterChange(fs, this.filterState)) {
+
+				// We are externally representing the filter as undefined or a two element array
+
+				// If the filter is null or empty, make it undefined
+				if (null == fs || (fs.length > 0 && fs[0])) {
+					fs = undefined;
+				}
+				else if (fs.length > 2) {
+					fs = fs.slice(1,3);
+				}
+				else if(fs.length !== 2) {
+					fs = undefined;
+				}
+
+				setTimeout(() => { this.filterChange.emit(fs); });
 			}
 		});
 
@@ -118,8 +132,7 @@ export class TimelineLineDirective
 			redraw = true;
 		}
 		if (changes["filterState"]) {
-			let currFilter = changes["filterState"].currentValue;
-			this.chart.setFilter((currFilter != null && currFilter.length > 2)? currFilter.slice(1,3) : currFilter);
+			this.chart.setFilter(changes["filterState"].currentValue);
 			redraw = true;
 		}
 
@@ -133,7 +146,7 @@ export class TimelineLineDirective
 		}
 	}
 
-	filterChanged = (current: Object[], previous: Object[]) => {
+	didFilterChange = (current: Object[], previous: Object[]) => {
 
 		// Deep compare the filter
 		if(null != current && null != previous

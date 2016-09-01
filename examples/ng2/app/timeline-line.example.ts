@@ -10,7 +10,7 @@ import {TimelineLineDirective} from "../../../src/ng2/ts/timeline-line.directive
 			[configure]="configure"
 			[filterEnabled]="true"
 			[(filter)]="filter"
-			(filterChange)="eventHandler("filterChanged", $event)">
+			(filterChange)="eventHandler('filterChanged', $event)">
 		</timeline-line>
 		<div>Current filter: {{filter}}</div>
 		<button (click)="updateData()">Update Data</button>

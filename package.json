@@ -1,18 +1,18 @@
 {
   "name": "sentio",
   "version": "0.7.7",
-  "copyright": "Copyright Asymmetrik, Ltd. 2015 - All Rights Reserved.",
+  "copyright": "Copyright Asymmetrik, Ltd. 2016 - All Rights Reserved.",
   "repository": {
     "type": "git",
     "url": "https://github.com/Asymmetrik/sentio.git"
   },
   "license": "UNLICENSED",
   "devDependencies": {
-    "@angular/common": "2.0.0-rc.6",
-    "@angular/compiler": "2.0.0-rc.6",
-    "@angular/core": "2.0.0-rc.6",
-    "@angular/platform-browser": "2.0.0-rc.6",
-    "@angular/platform-browser-dynamic": "2.0.0-rc.6",
+    "@angular/common": "2.0.0-rc.1",
+    "@angular/compiler": "2.0.0-rc.1",
+    "@angular/core": "2.0.0-rc.1",
+    "@angular/platform-browser": "2.0.0-rc.1",
+    "@angular/platform-browser-dynamic": "2.0.0-rc.1",
     "angular": "1.5",
     "d3": "3.5",
     "glob": "7.0",
@@ -52,26 +52,27 @@
     "reflect-metadata": "0.1",
     "rollup-stream": "^1.12.0",
     "run-sequence": "1.2",
-    "rxjs": "5.0.0-beta.11",
+    "rxjs": "5.0.0-beta.6",
     "should": "11.1",
     "tslint": "3.15",
     "tslint-stylish": "^2.1.0-beta",
     "vinyl-buffer": "^1.0.0",
     "vinyl-source-stream": "^1.1.0",
-    "zone.js": "0.6.17"
+    "zone.js": "0.6.12"
   },
   "jspm": {
     "directories": {
       "baseURL": "examples/ng2"
     },
     "dependencies": {
-      "@angular/core": "npm:@angular/core@^2.0.0-rc.3",
-      "@angular/platform-browser": "npm:@angular/platform-browser@^2.0.0-rc.3",
-      "@angular/platform-browser-dynamic": "npm:@angular/platform-browser-dynamic@^2.0.0-rc.4",
+      "@angular/core": "npm:@angular/core@2.0.0-rc.1",
+      "@angular/platform-browser": "npm:@angular/platform-browser@2.0.0-rc.1",
+      "@angular/platform-browser-dynamic": "npm:@angular/platform-browser-dynamic@2.0.0-rc.1",
       "crypto": "github:jspm/nodelibs-crypto@^0.1.0",
+      "d3": "npm:d3@3.5",
       "es6-shim": "github:es-shims/es6-shim@^0.35.1",
       "reflect-metadata": "npm:reflect-metadata@^0.1.3",
-      "rxjs": "npm:rxjs@^5.0.0-beta.9",
+      "rxjs": "npm:rxjs@^5.0.0-beta.6",
       "systemjs": "npm:systemjs@^0.19.31",
       "ts": "github:frankwallis/plugin-typescript@^4.0.16",
       "zone.js": "npm:zone.js@^0.6.12"

@@ -8,10 +8,9 @@ import {RealtimeTimelineDirective} from "../../../src/ng2/ts/realtime-timeline.d
 			style="width:400px; height:100px;"
 			[model]="model"
 			[configure]="configure"
-			(markerOver)="eventHandler("msg", $event)"
-			(markerOut)="eventHandler("msg", $event)"
-			(markerClick)="eventHandler("msg", $event)"
-			>
+			(markerOver)="eventHandler('markerOver', $event)"
+			(markerOut)="eventHandler('markerOut', $event)"
+			(markerClick)="eventHandler('markerClick', $event)">
 		</realtime-timeline>
 		<button (click)="updateModel()">Update Data</button>
 		<button (click)="play()">Play</button>
