@@ -9,7 +9,9 @@ var _ = require('lodash'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
 	path = require('path'),
 	q = require('q'),
-	runSequence = require('run-sequence'),
+	rollup = require('rollup-stream'),
+	source = require('vinyl-source-stream'),
+	buffer = require('vinyl-buffer'),
 
 	plugins = gulpLoadPlugins(),
 	pkg = require('./package.json'),
@@ -36,23 +38,26 @@ function installTypings(sourceArr) {
  */
 gulp.task('build-sentio', ['build-sentio-js', 'build-sentio-css', 'build-sentio-tests']);
 
-// JS
-gulp.task('build-sentio-js', function() {
-
-	gulp.src(assets.src.sentio.js)
-
+gulp.task('validate-sentio-js', function() {
+	return gulp.src(assets.src.sentio.js)
 		// ESLint
 		.pipe(plugins.eslint('./config/eslint.conf.json'))
 		.pipe(plugins.eslint.format())
-		.pipe(plugins.eslint.failAfterError())
+		.pipe(plugins.eslint.failAfterError());
+});
 
-		// Package using Rollup
-		.pipe(plugins.rollup({
+gulp.task('build-sentio-js', ['validate-sentio-js'], function() {
+
+	return rollup({
+			entry: assets.src.sentio.js,
 			format: 'iife',
 			moduleName: 'sentio',
 			sourceMap: true,
 			banner: bannerString
-		}))
+		})
+		.pipe(source('main.js', './src'))
+		.pipe(buffer())
+		.pipe(plugins.sourcemaps.init({loadMaps: true}))
 		.pipe(plugins.rename(pkg.name + '.js'))
 		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
@@ -162,7 +167,10 @@ gulp.task('build-ng2', function(done) {
 	return gulp.src(assets.src.ng2.ts, { base: './app' })
 
 		// Lint the Typescript
-		.pipe(plugins.tslint('config/tslint.conf.json'))
+		.pipe(plugins.tslint({
+			formatter: "prose",
+			configuration: require('./config/tslint.conf.json')
+		}))
 		.pipe(plugins.tslint.report(
 			require('tslint-stylish'), {
 				emitError: true,

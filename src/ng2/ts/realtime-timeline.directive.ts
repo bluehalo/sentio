@@ -1,150 +1,127 @@
-import {Directive, ElementRef, EventEmitter, Input, OnChanges, SimpleChange, AfterContentInit} from '@angular/core';
-import * as d3 from 'd3';
+import {Directive, ElementRef, EventEmitter, HostListener, Input, OnChanges, SimpleChange, Output} from "@angular/core";
+import {BaseChartDirective} from "./base-chart.directive";
 
-declare function sentio_realtime_timeline();
+declare var sentio: Object;
 
-@Directive({ selector: 'realtime-timeline' })
-export class RealtimeTimeline implements AfterContentInit, OnChanges {
+@Directive({
+	selector: "realtime-timeline"
+})
+export class RealtimeTimelineDirective
+	extends BaseChartDirective
+	implements OnChanges {
 
-	private timeline;
-	private timelineElement;
-	private resizeWidth;
-	private resizeHeight;
-	private resizeTimer;
-	private isInitialized: boolean = false;
+	@Input() model: Object[];
+	@Input() markers: Object[];
+	@Input() yExtent: Object[];
+	@Input() xExtent: Object[];
+	@Input() delay: number;
+	@Input() fps: number;
+	@Input() interval: number;
 
-	@Input() configureFn;
-	@Input() delay;
-	@Input() fps;
-	@Input() interval;
-	@Input() markerHover;
-	@Input() markerLabel;
-	@Input() markers;
-	@Input() model;
-	@Input() sentioResizeWidth;
-	@Input() sentioResizeHeight;
-	@Input() yExtent;
-	@Input() xExtent;
+	@Input() resizeWidth: boolean;
+	@Input() resizeHeight: boolean;
+	@Input() duration: number;
+
+	@Input("configure") configureFn: (chart: any) => void;
+
+	@Output() markerOver: EventEmitter<Object> = new EventEmitter();
+	@Output() markerOut: EventEmitter<Object> = new EventEmitter();
+	@Output() markerClick: EventEmitter<Object> = new EventEmitter();
 
 	constructor(el: ElementRef) {
-		this.timelineElement = d3.select(el.nativeElement);
+		super(el, sentio.realtime.timeline());
 	}
-	ngAfterContentInit() {
-		if (null != this.configureFn) {
-			this.configureFn(this.timeline);
-			this.timeline.redraw();
-		}
-	}
-	ngOnChanges(changes: { [key: string]: SimpleChange }) {
-		if (!this.isInitialized) {
-			this._init();
+
+	/**
+	 * For the timeline, both dimensions scale independently
+	 */
+	setChartDimensions(width: number, height: number): void {
+		let redraw: boolean = false;
+
+		if(null != this.chart.width) {
+			if(null != width && this.chart.width() != width) {
+				this.chart.width(width);
+				redraw = true;
+			}
 		}
 
-		if (changes['fps']) {
-			this.timeline.fps(changes['fps'].currentValue).redraw();
-		}
-		if (changes['delay']) {
-			this.timeline.delay(changes['delay'].currentValue).redraw();
-		}
-		if (changes['model']) {
-			this.timeline.data(changes['model'].currentValue).redraw();
-		}
-		if (changes['markers']) {
-			this.timeline.markers(changes['markers'].currentValue).redraw();
-		}
-		if (changes['interval']) {
-			this.timeline.interval(changes['interval'].currentValue).redraw();
-		}
-		if (changes['yExtent']) {
-			this.timeline.yExtent().overrideValue(changes['yExtent'].currentValue);
-			this.timeline.redraw();
-		}
-		if (changes['xExtent']) {
-			this.timeline.xExtent().overrideValue(changes['xExtent'].currentValue);
-			this.timeline.redraw();
-		}
-	}
-	_init() {
-		this.timeline = sentio_realtime_timeline();
-		this.resizeWidth = (null != this.sentioResizeWidth);
-		this.resizeHeight = (null != this.sentioResizeHeight);
-
-		// Extract the height and width of the chart
-		var width = this.timelineElement[0][0].style.width;
-		if (null != width && '' !== width) {
-			width = parseFloat(width.substring(0, width.length - 2));
-			if (null != width && !isNaN(width)) { this.timeline.width(width); }
-		}
-		var height = this.timelineElement[0][0].style.height;
-		if (null != height && '' !== height) {
-			height = parseFloat(height.substring(0, height.length - 2));
-			if (null != height && !isNaN(height)) { this.timeline.height(height); }
+		if(null != this.chart.height) {
+			if(null != height && this.chart.height() != height) {
+				this.chart.height(height);
+				redraw = true;
+			}
 		}
 
-		// setup the marker callback method if one was provided
-		if (null != this.markerHover) {
-			this.timeline.markerHover(this.markerHover);
+		if(redraw) {
+			this.chart.resize().redraw();
 		}
+	}
 
-		//EventEmitterService.get('doStart').subscribe(data => this.doStart());
-		//EventEmitterService.get('doStop').subscribe(data => this.doStop());
-		//EventEmitterService.get('onResize').subscribe(event => this.onResize(event));
-
-		this.timeline.init(this.timelineElement).data([]).start();
-		//EventEmitterService.get(this.eventChannel || 'timelineInit').emit('done');
-	}
-	// Add a marker
-	addMarker() {
-		var now = Date.now();
-		this.markers.push([now, this.markerLabel]);
-		this.timeline.markers(this.markers).redraw();
-		this.markerLabel = '';
-	}
-	// Start and stop the timeline
-	doStart() {
-		this.timeline.start();
-	}
-	doStop() {
-		this.timeline.stop();
-	}
-	delayResize() {
-		if (undefined !== this.resizeTimer) {
-			clearTimeout(this.resizeTimer);
-		}
-		this.resizeTimer = setTimeout(() => this.doResize(), 200);
-	}
+	@HostListener("window:resize", ["$event"])
 	onResize(event) {
-		if (this.resizeWidth || this.resizeHeight) {
+		if (this.resizeHeight || this.resizeWidth) {
 			this.delayResize();
 		}
 	}
-	doResize() {
-		// Get the raw body element
-		var body = document.body;
 
-		// Cache the old overflow style
-		var overflow = body.style.overflow;
-		body.style.overflow = 'hidden';
+	ngOnInit() {
+		// Do the initial resize if either dimension is supposed to resize
+		if (this.resizeHeight || this.resizeWidth) {
+			this.resize();
+		}
 
-		// The first element child of our selector should be the <div> we injected
-		var rawElement = this.timelineElement[0][0].firstElementChild;
-		// Derive height/width of the parent (there are several ways to do this depending on the parent)
-		var parentWidth = rawElement.attributes.width | rawElement.style.width | rawElement.clientWidth;
-		var parentHeight = rawElement.attributes.height | rawElement.style.height | rawElement.clientHeight;
+		// register for the marker events
+		this.chart.markers().on("mouseover", p => { this.markerClick.emit(p); });
+		this.chart.markers().on("mouseout", p => { this.markerOver.emit(p); });
+		this.chart.markers().on("click", p => { this.markerOut.emit(p); });
 
-		// Calculate the new width/height based on the parent and the resize size
-		var width = (this.resizeWidth) ? parentWidth - this.sentioResizeWidth : undefined;
-		var height = (this.resizeHeight) ? parentHeight - this.sentioResizeHeight : undefined;
-
-		// Reapply the old overflow setting
-		body.style.overflow = overflow;
-
-		console.debug('resize rt.timeline height: ' + height + ' width: ' + width);
-
-		// Apply the new width and height
-		if (this.resizeWidth) { this.timeline.width(width); }
-		if (this.resizeHeight) { this.timeline.height(height); }
-
-		this.timeline.resize().redraw();
 	}
+
+	ngOnChanges(changes: { [key: string]: SimpleChange }) {
+
+		let redraw: boolean = false;
+
+		// Call the configure function
+		if (changes["configureFn"] && changes["configureFn"].isFirstChange()
+				&& null != changes["configureFn"].currentValue) {
+			this.configureFn(this.chart);
+		}
+
+		if (changes["model"]) {
+			this.chart.data(changes["model"].currentValue);
+			redraw = true;
+		}
+		if (changes["markers"]) {
+			this.chart.markers(changes["markers"].currentValue);
+			redraw = true;
+		}
+		if (changes["yExtent"]) {
+			this.chart.yExtent().overrideValue(changes["yExtent"].currentValue);
+			redraw = true;
+		}
+		if (changes["xExtent"]) {
+			this.chart.xExtent().overrideValue(changes["xExtent"].currentValue);
+			redraw = true;
+		}
+		if (changes["duration"]) {
+			this.chart.duration(changes["duration"].currentValue);
+		}
+
+		if (changes["fps"]) {
+			this.chart.fps(changes["fps"].currentValue);
+		}
+		if (changes["delay"]) {
+			this.chart.delay(changes["delay"].currentValue);
+			redraw = true;
+		}
+		if (changes["interval"]) {
+			this.chart.interval(changes["interval"].currentValue);
+			redraw = true;
+		}
+
+		if(redraw) {
+			this.chart.redraw();
+		}
+	}
+
 }

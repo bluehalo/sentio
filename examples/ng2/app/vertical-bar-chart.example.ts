@@ -1,14 +1,14 @@
-import {Component, Input, OnInit} from '@angular/core';
-import {VerticalBarChartDirective} from '../../../src/ng2/ts/vertical-bar-chart.directive';
+import {Component, OnInit} from "@angular/core";
+import {VerticalBarChartDirective} from "../../../src/ng2/ts/vertical-bar-chart.directive";
 
 @Component({
-	selector: 'vertical-bar-chart-example',
+	selector: "vertical-bar-chart-example",
 	template: `
 		<vertical-bar-chart
 		    style="width:200px;"
 			[model]="model"
 			[widthExtent]="[0,undefined]"
-			[configureFn]="configure">
+			[configure]="configure">
 		</vertical-bar-chart>
 		<button (click)="updateData()">Update Data</button>
 	`,
@@ -18,15 +18,15 @@ import {VerticalBarChartDirective} from '../../../src/ng2/ts/vertical-bar-chart.
 export class VerticalBarChartExample
     implements OnInit {
 
-    @Input() model: Object[] = [];
+    model: Object[] = [];
 
     ngOnInit() {
         this.updateData();
     }
 
-    configure(chart: any) {
+    configure = (chart: any) => {
         chart.label(function(d) {
-            return d.key + '&lrm; (' + d.value + ')';
+            return d.key + "&lrm; (" + d.value + ")";
         });
     }
 
@@ -44,7 +44,7 @@ export class VerticalBarChartExample
         let toReturn: Object[] = [];
         for(let i: number = 0; i < samples; i++){
             toReturn.push({
-                key: 'key:' + i,
+                key: "key:" + i,
                 value: Math.floor(Math.random() * samples)
             });
         }

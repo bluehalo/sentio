@@ -7,12 +7,6 @@ export default function() {
 	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
 	var _height = 100, _width = 600;
 
-	/*
-	 * Callback function for hovers over the markers. Invokes this function
-	 * with the data from the marker payload
-	 */
-	var _markerHoverCallback = null;
-
 	// Default accessors for the dimensions of the data
 	var _value = {
 		x: function(d) { return d[0]; },
@@ -93,7 +87,7 @@ export default function() {
 
 	var _markers = {
 		values: [],
-		dispatch: d3.dispatch('onclick')
+		dispatch: d3.dispatch('click', 'mouseover', 'mouseout')
 	};
 
 	function brushstart() {
@@ -148,16 +142,12 @@ export default function() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
-		// If the filter is enabled, add it
-		if(_filter.enabled) {
-			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-			_element.g.brush.call(_filter.brush)
-				.selectAll('rect').attr('y', -6);
-			_filter.brush
-				.on('brushend', brushend)
-				.on('brushstart', brushstart)
-				.on('brush', brush);
-		}
+		// Add the filter brush element and set up brush callbacks
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
+		_filter.brush
+			.on('brushend', brushend)
+			.on('brushstart', brushstart)
+			.on('brush', brush);
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
@@ -189,22 +179,6 @@ export default function() {
 		_markers.values = v;
 		return _instance;
 	};
-
-	/*
-	 * Accepts the hovered element and conditionally invokes
-	 * the marker hover callback if both the function and data
-	 * are non-null
-	 */
-	function invokeMarkerCallback(d) {
-		// fire an event with the payload
-		if(null != _markerHoverCallback) {
-			_markerHoverCallback(d);
-		}
-	}
-
-	function markerClicked(d) {
-		_markers.dispatch.onclick(d);
-	}
 
 	/*
 	 * Updates all the elements that depend on the size of the various components
@@ -314,8 +288,9 @@ export default function() {
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', invokeMarkerCallback)
-			.on('click', markerClicked);
+			.on('mouseover', _markers.dispatch.mouseover)
+			.on('mouseover', _markers.dispatch.mouseout)
+			.on('click', _markers.dispatch.click);
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');
@@ -393,26 +368,27 @@ export default function() {
 	 * has moved completely outside of the boundaries of the plot.
 	 */
 	function updateFilter(extent) {
-		// Don't need to do anything if filtering is not enabled
-		if(_filter.enabled) {
-			// Reassert the x scale of the brush (in case the scale has changed)
-			_filter.brush.x(_scale.x);
+		// Reassert the x scale of the brush (in case the scale has changed)
+		_filter.brush.x(_scale.x);
 
-			// Derive the overall plot extent from the collection of series
-			var plotExtent = multiExtent(_data, _extent.x);
+		// Derive the overall plot extent from the collection of series
+		var plotExtent = multiExtent(_data, _extent.x);
 
-			// If there was no previous extent, then there is no brush to update
-			if(null != extent) {
-				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
-				setFilter(nExtent, extent);
-			}
-
-			_element.g.brush
-				.call(_filter.brush)
-				.selectAll('rect')
-					.attr('height', _height - _margin.top - _margin.bottom + 7);
+		// If there was no previous extent, then there is no brush to update
+		if(null != extent) {
+			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
+			var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
+			setFilter(nExtent, extent);
 		}
+
+		_element.g.brush
+			.call(_filter.brush)
+			.selectAll('rect')
+			.attr('y', -6)
+				.attr('height', _height - _margin.top - _margin.bottom + 7);
+
+		_element.g.brush
+			.style('display', (_filter.enabled)? 'unset' : 'none');
 	}
 
 	// Basic Getters/Setters
@@ -491,11 +467,6 @@ export default function() {
 	_instance.markerLabelValue = function(v){
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
-		return _instance;
-	};
-	_instance.markerHover = function(v) {
-		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = v;
 		return _instance;
 	};
 	_instance.filter = function(v) {

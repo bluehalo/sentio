@@ -1,166 +1,150 @@
-import {Directive, ElementRef, EventEmitter, Input, OnChanges, SimpleChange, AfterContentInit, Output} from '@angular/core';
-import * as d3 from 'd3';
+import {Directive, ElementRef, EventEmitter, HostListener, Input, OnChanges, SimpleChange, Output} from "@angular/core";
+import {BaseChartDirective} from "./base-chart.directive";
 
-declare function sentio_timeline_line();
+declare var sentio: Object;
 
-@Directive({ selector: 'timeline-line' })
-export class TimelineLine implements AfterContentInit, OnChanges {
+@Directive({
+	selector: "timeline-line"
+})
+export class TimelineLineDirective
+	extends BaseChartDirective
+	implements OnChanges {
 
-	private timeline;
-	private timelineElement;
-	private resizeWidth;
-	private resizeHeight;
-	private resizeTimer;
-	private isInitialized: boolean = false;
+	@Input() model: Object[];
+	@Input() markers: Object[];
+	@Input() yExtent: Object[];
+	@Input() xExtent: Object[];
 
-	@Input() configureFn;
-	@Input() filterFn;
-	@Input() filterState;
-	@Input() interval;
-	@Input() markerHover;
-	@Input() markers;
-	@Input() model;
-	@Input() sentioResizeWidth;
-	@Input() sentioResizeHeight;
-	@Input() yExtent;
-	@Input() xExtent;
+	@Input() resizeWidth: boolean;
+	@Input() resizeHeight: boolean;
+	@Input() duration: number;
 
-	@Output() filterChanged: EventEmitter<any> = new EventEmitter();
+	@Input("configure") configureFn: (chart: any) => void;
+
+	@Input() filterEnabled: boolean;
+	@Input("filter") filterState: Object[];
+	@Output() filterChange: EventEmitter<Object[]> = new EventEmitter();
+
+	@Output() markerOver: EventEmitter<Object> = new EventEmitter();
+	@Output() markerOut: EventEmitter<Object> = new EventEmitter();
+	@Output() markerClick: EventEmitter<Object> = new EventEmitter();
 
 	constructor(el: ElementRef) {
-		this.timelineElement = d3.select(el.nativeElement);
+		super(el, sentio.timeline.line());
 	}
-	ngAfterContentInit() {
 
-	}
-	ngOnChanges(changes: { [key: string]: SimpleChange }) {
-		if (!this.isInitialized) {
-			this._init();
-			this.isInitialized = true;
-		}
+	/**
+	 * For the timeline, both dimensions scale independently
+	 */
+	setChartDimensions(width: number, height: number): void {
+		let redraw: boolean = false;
 
-		if (changes['filterState']) {
-			let filterDisabled = false;
-			// If a filter was passed in and it is not the one we just set, do some updates
-			if (null != changes['filterState'].currentValue
-				&& JSON.stringify(changes['filterState'].currentValue) != JSON.stringify(changes['filterState'].previousValue)) {
-
-				// If we're in the original format with 3 parameters, use the second two only
-				// TODO: We should go ahead and get rid of the 3 parameter style
-				if (changes['filterState'].currentValue.length > 2) {
-					// The first element indicates if we're disabled
-					if (changes['filterState'].currentValue[0]) {
-						filterDisabled = true;
-					} else {
-						this.filterState = changes['filterState'].currentValue.slice(1, 3);
-					}
-				}
-				if (!filterDisabled) {
-					this.timeline.setFilter(this.filterState);
-					console.log({ msg: 'Watch Filter', filter: this.filterState });
-				}
+		if(null != this.chart.width) {
+			if(null != width && this.chart.width() != width) {
+				this.chart.width(width);
+				redraw = true;
 			}
 		}
-		if (changes['model']) {
-			this.timeline.data(changes['model'].currentValue).redraw();
+
+		if(null != this.chart.height) {
+			if(null != height && this.chart.height() != height) {
+				this.chart.height(height);
+				redraw = true;
+			}
 		}
-		if (changes['markers']) {
-			this.timeline.markers(changes['markers'].currentValue).redraw();
-		}
-		if (changes['interval']) {
-			this.timeline.interval(changes['interval'].currentValue).redraw();
-		}
-		if (changes['yExtent']) {
-			this.timeline.yExtent().overrideValue(changes['yExtent'].currentValue);
-			this.timeline.redraw();
-		}
-		if (changes['xExtent']) {
-			this.timeline.xExtent().overrideValue(changes['xExtent'].currentValue);
-			this.timeline.redraw();
-		}
-		if (changes['duration']) {
-			this.timeline.duration(changes['duration'].currentValue);
+
+		if(redraw) {
+			this.chart.resize().redraw();
 		}
 	}
-	_init() {
-		this.timeline = sentio_timeline_line();
 
-		this.resizeWidth = (null != this.sentioResizeWidth);
-		this.resizeHeight = (null != this.sentioResizeHeight);
-		// Extract the height and width of the chart
-		var width = this.timelineElement[0][0].style.width;
-		if (null != width && '' !== width) {
-			width = parseFloat(width.substring(0, width.length - 2));
-			if (null != width && !isNaN(width)) { this.timeline.width(width); }
-		}
-		var height = this.timelineElement[0][0].style.height;
-		if (null != height && '' !== height) {
-			height = parseFloat(height.substring(0, height.length - 2));
-			if (null != height && !isNaN(height)) { this.timeline.height(height); }
-		}
-
-		if (null != this.configureFn) {
-			this.configureFn(this.timeline);
-		}
-
-		this.timeline.filter().on('filterend', fs => {
-			// Regular angular2 style
-			this.filterChanged.emit(fs);
-
-			setTimeout(() => {
-				// Call the function callback
-				if (undefined != this.filterFn) {
-					this.filterFn(fs);
-				}
-			});
-		});
-
-		// Check to see if filtering is enabled
-		if (null != this.filterFn || this.filterState) {
-			this.timeline.filter(true);
-		}
-
-		this.timeline.init(this.timelineElement);
-	}
-	doResize() {
-		// Get the raw body element
-		var body = document.body;
-
-		// Cache the old overflow style
-		var overflow = body.style.overflow;
-		body.style.overflow = 'hidden';
-
-		// The first element child of our selector should be the <div> we injected
-		var rawElement = this.timelineElement[0][0].firstElementChild;
-		// Derive height/width of the parent (there are several ways to do this depending on the parent)
-		var parentWidth = rawElement.attributes.width | rawElement.style.width | rawElement.clientWidth;
-		var parentHeight = rawElement.attributes.height | rawElement.style.height | rawElement.clientHeight;
-
-		// Calculate the new width/height based on the parent and the resize size
-		var width = (this.resizeWidth) ? parentWidth - this.sentioResizeWidth : undefined;
-		var height = (this.resizeHeight) ? parentHeight - this.sentioResizeHeight : undefined;
-
-		// Reapply the old overflow setting
-		body.style.overflow = overflow;
-
-		console.debug('resize rt.timeline height: ' + height + ' width: ' + width);
-
-		// Apply the new width and height
-		if (this.resizeWidth) { this.timeline.width(width); }
-		if (this.resizeHeight) { this.timeline.height(height); }
-
-		this.timeline.resize();
-		this.timeline.redraw();
-	}
-	delayResize() {
-		if (undefined !== this.resizeTimer) {
-			clearTimeout(this.resizeTimer);
-		}
-		this.resizeTimer = setTimeout(() => this.doResize(), 200);
-	}
+	@HostListener("window:resize", ["$event"])
 	onResize(event) {
-		if (this.resizeWidth || this.resizeHeight) {
+		if (this.resizeHeight || this.resizeWidth) {
 			this.delayResize();
 		}
+	}
+
+	ngOnInit() {
+
+		// Do the initial resize if either dimension is supposed to resize
+		if (this.resizeHeight || this.resizeWidth) {
+			this.resize();
+		}
+
+		// register for the filter end event
+		this.chart.filter().on("filterend", (fs) => {
+			// If the filter actually changed, emit the event
+			if(this.filterChanged(fs, this.filterState)) {
+				this.filterChange.emit((null != fs && !fs[0])? fs : undefined)
+			}
+		});
+
+		// register for the marker events
+		this.chart.markers().on("mouseover", p => { this.markerClick.emit(p); });
+		this.chart.markers().on("mouseout", p => { this.markerOver.emit(p); });
+		this.chart.markers().on("click", p => { this.markerOut.emit(p); });
+
+	}
+
+	ngOnChanges(changes: { [key: string]: SimpleChange }) {
+
+		let redraw: boolean = false;
+
+		// Call the configure function
+		if (changes["configureFn"] && changes["configureFn"].isFirstChange()
+				&& null != changes["configureFn"].currentValue) {
+			this.configureFn(this.chart);
+		}
+
+		if (changes["model"]) {
+			this.chart.data(changes["model"].currentValue);
+			redraw = true;
+		}
+		if (changes["yExtent"]) {
+			this.chart.yExtent().overrideValue(changes["yExtent"].currentValue);
+			redraw = true;
+		}
+		if (changes["xExtent"]) {
+			this.chart.xExtent().overrideValue(changes["xExtent"].currentValue);
+			redraw = true;
+		}
+		if (changes["duration"]) {
+			this.chart.duration(changes["duration"].currentValue);
+		}
+
+		if (changes["filterEnabled"]) {
+			this.chart.filter(changes["filterEnabled"].currentValue);
+			redraw = true;
+		}
+		if (changes["filterState"]) {
+			let currFilter = changes["filterState"].currentValue;
+			this.chart.setFilter((currFilter != null && currFilter.length > 2)? currFilter.slice(1,3) : currFilter);
+			redraw = true;
+		}
+
+		if (changes["markers"]) {
+			this.chart.markers(changes["markers"].currentValue);
+			redraw = true;
+		}
+
+		if(redraw) {
+			this.chart.redraw();
+		}
+	}
+
+	filterChanged = (current: Object[], previous: Object[]) => {
+
+		// Deep compare the filter
+		if(null != current && null != previous
+			&& current.length === previous.length
+			&& current[0] === previous[0]
+			&& current[1] === previous[1]
+			&& current[2] === previous[2]) {
+			return false;
+		}
+
+		// We know it changed
+		return true;
 	}
 }
