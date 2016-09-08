@@ -1,4 +1,4 @@
-/*! sentio-0.7.7 - Copyright Asymmetrik, Ltd. 2016 - All Rights Reserved.*/
+/*! sentio-1.0.0 - Copyright Asymmetrik, Ltd. 2016 - All Rights Reserved.*/
 (function (exports) {
 'use strict';
 
@@ -27,7 +27,7 @@ function donut() {
 	};
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOver', 'onMouseOut', 'onClick');
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
 
 	// Function handlers
 	var _fn = {
@@ -54,16 +54,16 @@ function donut() {
 				arcs.classed('active', false);
 			}
 		},
-		onMouseOver: function(d, i) {
+		mouseover: function(d, i) {
 			_fn.updateActiveElement(d);
-			_dispatch.onMouseOver(d, this);
+			_dispatch.mouseover(d, this);
 		},
-		onMouseOut: function(d, i) {
+		mouseout: function(d, i) {
 			_fn.updateActiveElement();
-			_dispatch.onMouseOut(d, this);
+			_dispatch.mouseout(d, this);
 		},
-		onClick: function(d, i) {
-			_dispatch.onClick(d, this);
+		click: function(d, i) {
+			_dispatch.click(d, this);
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
@@ -187,9 +187,9 @@ function donut() {
 		 */
 		var gEnter = g.enter().append('path')
 			.attr('class', 'arc')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
 			.each(function(d) { this._current = { startAngle: 0, endAngle: 0 }; });
 
 		/*
@@ -246,9 +246,9 @@ function donut() {
 		var gLegendGroupEnter = gLegendGroup.enter().append('g')
 			.attr('class', 'entry')
 			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } )
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click);
 
 		// Add the legend's rect
 		var rect = gLegendGroupEnter
@@ -360,7 +360,7 @@ function matrix() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOverCell', 'onMouseOutCell', 'onClickCell', 'onMouseOverRow', 'onMouseOutRow', 'onClickRow');
+	var _dispatch = d3.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
 	// Function handlers
 	var _fn = {
@@ -377,25 +377,25 @@ function matrix() {
 				seriesLabels.classed('active', false);
 			}
 		},
-		onMouseOverRow: function(d, i) {
+		rowMouseover: function(d, i) {
 			_fn.updateActiveSeries(d);
-			_dispatch.onMouseOverRow(d, this);
+			_dispatch.rowMouseover(d, this);
 		},
-		onMouseOutRow: function(d, i) {
+		rowMouseout: function(d, i) {
 			_fn.updateActiveSeries();
-			_dispatch.onMouseOutRow(d, this);
+			_dispatch.rowMouseout(d, this);
 		},
-		onClickRow: function(d, i) {
-			_dispatch.onClickRow(d, this);
+		rowClick: function(d, i) {
+			_dispatch.rowClick(d, this);
 		},
-		onMouseOverCell: function(d, i) {
-			_dispatch.onMouseOverCell(d, this);
+		cellMouseover: function(d, i) {
+			_dispatch.cellMouseover(d, this);
 		},
-		onMouseOutCell: function(d, i) {
-			_dispatch.onMouseOutCell(d, this);
+		cellMouseout: function(d, i) {
+			_dispatch.cellMouseout(d, this);
 		},
-		onClickCell: function(d, i) {
-			_dispatch.onClickCell(d, this);
+		cellClick: function(d, i) {
+			_dispatch.cellClick(d, this);
 		},
 		seriesKey: function(d) { return d.key; },
 		seriesLabel: function(d) { return d.label; },
@@ -514,9 +514,9 @@ function matrix() {
 			.style('opacity', 0.1)
 			.attr('class', 'row')
 			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.onMouseOverRow)
-			.on('mouseout', _fn.onMouseOutRow)
-			.on('click', _fn.onClickRow);
+			.on('mouseover', _fn.rowMouseover)
+			.on('mouseout', _fn.rowMouseout)
+			.on('click', _fn.rowClick);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
@@ -577,9 +577,9 @@ function matrix() {
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
-			.on('mouseover', _fn.onMouseOverCell)
-			.on('mouseout', _fn.onMouseOutCell)
-			.on('click', _fn.onClickCell);
+			.on('mouseover', _fn.cellMouseover)
+			.on('mouseout', _fn.cellMouseout)
+			.on('click', _fn.cellClick);
 
 		/*
 		 * Cell Enter + Update
@@ -703,16 +703,16 @@ function verticalBars() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
-		onMouseOver: function(d, i) {
-			_dispatch.onmouseover(d, this);
+		mouseover: function(d, i) {
+			_dispatch.mouseover(d, this);
 		},
-		onMouseOut: function(d, i) {
-			_dispatch.onmouseout(d, this);
+		mouseout: function(d, i) {
+			_dispatch.mouseout(d, this);
 		},
-		onClick: function(d, i) {
-			_dispatch.onclick(d, this);
+		click: function(d, i) {
+			_dispatch.click(d, this);
 		}
 	};
 
@@ -802,9 +802,9 @@ function verticalBars() {
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
 			.style('opacity', 0.01);
 
 		bar.append('div')
@@ -1683,15 +1683,14 @@ function line() {
 	// Brush filter
 	var _filter = {
 		enabled: false,
-		brush: d3.svg.brush(),
-		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
+		brush: d3.svg.brush()
 	};
 
+	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout')
 	var _data = [];
 
 	var _markers = {
-		values: [],
-		dispatch: d3.dispatch('click', 'mouseover', 'mouseout')
+		values: []
 	};
 
 	function brushstart() {
@@ -1701,7 +1700,7 @@ function line() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filterstart([isEmpty, min, max]);
+		_dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
 		var extent = getFilter();
@@ -1710,7 +1709,7 @@ function line() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filter([isEmpty, min, max]);
+		_dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
 		var extent = getFilter();
@@ -1719,7 +1718,7 @@ function line() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filterend([isEmpty, min, max]);
+		_dispatch.filterend([isEmpty, min, max]);
 	}
 
 	// Chart create/init method
@@ -1779,7 +1778,7 @@ function line() {
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers.dispatch; }
+		if(!arguments.length) { return _markers.values; }
 		_markers.values = v;
 		return _instance;
 	};
@@ -1892,9 +1891,9 @@ function line() {
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', _markers.dispatch.mouseover)
-			.on('mouseover', _markers.dispatch.mouseout)
-			.on('click', _markers.dispatch.click);
+			.on('mouseover', _dispatch.markerMouseover)
+			.on('mouseout', _dispatch.markerMouseout)
+			.on('click', _dispatch.markerClick);
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');
@@ -2074,8 +2073,12 @@ function line() {
 		return _instance;
 	};
 	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.dispatch; }
+		if(!arguments.length) { return _filter.enabled; }
 		_filter.enabled = v;
+		return _instance;
+	};
+	_instance.dispatch = function(v) {
+		if(!arguments.length) { return _dispatch; }
 		return _instance;
 	};
 

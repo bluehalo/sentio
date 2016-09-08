@@ -38,7 +38,7 @@ function($document, $window, $timeout, $log) {
 
 			// setup the marker callback method if one was provided
 			if(null != scope.markerHover) {
-				timeline.markerHover( scope.markerHover );
+				timeline.dispatch().on('markerMouseover', scope.markerHover);
 			}
 
 			scope.$watch('configure', function(n, o){

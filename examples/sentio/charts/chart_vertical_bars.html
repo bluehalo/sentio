@@ -28,9 +28,9 @@
 		chart.widthExtent().overrideValue([0, undefined]);
 
 		chart.dispatch()
-			.on('onmouseover', function(d) { console.log(d); })
-			.on('onmouseout', function(d) { console.log(d); })
-			.on('onclick', function(d) { console.log(d); });
+			.on('mouseover', function(d) { console.log(d); })
+			.on('mouseout', function(d) { console.log(d); })
+			.on('click', function(d) { console.log(d); });
 
 		chart.label(function(d) {
 			return 'Label ' + d.key + ' (' + d.value + ')';

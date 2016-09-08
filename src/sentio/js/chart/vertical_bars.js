@@ -8,16 +8,16 @@ export default function() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
-		onMouseOver: function(d, i) {
-			_dispatch.onmouseover(d, this);
+		mouseover: function(d, i) {
+			_dispatch.mouseover(d, this);
 		},
-		onMouseOut: function(d, i) {
-			_dispatch.onmouseout(d, this);
+		mouseout: function(d, i) {
+			_dispatch.mouseout(d, this);
 		},
-		onClick: function(d, i) {
-			_dispatch.onclick(d, this);
+		click: function(d, i) {
+			_dispatch.click(d, this);
 		}
 	};
 
@@ -107,9 +107,9 @@ export default function() {
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
 			.style('opacity', 0.01);
 
 		bar.append('div')

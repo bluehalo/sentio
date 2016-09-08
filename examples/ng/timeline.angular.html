@@ -51,7 +51,7 @@
 			};
 
 			$scope.configure = function(chart) {
-				chart.markers().on('onclick', function(marker) {
+				chart.dispatch().on('markerClick', function(marker) {
 					console.log(marker);
 				});
 			};

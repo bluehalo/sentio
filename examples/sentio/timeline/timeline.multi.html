@@ -33,7 +33,7 @@
 
 		timeline.yExtent().overrideValue([0, undefined]);
 
-		timeline.filter()
+		timeline.dispatch()
 			.on('filter', function(val) { console.log(val); })
 			.on('filterstart', function(val) { console.log(val); })
 			.on('filterend', function(val) { console.log(val); });

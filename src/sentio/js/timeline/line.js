@@ -79,15 +79,14 @@ export default function() {
 	// Brush filter
 	var _filter = {
 		enabled: false,
-		brush: d3.svg.brush(),
-		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
+		brush: d3.svg.brush()
 	};
 
+	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout')
 	var _data = [];
 
 	var _markers = {
-		values: [],
-		dispatch: d3.dispatch('click', 'mouseover', 'mouseout')
+		values: []
 	};
 
 	function brushstart() {
@@ -97,7 +96,7 @@ export default function() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filterstart([isEmpty, min, max]);
+		_dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
 		var extent = getFilter();
@@ -106,7 +105,7 @@ export default function() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filter([isEmpty, min, max]);
+		_dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
 		var extent = getFilter();
@@ -115,7 +114,7 @@ export default function() {
 		var min = (isEmpty)? undefined : extent[0];
 		var max = (isEmpty)? undefined : extent[1];
 
-		_filter.dispatch.filterend([isEmpty, min, max]);
+		_dispatch.filterend([isEmpty, min, max]);
 	}
 
 	// Chart create/init method
@@ -175,7 +174,7 @@ export default function() {
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers.dispatch; }
+		if(!arguments.length) { return _markers.values; }
 		_markers.values = v;
 		return _instance;
 	};
@@ -288,9 +287,9 @@ export default function() {
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', _markers.dispatch.mouseover)
-			.on('mouseover', _markers.dispatch.mouseout)
-			.on('click', _markers.dispatch.click);
+			.on('mouseover', _dispatch.markerMouseover)
+			.on('mouseout', _dispatch.markerMouseout)
+			.on('click', _dispatch.markerClick);
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');
@@ -470,8 +469,12 @@ export default function() {
 		return _instance;
 	};
 	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.dispatch; }
+		if(!arguments.length) { return _filter.enabled; }
 		_filter.enabled = v;
+		return _instance;
+	};
+	_instance.dispatch = function(v) {
+		if(!arguments.length) { return _dispatch; }
 		return _instance;
 	};
 

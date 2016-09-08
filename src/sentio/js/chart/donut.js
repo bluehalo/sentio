@@ -23,7 +23,7 @@ export default function() {
 	};
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOver', 'onMouseOut', 'onClick');
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
 
 	// Function handlers
 	var _fn = {
@@ -50,16 +50,16 @@ export default function() {
 				arcs.classed('active', false);
 			}
 		},
-		onMouseOver: function(d, i) {
+		mouseover: function(d, i) {
 			_fn.updateActiveElement(d);
-			_dispatch.onMouseOver(d, this);
+			_dispatch.mouseover(d, this);
 		},
-		onMouseOut: function(d, i) {
+		mouseout: function(d, i) {
 			_fn.updateActiveElement();
-			_dispatch.onMouseOut(d, this);
+			_dispatch.mouseout(d, this);
 		},
-		onClick: function(d, i) {
-			_dispatch.onClick(d, this);
+		click: function(d, i) {
+			_dispatch.click(d, this);
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
@@ -183,9 +183,9 @@ export default function() {
 		 */
 		var gEnter = g.enter().append('path')
 			.attr('class', 'arc')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
 			.each(function(d) { this._current = { startAngle: 0, endAngle: 0 }; });
 
 		/*
@@ -242,9 +242,9 @@ export default function() {
 		var gLegendGroupEnter = gLegendGroup.enter().append('g')
 			.attr('class', 'entry')
 			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } )
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click);
 
 		// Add the legend's rect
 		var rect = gLegendGroupEnter

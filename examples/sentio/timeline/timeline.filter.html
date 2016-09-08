@@ -26,7 +26,7 @@
 			.filter(true);
 		timeline.yExtent().overrideValue([0, undefined]);
 
-		timeline.filter()
+		timeline.dispatch()
 			.on('filterend', function(val) { console.log({ msg: 'filterend', val }); });
 
 		var interval = 60000;

@@ -7,8 +7,8 @@ declare var sentio: Object;
 	selector: "timeline-line"
 })
 export class TimelineLineDirective
-	extends BaseChartDirective
-	implements OnChanges {
+extends BaseChartDirective
+implements OnChanges {
 
 	@Input() model: Object[];
 	@Input() markers: Object[];
@@ -58,6 +58,25 @@ export class TimelineLineDirective
 		}
 	}
 
+	/**
+	 * Did the state of the filter change?
+	 */
+	didFilterChange = (current: Object[], previous: Object[]) => {
+
+		// Deep compare the filter
+		if(current === previous ||
+			(null != current && null != previous
+			&& current.length === previous.length
+			&& current[0] === previous[0]
+			&& current[1] === previous[1]
+			&& current[2] === previous[2])) {
+			return false;
+		}
+
+		// We know it changed
+		return true;
+	}
+
 	@HostListener("window:resize", ["$event"])
 	onResize(event) {
 		if (this.resizeHeight || this.resizeWidth) {
@@ -73,31 +92,30 @@ export class TimelineLineDirective
 		}
 
 		// register for the filter end event
-		this.chart.filter().on("filterend", (fs) => {
+		this.chart.dispatch().on("filterend", (fs) => {
+
+			// We are externally representing the filter as undefined or a two element array
+			// So, convert the filter state to the two value format
+			if (null == fs || (fs.length > 0 && fs[0])) {
+				fs = undefined;
+			}
+			else if (fs.length > 2) {
+				fs = fs.slice(1,3);
+			}
+			else if(fs.length !== 2) {
+				fs = undefined;
+			}
+
 			// If the filter actually changed, emit the event
 			if(this.didFilterChange(fs, this.filterState)) {
-
-				// We are externally representing the filter as undefined or a two element array
-
-				// If the filter is null or empty, make it undefined
-				if (null == fs || (fs.length > 0 && fs[0])) {
-					fs = undefined;
-				}
-				else if (fs.length > 2) {
-					fs = fs.slice(1,3);
-				}
-				else if(fs.length !== 2) {
-					fs = undefined;
-				}
-
 				setTimeout(() => { this.filterChange.emit(fs); });
 			}
 		});
 
 		// register for the marker events
-		this.chart.markers().on("mouseover", p => { this.markerClick.emit(p); });
-		this.chart.markers().on("mouseout", p => { this.markerOver.emit(p); });
-		this.chart.markers().on("click", p => { this.markerOut.emit(p); });
+		this.chart.dispatch().on("markerMouseover", p => { this.markerClick.emit(p); });
+		this.chart.dispatch().on("markerMouseout", p => { this.markerOver.emit(p); });
+		this.chart.dispatch().on("markerClick", p => { this.markerOut.emit(p); });
 
 	}
 
@@ -107,7 +125,7 @@ export class TimelineLineDirective
 
 		// Call the configure function
 		if (changes["configureFn"] && changes["configureFn"].isFirstChange()
-				&& null != changes["configureFn"].currentValue) {
+			&& null != changes["configureFn"].currentValue) {
 			this.configureFn(this.chart);
 		}
 
@@ -146,18 +164,4 @@ export class TimelineLineDirective
 		}
 	}
 
-	didFilterChange = (current: Object[], previous: Object[]) => {
-
-		// Deep compare the filter
-		if(null != current && null != previous
-			&& current.length === previous.length
-			&& current[0] === previous[0]
-			&& current[1] === previous[1]
-			&& current[2] === previous[2]) {
-			return false;
-		}
-
-		// We know it changed
-		return true;
-	}
 }

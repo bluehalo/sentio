@@ -9,7 +9,7 @@ export default function() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOverCell', 'onMouseOutCell', 'onClickCell', 'onMouseOverRow', 'onMouseOutRow', 'onClickRow');
+	var _dispatch = d3.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
 	// Function handlers
 	var _fn = {
@@ -26,25 +26,25 @@ export default function() {
 				seriesLabels.classed('active', false);
 			}
 		},
-		onMouseOverRow: function(d, i) {
+		rowMouseover: function(d, i) {
 			_fn.updateActiveSeries(d);
-			_dispatch.onMouseOverRow(d, this);
+			_dispatch.rowMouseover(d, this);
 		},
-		onMouseOutRow: function(d, i) {
+		rowMouseout: function(d, i) {
 			_fn.updateActiveSeries();
-			_dispatch.onMouseOutRow(d, this);
+			_dispatch.rowMouseout(d, this);
 		},
-		onClickRow: function(d, i) {
-			_dispatch.onClickRow(d, this);
+		rowClick: function(d, i) {
+			_dispatch.rowClick(d, this);
 		},
-		onMouseOverCell: function(d, i) {
-			_dispatch.onMouseOverCell(d, this);
+		cellMouseover: function(d, i) {
+			_dispatch.cellMouseover(d, this);
 		},
-		onMouseOutCell: function(d, i) {
-			_dispatch.onMouseOutCell(d, this);
+		cellMouseout: function(d, i) {
+			_dispatch.cellMouseout(d, this);
 		},
-		onClickCell: function(d, i) {
-			_dispatch.onClickCell(d, this);
+		cellClick: function(d, i) {
+			_dispatch.cellClick(d, this);
 		},
 		seriesKey: function(d) { return d.key; },
 		seriesLabel: function(d) { return d.label; },
@@ -163,9 +163,9 @@ export default function() {
 			.style('opacity', 0.1)
 			.attr('class', 'row')
 			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.onMouseOverRow)
-			.on('mouseout', _fn.onMouseOutRow)
-			.on('click', _fn.onClickRow);
+			.on('mouseover', _fn.rowMouseover)
+			.on('mouseout', _fn.rowMouseout)
+			.on('click', _fn.rowClick);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
@@ -226,9 +226,9 @@ export default function() {
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
-			.on('mouseover', _fn.onMouseOverCell)
-			.on('mouseout', _fn.onMouseOutCell)
-			.on('click', _fn.onClickCell);
+			.on('mouseover', _fn.cellMouseover)
+			.on('mouseout', _fn.cellMouseout)
+			.on('click', _fn.cellClick);
 
 		/*
 		 * Cell Enter + Update

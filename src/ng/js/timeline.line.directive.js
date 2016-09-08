@@ -44,7 +44,7 @@ function($document, $window, $timeout, $log) {
 			var lastFilterState = null;
 
 			scope.$watch('filterFn', function(n, o){
-				timeline.filter().on('filterend', function(filterState){
+				timeline.dispatch().on('filterend', function(filterState){
 					$timeout(function(){
 						// Call the function callback
 						scope.filterFn({ filterState: filterState });

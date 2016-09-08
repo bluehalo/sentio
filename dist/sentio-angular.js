@@ -238,7 +238,7 @@ function($document, $window, $timeout, $log) {
 
 			// setup the marker callback method if one was provided
 			if(null != scope.markerHover) {
-				timeline.markerHover( scope.markerHover );
+				timeline.dispatch().on('markerMouseover', scope.markerHover);
 			}
 
 			scope.$watch('configure', function(n, o){
@@ -400,7 +400,7 @@ function($document, $window, $timeout, $log) {
 			var lastFilterState = null;
 
 			scope.$watch('filterFn', function(n, o){
-				timeline.filter().on('filterend', function(filterState){
+				timeline.dispatch().on('filterend', function(filterState){
 					$timeout(function(){
 						// Call the function callback
 						scope.filterFn({ filterState: filterState });

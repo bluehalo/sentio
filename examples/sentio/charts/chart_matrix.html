@@ -28,8 +28,8 @@
 			.cellMargin(2);
 
 		chart.dispatch()
-			.on('onMouseOverCell', function(d) { console.log({ msg: 'OnMouseOverCell', d: d }); })
-			.on('onMouseOverRow', function(d) { console.log({ msg: 'OnMouseOverRow', d: d }); });
+			.on('cellMouseover', function(d) { console.log({ msg: 'cellMouseover', d: d }); })
+			.on('rowMouseover', function(d) { console.log({ msg: 'rowMouseover', d: d }); });
 
 		chart.init(chartDiv);
 		updateData();
