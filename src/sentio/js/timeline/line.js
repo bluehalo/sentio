@@ -341,7 +341,10 @@ export default function() {
 	 */
 	function setFilter(newExtent, oldExtent) {
 		// Fire the event if the extents are different
-		var suppressEvent = newExtent == oldExtent || newExtent == null || oldExtent == null || (newExtent[0] == oldExtent[0] && newExtent[1] == oldExtent[1]);
+		var suppressEvent =
+			newExtent === oldExtent || newExtent == null || oldExtent == null
+			|| (newExtent[0] === oldExtent[0] && newExtent[1] === oldExtent[1]);
+
 		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
 
 		// either clear the filter or assert it

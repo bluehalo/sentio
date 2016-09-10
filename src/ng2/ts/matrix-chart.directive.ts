@@ -25,17 +25,17 @@ export class MatrixChartDirective
 	/**
 	 * For the matrix chart, we scale height and width independently
 	 */
-	setChartDimensions(width: number, height: number): void {
+	setChartDimensions(width: number, height: number, force: boolean = false): void {
 		let redraw: boolean = false;
 
-		if (null != this.chart.width) {
+		if ((force || this.resizeWidth) && null != this.chart.width) {
 			if(null != width && this.chart.width() !== width) {
 				this.chart.width(width);
 				redraw = true;
 			}
 		}
 
-		if (null != this.chart.height) {
+		if ((force || this.resizeHeight) && null != this.chart.height) {
 			if(null != height && this.chart.height() !== height) {
 				this.chart.height(height);
 				redraw = true;

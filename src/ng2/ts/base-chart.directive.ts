@@ -15,14 +15,18 @@ export abstract class BaseChartDirective {
 		// Extract the dimensions of the chart
 		let width: number = this.getPixelDimension(this.chartElement[0][0].style.width);
 		let height: number = this.getPixelDimension(this.chartElement[0][0].style.height);
-		this.setChartDimensions(width, height);
+		this.setChartDimensions(width, height, true);
 	}
 
 	/**
-	 * Apply the dimensions to the underlying sentio chart object
-	 * @param width
+	 * Set the chart dimensions according to the implementation
+	 * behavior, the configuration, and the parameters.
+	 *
+	 * @param width Width to which to optionally resize in pixels
+	 * @param height Height to which to optionally resize in pixels
+	 * @param force Should the resize ignore the resize configuration?
 	 */
-	abstract setChartDimensions(width: number, height: number): void;
+	abstract setChartDimensions(width: number, height: number, force: boolean = false): void;
 
 	/**
 	 * Determines the numerical dimension given a string representation

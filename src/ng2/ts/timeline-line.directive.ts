@@ -7,8 +7,8 @@ declare var sentio: Object;
 	selector: "timeline-line"
 })
 export class TimelineLineDirective
-extends BaseChartDirective
-implements OnChanges {
+	extends BaseChartDirective
+	implements OnChanges {
 
 	@Input() model: Object[];
 	@Input() markers: Object[];
@@ -36,17 +36,17 @@ implements OnChanges {
 	/**
 	 * For the timeline, both dimensions scale independently
 	 */
-	setChartDimensions(width: number, height: number): void {
+	setChartDimensions(width: number, height: number, force: boolean = false): void {
 		let redraw: boolean = false;
 
-		if(null != this.chart.width) {
+		if((force || this.resizeWidth) && null != this.chart.width) {
 			if(null != width && this.chart.width() != width) {
 				this.chart.width(width);
 				redraw = true;
 			}
 		}
 
-		if(null != this.chart.height) {
+		if((force || this.resizeHeight) && null != this.chart.height) {
 			if(null != height && this.chart.height() != height) {
 				this.chart.height(height);
 				redraw = true;
@@ -125,7 +125,7 @@ implements OnChanges {
 
 		// Call the configure function
 		if (changes["configureFn"] && changes["configureFn"].isFirstChange()
-			&& null != changes["configureFn"].currentValue) {
+				&& null != changes["configureFn"].currentValue) {
 			this.configureFn(this.chart);
 		}
 
@@ -150,8 +150,14 @@ implements OnChanges {
 			redraw = true;
 		}
 		if (changes["filterState"]) {
-			this.chart.setFilter(changes["filterState"].currentValue);
-			redraw = true;
+
+			// Only do anything if the filter is changing
+			if(changes["filterState"].isFirstChange()
+				|| this.didFilterChange(changes["filterState"].currentValue, changes["filterState"].previousValue)) {
+				this.chart.setFilter(changes["filterState"].currentValue);
+				redraw = true;
+			}
+
 		}
 
 		if (changes["markers"]) {
