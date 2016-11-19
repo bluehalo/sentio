@@ -24,9 +24,9 @@ export abstract class BaseChartDirective {
 	 *
 	 * @param width Width to which to optionally resize in pixels
 	 * @param height Height to which to optionally resize in pixels
-	 * @param force Should the resize ignore the resize configuration?
+	 * @param force Should the resize ignore the resize configuration? (optional, should default to false)
 	 */
-	abstract setChartDimensions(width: number, height: number, force: boolean = false): void;
+	abstract setChartDimensions(width: number, height: number, force?: boolean): void;
 
 	/**
 	 * Determines the numerical dimension given a string representation
@@ -70,7 +70,7 @@ export abstract class BaseChartDirective {
 		// Reapply the old overflow setting
 		body.style.overflow = overflow;
 
-		this.setChartDimensions(width, height);
+		this.setChartDimensions(width, height, false);
 	}
 
 	/**

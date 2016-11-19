@@ -1,7 +1,7 @@
 import {Directive, ElementRef, HostListener, Input, OnChanges, SimpleChange} from "@angular/core";
 import {BaseChartDirective} from "./base-chart.directive";
 
-declare var sentio: Object;
+declare var sentio: any;
 
 @Directive({
 	selector: "matrix-chart"

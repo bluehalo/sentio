@@ -1,7 +1,7 @@
 import {Directive, ElementRef, EventEmitter, HostListener, Input, OnChanges, SimpleChange, Output} from "@angular/core";
 import {BaseChartDirective} from "./base-chart.directive";
 
-declare var sentio: Object;
+declare var sentio: any;
 
 @Directive({
 	selector: "realtime-timeline"

@@ -1,7 +1,7 @@
 import {Directive, ElementRef, EventEmitter, HostListener, Input, OnChanges, SimpleChange, Output} from "@angular/core";
 import {BaseChartDirective} from "./base-chart.directive";
 
-declare var sentio: Object;
+declare var sentio: any;
 
 @Directive({
 	selector: "timeline-line"
@@ -23,11 +23,11 @@ export class TimelineLineDirective
 
 	@Input() filterEnabled: boolean;
 	@Input("filter") filterState: Object[];
-	@Output() filterChange: EventEmitter<Object[]> = new EventEmitter();
+	@Output() filterChange: EventEmitter<Object[]> = new EventEmitter<Object[]>();
 
-	@Output() markerOver: EventEmitter<Object> = new EventEmitter();
-	@Output() markerOut: EventEmitter<Object> = new EventEmitter();
-	@Output() markerClick: EventEmitter<Object> = new EventEmitter();
+	@Output() markerOver: EventEmitter<Object> = new EventEmitter<Object>();
+	@Output() markerOut: EventEmitter<Object> = new EventEmitter<Object>();
+	@Output() markerClick: EventEmitter<Object> = new EventEmitter<Object>();
 
 	constructor(el: ElementRef) {
 		super(el, sentio.timeline.line());
