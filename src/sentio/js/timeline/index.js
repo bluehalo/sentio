@@ -1,4 +1,4 @@
-import {default as line} from './line';
+import { default as line } from './line';
 
 export var timeline = {
 	line: line
