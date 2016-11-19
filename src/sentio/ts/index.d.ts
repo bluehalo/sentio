@@ -57,3 +57,5 @@ declare namespace sentio {
 
 	}
 }
+
+export = sentio;
