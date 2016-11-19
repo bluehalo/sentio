@@ -1,6 +1,6 @@
 'use strict';
 
-var
+let
 	chalk = require('chalk'),
 	del = require('del'),
 	fs = require('fs'),
@@ -10,6 +10,7 @@ var
 	path = require('path'),
 	q = require('q'),
 	rollup = require('rollup-stream'),
+	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
 	buffer = require('vinyl-buffer'),
 
@@ -19,7 +20,7 @@ var
 
 
 // Banner to append to generated files
-var bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
+let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
 
 
 /**
@@ -28,7 +29,7 @@ var bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright
 
 gulp.task('validate-js', function() {
 	return gulp.src(assets.src.js)
-	// ESLint
+		// ESLint
 		.pipe(plugins.eslint('./config/eslint.conf.json'))
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError());
@@ -84,7 +85,7 @@ gulp.task('build-js-umd', function() {
 
 gulp.task('build-css', function() {
 	// Generate a list of the sources in a deterministic manner
-	var sourceArr = [];
+	let sourceArr = [];
 	assets.src.sass.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
@@ -117,7 +118,7 @@ gulp.task('build-css', function() {
 // Tests
 gulp.task('build-tests', function() {
 	// Generate a list of the test sources in a deterministic manner
-	var sourceArr = [ './dist/version.js' ];
+	let sourceArr = [ './dist/version.js' ];
 	assets.tests.js.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
@@ -142,16 +143,16 @@ gulp.task('build-tests', function() {
  * --------------------------
  */
 
-gulp.task('build', [ 'build-js', 'build-css', 'build-tests' ]);
+gulp.task('build', [ 'build-js', 'build-css' ]);
 
-gulp.task('build-js', [ 'build-js-iife', 'build-js-umd', 'validate-js' ]);
+gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-iife', 'build-js-umd' ], done); } );
 
-gulp.task('test', [ 'build-js', 'build-tests' ], function() {
+gulp.task('test', [ 'build-js' ], function() {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
 });
 
-gulp.task('test-ci', [ 'build-js', 'build-tests' ], function() {
+gulp.task('test-ci', [ 'build-js' ], function() {
 
 });
 
