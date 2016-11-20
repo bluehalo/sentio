@@ -46,7 +46,7 @@ function doRollup(config, artifactName) {
 	return rollup(config)
 		.pipe(source('main.js', './src'))
 		.pipe(buffer())
-		.pipe(plugins.sourcemaps.init({loadMaps: true}))
+		.pipe(plugins.sourcemaps.init({ loadMaps: true }))
 		.pipe(plugins.rename(artifactName + '.js'))
 		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))

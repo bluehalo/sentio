@@ -14,7 +14,7 @@ module.exports = {
 	lib : {},
 
 	src: {
-		js: 'src/sentio/js/index.js',
+		js: './index.js',
 		sass: [
 			'src/sentio/sass/**/*.scss'
 		]

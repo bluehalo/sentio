@@ -8,15 +8,15 @@
 	"license": "UNLICENSED",
 
 	"main": "dist/sentio.umd.js",
-	"module": "src/js/index.js",
-	"typings": "src/ts/index.d.ts",
+	"module": "./index.js",
+	"typings": "./index.d.ts",
 
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Asymmetrik/sentio.git"
 	},
 
-	"peerDependencies": {
+	"dependencies": {
 		"d3": "3.5"
 	},
 
