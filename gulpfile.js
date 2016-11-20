@@ -62,7 +62,7 @@ gulp.task('build-js-iife', function() {
 	return doRollup({
 			entry: assets.src.js,
 			format: 'iife',
-			moduleName: 'sentio',
+			moduleName: pkg.artifactName,
 			sourceMap: true,
 			banner: bannerString
 		},
@@ -74,7 +74,7 @@ gulp.task('build-js-umd', function() {
 	return doRollup({
 			entry: assets.src.js,
 			format: 'umd',
-			moduleName: 'sentio',
+			moduleName: pkg.artifactName,
 			sourceMap: true,
 			banner: bannerString
 		},
