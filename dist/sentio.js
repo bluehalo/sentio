@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio-2.0.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
+/*! @asymmetrik/sentio-2.0.2 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
 (function (exports) {
 'use strict';
 
