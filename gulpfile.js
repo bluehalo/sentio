@@ -1,6 +1,6 @@
 'use strict';
 
-var _ = require('lodash'),
+let
 	chalk = require('chalk'),
 	del = require('del'),
 	fs = require('fs'),
@@ -10,6 +10,7 @@ var _ = require('lodash'),
 	path = require('path'),
 	q = require('q'),
 	rollup = require('rollup-stream'),
+	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
 	buffer = require('vinyl-buffer'),
 
@@ -18,63 +19,74 @@ var _ = require('lodash'),
 	assets = require('./config/assets');
 
 
-// banner info
-var bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
+// Banner to append to generated files
+let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
 
-/*
- * Helpers
+
+/**
+ * Validation Tasks
  */
 
-
-// Install Typings
-function installTypings(sourceArr) {
-	return gulp.src(sourceArr)
-		.pipe(plugins.typings());
-}
-
-
-/*
- * Sentio
- */
-gulp.task('build-sentio', ['build-sentio-js', 'build-sentio-css', 'build-sentio-tests']);
-
-gulp.task('validate-sentio-js', function() {
-	return gulp.src(assets.src.sentio.js)
+gulp.task('validate-js', function() {
+	return gulp.src(assets.src.js)
 		// ESLint
 		.pipe(plugins.eslint('./config/eslint.conf.json'))
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError());
 });
 
-gulp.task('build-sentio-js', ['validate-sentio-js'], function() {
 
-	return rollup({
-			entry: assets.src.sentio.js,
-			format: 'iife',
-			moduleName: 'sentio',
-			sourceMap: true,
-			banner: bannerString
-		})
+
+/*
+ * Build
+ */
+
+function doRollup(config, artifactName) {
+
+	return rollup(config)
 		.pipe(source('main.js', './src'))
 		.pipe(buffer())
-		.pipe(plugins.sourcemaps.init({loadMaps: true}))
-		.pipe(plugins.rename(pkg.name + '.js'))
+		.pipe(plugins.sourcemaps.init({ loadMaps: true }))
+		.pipe(plugins.rename(artifactName + '.js'))
 		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
 
 		// Uglify
-		.pipe(plugins.filter('**/' + pkg.name + '.js'))
+		.pipe(plugins.filter('**/' + artifactName + '.js'))
 		.pipe(plugins.uglify({ preserveComments: 'license' }))
-		.pipe(plugins.rename(pkg.name + '.min.js'))
+		.pipe(plugins.rename(artifactName + '.min.js'))
 		.pipe(gulp.dest('dist'));
+}
 
+gulp.task('build-js-iife', function() {
+	return doRollup({
+			entry: assets.src.js,
+			format: 'iife',
+			moduleName: 'sentio',
+			sourceMap: true,
+			banner: bannerString
+		},
+		pkg.artifactName
+	);
 });
 
-// SASS
-gulp.task('build-sentio-css', function() {
+gulp.task('build-js-umd', function() {
+	return doRollup({
+			entry: assets.src.js,
+			format: 'umd',
+			moduleName: 'sentio',
+			sourceMap: true,
+			banner: bannerString
+		},
+		pkg.artifactName + '.umd'
+	);
+});
+
+
+gulp.task('build-css', function() {
 	// Generate a list of the sources in a deterministic manner
-	var sourceArr = [];
-	assets.src.sentio.sass.forEach(function(f) {
+	let sourceArr = [];
+	assets.src.sass.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
@@ -91,23 +103,23 @@ gulp.task('build-sentio-css', function() {
 		// Compile and concat the sass (w/sourcemaps)
 		.pipe(plugins.sourcemaps.init())
 			.pipe(plugins.sass())
-			.pipe(plugins.concat(pkg.name + '.css'))
+			.pipe(plugins.concat(pkg.artifactName + '.css'))
 			.pipe(plugins.insert.prepend(bannerString))
 		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest('dist'))
 
 		// Clean the CSS
-		.pipe(plugins.filter('dist/' + pkg.name + '.css'))
+		.pipe(plugins.filter('dist/' + pkg.artifactName + '.css'))
 		.pipe(plugins.cleanCss())
-		.pipe(plugins.rename(pkg.name + '.min.css'))
+		.pipe(plugins.rename(pkg.artifactName + '.min.css'))
 		.pipe(gulp.dest('dist'));
 });
 
 // Tests
-gulp.task('build-sentio-tests', function() {
+gulp.task('build-tests', function() {
 	// Generate a list of the test sources in a deterministic manner
-	var sourceArr = [ './dist/version.js' ];
-	assets.tests.sentio.js.forEach(function(f) {
+	let sourceArr = [ './dist/version.js' ];
+	assets.tests.js.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
@@ -119,79 +131,30 @@ gulp.task('build-sentio-tests', function() {
 		.pipe(plugins.eslint.failAfterError())
 
 		// Concat
-		.pipe(plugins.concat(pkg.name + '-tests.js'))
+		.pipe(plugins.concat(pkg.artifactName + '-tests.js'))
 		.pipe(gulp.dest('dist'));
 });
 
 
-// Build Angular Support
-gulp.task('build-ng', function() {
-	var sourceArr = [ './dist/version.js' ];
-	assets.src.ng.js.forEach(function(f) {
-		sourceArr = sourceArr.concat(glob.sync(f).sort());
-	});
 
-	return gulp.src(sourceArr)
+/**
+ * --------------------------
+ * Main Tasks
+ * --------------------------
+ */
 
-		// ESLint
-		.pipe(plugins.eslint('./config/eslint.conf.json'))
-		.pipe(plugins.eslint.format())
-		.pipe(plugins.eslint.failAfterError())
+gulp.task('build', [ 'build-js', 'build-css' ]);
 
-		// Concatenate
-		.pipe(plugins.sourcemaps.init())
-			.pipe(plugins.concat(pkg.name + '-angular.js'))
-		.pipe(plugins.sourcemaps.write('./'))
-		.pipe(gulp.dest('dist'))
+gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-iife', 'build-js-umd' ], done); } );
 
-		// Uglify
-		.pipe(plugins.filter([ 'dist/version.js', 'dist/' + pkg.name + '-angular.js' ]))
-		.pipe(plugins.uglify({ preserveComments: 'license' }))
-		.pipe(plugins.rename(pkg.name + '-angular.min.js'))
-		.pipe(gulp.dest('dist'));
-});
-
-// Build Angular 2 Support
-var tsProject = plugins.typescript.createProject({
-	outDir: 'dist/tsc',
-	target: 'es6',
-	module: 'es6',
-	moduleResolution: 'node',
-	emitDecoratorMetadata: true,
-	experimentalDecorators: true,
-	removeComments: true,
-	noImplicitAny: false
-});
-
-gulp.task('build-ng2', function(done) {
-	return gulp.src(assets.src.ng2.ts, { base: './app' })
-
-		// Lint the Typescript
-		.pipe(plugins.tslint({
-			formatter: "prose",
-			configuration: require('./config/tslint.conf.json')
-		}))
-		.pipe(plugins.tslint.report(
-			require('tslint-stylish'), {
-				emitError: true,
-				sort: true
-			}
-		))
-
-		// Compile the Typescript
-		.pipe(plugins.sourcemaps.init())
-			.pipe(plugins.typescript(tsProject)).js
-		.pipe(plugins.sourcemaps.write('.'))
-		.pipe(gulp.dest('public/app'))
-		.on('error', plugins.util.log);
-
-});
-
-
-gulp.task('test', ['build-sentio-js', 'build-sentio-tests'], function() {
+gulp.task('test', [ 'build-js' ], function() {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
 });
 
-gulp.task('build', ['build-sentio', 'build-ng', 'build-ng2']);
-gulp.task('default', ['build', 'test']);
+gulp.task('test-ci', [ 'build-js' ], function() {
+
+});
+
+// Default task builds and tests
+gulp.task('default', [ 'build', 'test' ]);

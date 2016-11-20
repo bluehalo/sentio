@@ -15,6 +15,5 @@ First, you will need to install the build dependencies for the project using nod
 
 ```bash
 npm install
-bower install
 gulp
 ```

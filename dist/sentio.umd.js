@@ -1,6 +1,9 @@
 /*! @asymmetrik/sentio-2.0.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
-(function (exports) {
-'use strict';
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.sentio = global.sentio || {})));
+}(this, (function (exports) { 'use strict';
 
 var donut = function() {
 
@@ -2307,6 +2310,8 @@ exports.realtime = realtime;
 exports.timeline = timeline$1;
 exports.util = util;
 
-}((this.sentio = this.sentio || {})));
+Object.defineProperty(exports, '__esModule', { value: true });
 
-//# sourceMappingURL=sentio.js.map
+})));
+
+//# sourceMappingURL=sentio.umd.js.map
