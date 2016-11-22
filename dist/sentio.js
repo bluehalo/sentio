@@ -2243,6 +2243,12 @@ function line() {
 		if(!arguments.length) { return _dispatch; }
 		return _instance;
 	};
+	_instance.setFilter = function(v) {
+		return _filter.setFilter(v);
+	};
+	_instance.getFilter = function() {
+		return _filter.getFilter();
+	};
 
 	return _instance;
 }
