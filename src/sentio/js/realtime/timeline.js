@@ -1,6 +1,6 @@
-import {default as line} from '../timeline/line';
+import { line } from '../timeline/line';
 
-export default function() {
+function timeline() {
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
 	var _delay = 0;
@@ -25,7 +25,7 @@ export default function() {
 	/*
 	 * This is the main update loop function. It is called every time the
 	 * _instance is updating to proceed through time.
-	 */ 
+	 */
 	function tick() {
 		// If not running, let the loop die
 		if(!_running) return;
@@ -95,3 +95,5 @@ export default function() {
 
 	return _instance;
 }
+
+export { timeline };

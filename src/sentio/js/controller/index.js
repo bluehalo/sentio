@@ -1,3 +1,5 @@
-import { default as rtBins } from './realtime_bins';
+import { rtBins } from './realtime_bins';
 
-export var controller = { rtBins: rtBins };
+var controller = { rtBins: rtBins };
+
+export { controller };

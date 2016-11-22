@@ -1,8 +1,10 @@
+import { bins } from '../model/bins';
+
 /*
  * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
  * Every time binSize elapses, updates the lwm to keep the bins shifting.
  */
-export default function(config) {
+function rtBins(config) {
 
 	/**
 	 * Private variables
@@ -68,7 +70,7 @@ export default function(config) {
 			_config.delay = rtConfig.delay;
 		}
 
-		_model = sentio.model.bins({
+		_model = bins({
 			size: _config.binSize,
 			count: _config.binCount + 2,
 			lwm: 0
@@ -152,3 +154,5 @@ export default function(config) {
 
 	return controller;
 }
+
+export { rtBins };

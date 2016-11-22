@@ -1,4 +1,6 @@
-export default function() {
+import { extent } from '../util/extent';
+
+function verticalBars() {
 
 	// Layout properties
 	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -36,7 +38,7 @@ export default function() {
 
 	// Extents
 	var _extent = {
-		width: sentio.util.extent({
+		width: extent({
 			defaultValue: [0, 10],
 			getValue: _value.value
 		})
@@ -195,3 +197,5 @@ export default function() {
 
 	return _instance;
 }
+
+export { verticalBars };

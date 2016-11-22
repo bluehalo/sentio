@@ -1,9 +1,11 @@
-import { default as donut } from './donut';
-import { default as matrix } from './matrix';
-import { default as verticalBars } from './vertical_bars';
+import { donut } from './donut';
+import { matrix } from './matrix';
+import { verticalBars } from './vertical_bars';
 
-export var chart = {
+var chart = {
 	donut: donut,
 	matrix: matrix,
 	verticalBars: verticalBars
 };
+
+export { chart };

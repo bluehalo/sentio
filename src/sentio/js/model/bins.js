@@ -1,4 +1,4 @@
-export default function(config) {
+function bins(config) {
 
 	/**
 	 * Private variables
@@ -374,3 +374,5 @@ export default function(config) {
 
 	return model;
 }
+
+export { bins };

@@ -1,6 +1,6 @@
-import {default as extent} from './extent';
+import { extent } from './extent';
 
-export default function(config) {
+function multiExtent(config) {
 
 	/**
 	 * Private variables
@@ -35,7 +35,7 @@ export default function(config) {
 	 */
 
 	/*
-	 * Get/Set the extent to use 
+	 * Get/Set the extent to use
 	 */
 	_instance.extent = function(v) {
 		if(!arguments.length) { return _extent; }
@@ -84,3 +84,5 @@ export default function(config) {
 
 	return _instance;
 }
+
+export { multiExtent };

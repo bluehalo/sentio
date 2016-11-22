@@ -1,4 +1,4 @@
-export default function(config) {
+function extent(config) {
 
 	/**
 	 * Private variables
@@ -145,7 +145,7 @@ export default function(config) {
 						toReturn[1] = toReturn[0];
 					}
 				}
-				if(null != ov[1]) { 
+				if(null != ov[1]) {
 					toReturn[1] = ov[1];
 					if(toReturn[1] < toReturn[0]) {
 						toReturn[0] = toReturn[1];
@@ -166,3 +166,5 @@ export default function(config) {
 
 	return _instance;
 }
+
+export { extent };

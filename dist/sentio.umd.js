@@ -5,7 +5,7 @@
 	(factory((global.sentio = global.sentio || {})));
 }(this, (function (exports) { 'use strict';
 
-var donut = function() {
+function donut() {
 
 	// Chart height/width
 	var _width = 400;
@@ -350,9 +350,263 @@ var donut = function() {
 	};
 
 	return _instance;
-};
+}
 
-var matrix = function() {
+function extent(config) {
+
+	/**
+	 * Private variables
+	 */
+	// Configuration
+	var _config = {
+		defaultValue: [0, 10],
+		overrideValue: undefined
+	};
+
+	var _fn = {
+		getValue: function(d) { return d; },
+		filter: function() { return true; }
+	};
+
+
+	/**
+	 * Private Functions
+	 */
+
+	function setDefaultValue(v) {
+		if(null == v || 2 !== v.length || isNaN(v[0]) || isNaN(v[1]) || v[0] >= v[1]) {
+			throw new Error('Default extent must be a two element ordered array of numbers');
+		}
+		_config.defaultValue = v;
+	}
+
+	function setOverrideValue(v) {
+		if(null != v && 2 !== v.length) {
+			throw new Error('Extent override must be a two element array or null/undefined');
+		}
+		_config.overrideValue = v;
+	}
+
+	function setGetValue(v) {
+		if(typeof v !== 'function') {
+			throw new Error('Value getter must be a function');
+		}
+
+		_fn.getValue = v;
+	}
+
+	function setFilter(v) {
+		if(typeof v !== 'function') {
+			throw new Error('Filter must be a function');
+		}
+
+		_fn.filter = v;
+	}
+
+	/*
+	 * Constructor/initialization method
+	 */
+	function _instance(extentConfig) {
+		if(null != extentConfig) {
+			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
+			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
+			if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
+			if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	/*
+	 * Get/Set the default value for the extent
+	 */
+	_instance.defaultValue = function(v) {
+		if(!arguments.length) { return _config.defaultValue; }
+		setDefaultValue(v);
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the override value for the extent
+	 */
+	_instance.overrideValue = function(v) {
+		if(!arguments.length) { return _config.overrideValue; }
+		setOverrideValue(v);
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the value accessor for the extent
+	 */
+	_instance.getValue = function(v) {
+		if(!arguments.length) { return _fn.getValue; }
+		setGetValue(v);
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the filter fn for the extent
+	 */
+	_instance.filter = function(v) {
+		if(!arguments.length) { return _fn.filter; }
+		setFilter(v);
+		return _instance;
+	};
+
+	/*
+	 * Calculate the extent given some data.
+	 * - Default values are used in the absence of data
+	 * - Override values are used to clamp or extend the extent
+	 */
+	_instance.getExtent = function(data) {
+		var toReturn;
+		var ov = _config.overrideValue;
+
+		// Check to see if we need to calculate the extent
+		if(null == ov || null == ov[0] || null == ov[1]) {
+			// Since the override isn't complete, we need to calculate the extent
+			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			var foundData = false;
+
+			if(null != data) {
+				// Iterate over each element of the data
+				data.forEach(function(element, i) {
+					// If the element passes the filter, then update the extent
+					if(_fn.filter(element, i)) {
+						foundData = true;
+						var v = _fn.getValue(element, i);
+						toReturn[0] = Math.min(toReturn[0], v);
+						toReturn[1] = Math.max(toReturn[1], v);
+					}
+				});
+			}
+
+			// If we didn't find any data, use the default values
+			if(!foundData) {
+				toReturn = _config.defaultValue;
+			}
+
+			// Apply the overrides
+			// - Since we're in this conditional, only one or zero overrides were specified
+			if(null != ov) {
+				if(null != ov[0]) {
+					// Set the lower override
+					toReturn[0] = ov[0];
+					if(toReturn[0] > toReturn[1]) {
+						toReturn[1] = toReturn[0];
+					}
+				}
+				if(null != ov[1]) {
+					toReturn[1] = ov[1];
+					if(toReturn[1] < toReturn[0]) {
+						toReturn[0] = toReturn[1];
+					}
+				}
+			}
+		} else {
+			// Since the override is fully specified, use it
+			toReturn = ov;
+		}
+
+		return toReturn;
+	};
+
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
+}
+
+function multiExtent(config) {
+
+	/**
+	 * Private variables
+	 */
+
+	var _fn = {
+		values: function(d) { return d.values; }
+	};
+
+	var _extent = extent();
+
+	/**
+	 * Private Functions
+	 */
+
+	function setExtent(v) {
+		_extent = v;
+	}
+
+	/*
+	 * Constructor/initialization method
+	 */
+	function _instance(config) {
+		if(null != config && null != config.extent) {
+			setExtent(config.extent);
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	/*
+	 * Get/Set the extent to use
+	 */
+	_instance.extent = function(v) {
+		if(!arguments.length) { return _extent; }
+		setExtent(v);
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the values accessor function
+	 */
+	_instance.values = function(v) {
+		if(!arguments.length) { return _fn.values; }
+		_fn.values = v;
+		return _instance;
+	};
+
+	/*
+	 * Calculate the extent given some data.
+	 * - Default values are used in the absence of data
+	 * - Override values are used to clamp or extend the extent
+	 */
+	_instance.getExtent = function(data) {
+		var toReturn;
+
+		data.forEach(function(e) {
+			var tExtent = _extent.getExtent(_fn.values(e));
+			if(null == toReturn) {
+				toReturn = tExtent;
+			}
+			else {
+				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
+				toReturn[1] = Math.max(toReturn[1], tExtent[1]);
+			}
+		});
+
+		// In case there was no data
+		if(null == toReturn) {
+			toReturn = _extent.getExtent([]);
+		}
+
+		return toReturn;
+	};
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
+}
+
+function matrix() {
 
 	// Chart dimensions
 	var _cellSize = 16;
@@ -409,9 +663,9 @@ var matrix = function() {
 
 	// Extents
 	var _extent = {
-		x: sentio.util.extent().getValue(_fn.key),
-		value: sentio.util.extent().getValue(_fn.value),
-		multi: sentio.util.multiExtent()
+		x: extent().getValue(_fn.key),
+		value: extent().getValue(_fn.value),
+		multi: multiExtent()
 	};
 
 	// Scales for x, y, and color
@@ -694,9 +948,9 @@ var matrix = function() {
 	};
 
 	return _instance;
-};
+}
 
-var verticalBars = function() {
+function verticalBars() {
 
 	// Layout properties
 	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
@@ -734,7 +988,7 @@ var verticalBars = function() {
 
 	// Extents
 	var _extent = {
-		width: sentio.util.extent({
+		width: extent({
 			defaultValue: [0, 10],
 			getValue: _value.value
 		})
@@ -892,7 +1146,7 @@ var verticalBars = function() {
 	};
 
 	return _instance;
-};
+}
 
 var chart = {
 	donut: donut,
@@ -900,164 +1154,7 @@ var chart = {
 	verticalBars: verticalBars
 };
 
-/*
- * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
- * Every time binSize elapses, updates the lwm to keep the bins shifting.
- */
-var rtBins = function(config) {
-
-	/**
-	 * Private variables
-	 */
-	var _config = {
-		delay: 0,
-		binSize: 0,
-		binCount: 0
-	};
-
-	// The bins
-	var _model;
-	var _running;
-
-	/**
-	 * Private Functions
-	 */
-
-	function _calculateLwm() {
-		// Assume the hwm is now plus two binSize
-		var hwm = Date.now() + 2*_model.size();
-
-		// Trunc the hwm down to a round value based on the binSize
-		hwm = Math.floor(hwm/_model.size()) * _model.size();
-
-		// Derive the lwm from the hwm
-		var lwm = hwm - _model.size() * _model.count();
-
-		return lwm;
-	}
-
-	function _update() {
-		if(_running === true) {
-			// need to update the lwm
-			_model.lwm(_calculateLwm());
-			window.setTimeout(_update, _model.size());
-		}
-	}
-
-	function _start() {
-		if(!_running) {
-			// Start the update loop
-			_running = true;
-			_update();
-		}
-	}
-
-	function _stop() {
-		// Setting running to false will stop the update loop
-		_running = false;
-	}
-
-	// create/init method
-	function controller(rtConfig) {
-		if(null == rtConfig || null == rtConfig.binCount || null == rtConfig.binSize) {
-			throw new Error('You must provide an initial binSize and binCount');
-		}
-
-		_config.binSize = rtConfig.binSize;
-		_config.binCount = rtConfig.binCount;
-
-		if(null != rtConfig.delay) {
-			_config.delay = rtConfig.delay;
-		}
-
-		_model = sentio.model.bins({
-			size: _config.binSize,
-			count: _config.binCount + 2,
-			lwm: 0
-		});
-		_model.lwm(_calculateLwm());
-
-		_start();
-	}
-
-
-
-	/**
-	 * Public API
-	 */
-
-	/*
-	 * Get the model bins
-	 */
-	controller.model = function() {
-		return _model;
-	};
-
-	controller.bins = function() {
-		return _model.bins();
-	};
-
-	controller.start = function() {
-		_start();
-		return controller;
-	};
-
-	controller.stop = function() {
-		_stop();
-		return controller;
-	};
-
-	controller.running = function() {
-		return _running;
-	};
-
-	controller.add = function(v) {
-		_model.add(v);
-		return controller;
-	};
-
-	controller.clear = function() {
-		_model.clear();
-		return controller;
-	};
-
-	controller.binSize = function(v) {
-		if(!arguments.length) { return _config.binSize; }
-
-		if(Number(v) < 1) {
-			throw new Error('Bin size must be a positive integer');
-		}
-
-		_config.binSize = v;
-		_model.size(v);
-		_model.lwm(_calculateLwm());
-
-		return controller;
-	};
-
-	controller.binCount = function(v) {
-		if(!arguments.length) { return _config.binCount; }
-
-		if(Number(v) < 1) {
-			throw new Error('Bin count must be a positive integer');
-		}
-
-		_config.binCount = v;
-		_model.count(v + 2);
-		_model.lwm(_calculateLwm());
-
-		return controller;
-	};
-
-	// Initialize the layout
-	controller(config);
-
-	return controller;
-};
-
-var controller = { rtBins: rtBins };
-
-var bins = function(config) {
+function bins(config) {
 
 	/**
 	 * Private variables
@@ -1432,72 +1529,248 @@ var bins = function(config) {
 	model(config);
 
 	return model;
-};
+}
 
-var model = {
-	bins: bins
-};
-
-var extent = function(config) {
+/*
+ * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
+ * Every time binSize elapses, updates the lwm to keep the bins shifting.
+ */
+function rtBins(config) {
 
 	/**
 	 * Private variables
 	 */
-	// Configuration
 	var _config = {
-		defaultValue: [0, 10],
-		overrideValue: undefined
+		delay: 0,
+		binSize: 0,
+		binCount: 0
 	};
 
-	var _fn = {
-		getValue: function(d) { return d; },
-		filter: function() { return true; }
-	};
-
+	// The bins
+	var _model;
+	var _running;
 
 	/**
 	 * Private Functions
 	 */
 
-	function setDefaultValue(v) {
-		if(null == v || 2 !== v.length || isNaN(v[0]) || isNaN(v[1]) || v[0] >= v[1]) {
-			throw new Error('Default extent must be a two element ordered array of numbers');
-		}
-		_config.defaultValue = v;
+	function _calculateLwm() {
+		// Assume the hwm is now plus two binSize
+		var hwm = Date.now() + 2*_model.size();
+
+		// Trunc the hwm down to a round value based on the binSize
+		hwm = Math.floor(hwm/_model.size()) * _model.size();
+
+		// Derive the lwm from the hwm
+		var lwm = hwm - _model.size() * _model.count();
+
+		return lwm;
 	}
 
-	function setOverrideValue(v) {
-		if(null != v && 2 !== v.length) {
-			throw new Error('Extent override must be a two element array or null/undefined');
+	function _update() {
+		if(_running === true) {
+			// need to update the lwm
+			_model.lwm(_calculateLwm());
+			window.setTimeout(_update, _model.size());
 		}
-		_config.overrideValue = v;
 	}
 
-	function setGetValue(v) {
-		if(typeof v !== 'function') {
-			throw new Error('Value getter must be a function');
+	function _start() {
+		if(!_running) {
+			// Start the update loop
+			_running = true;
+			_update();
 		}
-
-		_fn.getValue = v;
 	}
 
-	function setFilter(v) {
-		if(typeof v !== 'function') {
-			throw new Error('Filter must be a function');
+	function _stop() {
+		// Setting running to false will stop the update loop
+		_running = false;
+	}
+
+	// create/init method
+	function controller(rtConfig) {
+		if(null == rtConfig || null == rtConfig.binCount || null == rtConfig.binSize) {
+			throw new Error('You must provide an initial binSize and binCount');
 		}
 
-		_fn.filter = v;
+		_config.binSize = rtConfig.binSize;
+		_config.binCount = rtConfig.binCount;
+
+		if(null != rtConfig.delay) {
+			_config.delay = rtConfig.delay;
+		}
+
+		_model = bins({
+			size: _config.binSize,
+			count: _config.binCount + 2,
+			lwm: 0
+		});
+		_model.lwm(_calculateLwm());
+
+		_start();
+	}
+
+
+
+	/**
+	 * Public API
+	 */
+
+	/*
+	 * Get the model bins
+	 */
+	controller.model = function() {
+		return _model;
+	};
+
+	controller.bins = function() {
+		return _model.bins();
+	};
+
+	controller.start = function() {
+		_start();
+		return controller;
+	};
+
+	controller.stop = function() {
+		_stop();
+		return controller;
+	};
+
+	controller.running = function() {
+		return _running;
+	};
+
+	controller.add = function(v) {
+		_model.add(v);
+		return controller;
+	};
+
+	controller.clear = function() {
+		_model.clear();
+		return controller;
+	};
+
+	controller.binSize = function(v) {
+		if(!arguments.length) { return _config.binSize; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin size must be a positive integer');
+		}
+
+		_config.binSize = v;
+		_model.size(v);
+		_model.lwm(_calculateLwm());
+
+		return controller;
+	};
+
+	controller.binCount = function(v) {
+		if(!arguments.length) { return _config.binCount; }
+
+		if(Number(v) < 1) {
+			throw new Error('Bin count must be a positive integer');
+		}
+
+		_config.binCount = v;
+		_model.count(v + 2);
+		_model.lwm(_calculateLwm());
+
+		return controller;
+	};
+
+	// Initialize the layout
+	controller(config);
+
+	return controller;
+}
+
+var controller = { rtBins: rtBins };
+
+var model = {
+	bins: bins
+};
+
+function timelineFilter(config) {
+
+	/**
+	 * Private variables
+	 */
+
+	var _brush = d3.svg.brush();
+	var _enabled = false;
+
+	/**
+	 * Private Functions
+	 */
+
+	function setBrush(v) {
+		_brush = v;
+	}
+
+	function setEnabled(v) {
+		_enabled = v;
+	}
+
+	/*
+	 * Get the current state of the filter
+	 * Returns undefined if the filter is disabled or not set, millisecond time otherwise
+	 */
+	function getFilter() {
+		var extent;
+		if(_enabled && !_brush.empty()) {
+			extent = _brush.extent();
+			if(null != extent) {
+				extent = [ extent[0].getTime(), extent[1].getTime() ];
+			}
+		}
+
+		return extent;
+	}
+
+	function cleanFilter(filter) {
+		if(!Array.isArray(filter) || filter.length != 2 || isNaN(filter[0]) || isNaN(filter[1])) {
+			filter = undefined;
+		}
+
+		return filter;
+	}
+
+	/*
+	 * Set the state of the filter, return true if filter changed
+	 */
+	function setFilter(ne) {
+		var oe = cleanFilter(getFilter());
+		ne = cleanFilter(ne);
+
+		// Fire the event if the extents are different
+		var suppressEvent = ne === oe || (null != ne && null != oe && ne[0] === oe[0] && ne[1] === oe[1]);
+		var clearFilter = (null == ne || ne[0] >= ne[1]);
+
+		// either clear the filter or assert it
+		if(clearFilter) {
+			_brush.clear();
+		} else {
+			_brush.extent([ new Date(ne[0]), new Date(ne[1]) ]);
+		}
+
+		// fire the event if anything changed
+		return !(suppressEvent);
+
 	}
 
 	/*
 	 * Constructor/initialization method
 	 */
-	function _instance(extentConfig) {
-		if(null != extentConfig) {
-			if(null != extentConfig.defaultValue) { setDefaultValue(extentConfig.defaultValue); }
-			if(null != extentConfig.overrideValue) { setOverrideValue(extentConfig.overrideValue); }
-			if(null != extentConfig.getValue) { setGetValue(extentConfig.getValue); }
-			if(null != extentConfig.filter) { setFilter(extentConfig.filter); }
+	function _instance(config) {
+		if (null != config) {
+			if (null != config.brush) {
+				setBrush(config.brush);
+			}
+			if (null != config.enabled) {
+				setEnabled(config.enabled);
+			}
 		}
 	}
 
@@ -1507,107 +1780,38 @@ var extent = function(config) {
 	 */
 
 	/*
-	 * Get/Set the default value for the extent
+	 * Get/Set the brush to use
 	 */
-	_instance.defaultValue = function(v) {
-		if(!arguments.length) { return _config.defaultValue; }
-		setDefaultValue(v);
+	_instance.brush = function(v) {
+		if(!arguments.length) { return _brush; }
+		setBrush(v);
 		return _instance;
 	};
 
 	/*
-	 * Get/Set the override value for the extent
+	 * Get/Set the values accessor function
 	 */
-	_instance.overrideValue = function(v) {
-		if(!arguments.length) { return _config.overrideValue; }
-		setOverrideValue(v);
+	_instance.enabled = function(v) {
+		if(!arguments.length) { return _enabled; }
+		setEnabled(v);
 		return _instance;
 	};
 
-	/*
-	 * Get/Set the value accessor for the extent
-	 */
-	_instance.getValue = function(v) {
-		if(!arguments.length) { return _fn.getValue; }
-		setGetValue(v);
-		return _instance;
+	_instance.getFilter = function() {
+		return getFilter();
 	};
 
-	/*
-	 * Get/Set the filter fn for the extent
-	 */
-	_instance.filter = function(v) {
-		if(!arguments.length) { return _fn.filter; }
-		setFilter(v);
-		return _instance;
+	_instance.setFilter = function(v) {
+		return setFilter(v);
 	};
-
-	/*
-	 * Calculate the extent given some data.
-	 * - Default values are used in the absence of data
-	 * - Override values are used to clamp or extend the extent
-	 */
-	_instance.getExtent = function(data) {
-		var toReturn;
-		var ov = _config.overrideValue;
-
-		// Check to see if we need to calculate the extent
-		if(null == ov || null == ov[0] || null == ov[1]) {
-			// Since the override isn't complete, we need to calculate the extent
-			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
-			var foundData = false;
-
-			if(null != data) {
-				// Iterate over each element of the data
-				data.forEach(function(element, i) {
-					// If the element passes the filter, then update the extent
-					if(_fn.filter(element, i)) {
-						foundData = true;
-						var v = _fn.getValue(element, i);
-						toReturn[0] = Math.min(toReturn[0], v);
-						toReturn[1] = Math.max(toReturn[1], v);
-					}
-				});
-			}
-
-			// If we didn't find any data, use the default values
-			if(!foundData) {
-				toReturn = _config.defaultValue;
-			}
-
-			// Apply the overrides
-			// - Since we're in this conditional, only one or zero overrides were specified
-			if(null != ov) {
-				if(null != ov[0]) {
-					// Set the lower override
-					toReturn[0] = ov[0];
-					if(toReturn[0] > toReturn[1]) {
-						toReturn[1] = toReturn[0];
-					}
-				}
-				if(null != ov[1]) { 
-					toReturn[1] = ov[1];
-					if(toReturn[1] < toReturn[0]) {
-						toReturn[0] = toReturn[1];
-					}
-				}
-			}
-		} else {
-			// Since the override is fully specified, use it
-			toReturn = ov;
-		}
-
-		return toReturn;
-	};
-
 
 	// Initialize the model
 	_instance(config);
 
 	return _instance;
-};
+}
 
-var line = function() {
+function line() {
 
 	// Layout properties
 	var _id = 'timeline_line_' + Date.now();
@@ -1636,7 +1840,7 @@ var line = function() {
 			getValue: function(d) { return d[1]; }
 		})
 	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
+	var _multiExtent = multiExtent().values(function(d) { return d.data; });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -1684,10 +1888,7 @@ var line = function() {
 	});
 
 	// Brush filter
-	var _filter = {
-		enabled: false,
-		brush: d3.svg.brush()
-	};
+	var _filter = timelineFilter();
 
 	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
 	var _data = [];
@@ -1697,7 +1898,7 @@ var line = function() {
 	};
 
 	function brushstart() {
-		var extent$$1 = getFilter();
+		var extent$$1 = _filter.getFilter();
 		var isEmpty = (null == extent$$1);
 
 		var min = (isEmpty)? undefined : extent$$1[0];
@@ -1706,7 +1907,7 @@ var line = function() {
 		_dispatch.filterstart([isEmpty, min, max]);
 	}
 	function brush() {
-		var extent$$1 = getFilter();
+		var extent$$1 = _filter.getFilter();
 		var isEmpty = (null == extent$$1);
 
 		var min = (isEmpty)? undefined : extent$$1[0];
@@ -1715,7 +1916,7 @@ var line = function() {
 		_dispatch.filter([isEmpty, min, max]);
 	}
 	function brushend() {
-		var extent$$1 = getFilter();
+		var extent$$1 = _filter.getFilter();
 		var isEmpty = (null == extent$$1);
 
 		var min = (isEmpty)? undefined : extent$$1[0];
@@ -1750,7 +1951,7 @@ var line = function() {
 
 		// Add the filter brush element and set up brush callbacks
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-		_filter.brush
+		_filter.brush()
 			.on('brushend', brushend)
 			.on('brushstart', brushstart)
 			.on('brush', brush);
@@ -1819,23 +2020,18 @@ var line = function() {
 		return _instance;
 	};
 
-	// Multi Extent Combiner
-	function multiExtent(data, extent$$1) {
-		return _multiExtent.extent(extent$$1).getExtent(data);
-	}
-
 	/*
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
 		// Need to grab the filter extent before we change anything
-		var filterExtent = getFilter();
+		var filterExtent = _filter.getFilter();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(multiExtent(_data, _extent.x));
+		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain(multiExtent(_data, _extent.y));
+		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
 
 		// Update the plot elements
 		updateAxes();
@@ -1859,8 +2055,8 @@ var line = function() {
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
-			.data(_data, function(d) { 
-				return d.key; 
+			.data(_data, function(d) {
+				return d.key;
 			});
 
 		// Enter
@@ -1888,7 +2084,7 @@ var line = function() {
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
 			.data(_markers.values, function(d) {
-				return _markerValue.x(d); 
+				return _markerValue.x(d);
 			});
 
 		// Enter
@@ -1927,49 +2123,10 @@ var line = function() {
 
 	}
 
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
-	 */
-	function getFilter() {
-		var extent$$1;
-		if(_filter.enabled && !_filter.brush.empty()) {
-			extent$$1 = _filter.brush.extent();
-			if(null != extent$$1) {
-				extent$$1 = [ extent$$1[0].getTime(), extent$$1[1].getTime() ];
-			}
-		}
-
-		return extent$$1;
-	}
-
-	/*
-	 * Set the state of the filter, firing events if necessary
-	 */
-	function setFilter(newExtent, oldExtent) {
-		// Fire the event if the extents are different
-		var suppressEvent =
-			newExtent === oldExtent || newExtent == null || oldExtent == null
-			|| (newExtent[0] === oldExtent[0] && newExtent[1] === oldExtent[1]);
-
-		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
-
-		// either clear the filter or assert it
-		if(clearFilter) {
-			_filter.brush.clear();
-		} else {
-			_filter.brush.extent([ new Date(newExtent[0]), new Date(newExtent[1]) ]);
-		}
-
-		// fire the event if anything changed
-		if(!suppressEvent) {
-			_filter.brush.event(_element.g.brush);
-		}
-	}
 
 	/*
 	 * Update the state of the existing filter (if any) on the plot.
-	 * 
+	 *
 	 * This method accepts the extent of the brush before any plot changes were applied
 	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
 	 * There is also logic to clip the brush if the extent has moved such that the brush
@@ -1978,7 +2135,7 @@ var line = function() {
 	 */
 	function updateFilter(extent$$1) {
 		// Reassert the x scale of the brush (in case the scale has changed)
-		_filter.brush.x(_scale.x);
+		_filter.brush().x(_scale.x);
 
 		// Derive the overall plot extent from the collection of series
 		var plotExtent = multiExtent(_data, _extent.x);
@@ -1987,17 +2144,19 @@ var line = function() {
 		if(null != extent$$1) {
 			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
 			var nExtent = [ Math.max(plotExtent[0], extent$$1[0]), Math.min(plotExtent[1], extent$$1[1]) ];
-			setFilter(nExtent, extent$$1);
+			if(_filter.setFilter(nExtent)) {
+				_filter.brush().event(_element.g.brush);
+			}
 		}
 
 		_element.g.brush
-			.call(_filter.brush)
+			.call(_filter.brush())
 			.selectAll('rect')
 			.attr('y', -6)
 				.attr('height', _height - _margin.top - _margin.bottom + 7);
 
 		_element.g.brush
-			.style('display', (_filter.enabled)? 'unset' : 'none');
+			.style('display', (_filter.enabled())? 'unset' : 'none');
 	}
 
 	// Basic Getters/Setters
@@ -2080,7 +2239,7 @@ var line = function() {
 	};
 	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.enabled; }
-		_filter.enabled = v;
+		_filter.enabled(v);
 		return _instance;
 	};
 	_instance.dispatch = function(v) {
@@ -2088,28 +2247,10 @@ var line = function() {
 		return _instance;
 	};
 
-	// Expects milliseconds time
-	_instance.setFilter = function(extent$$1) {
-		var oldExtent = getFilter();
-		if(null != extent$$1 && extent$$1.length === 2) {
-			// Convert to Dates and assert filter
-			if(extent$$1[0] instanceof Date) {
-				extent$$1[0] = extent$$1[0].getTime();
-			}
-			if(extent$$1[1] instanceof Date) {
-				extent$$1[1] = extent$$1[1].getTime();
-			}
-		}
-
-		setFilter(extent$$1, oldExtent);
-		_instance.redraw();
-		return _instance;
-	};
-
 	return _instance;
-};
+}
 
-var timeline = function() {
+function timeline() {
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
 	var _delay = 0;
@@ -2134,7 +2275,7 @@ var timeline = function() {
 	/*
 	 * This is the main update loop function. It is called every time the
 	 * _instance is updating to proceed through time.
-	 */ 
+	 */
 	function tick() {
 		// If not running, let the loop die
 		if(!_running) return;
@@ -2203,7 +2344,7 @@ var timeline = function() {
 	};
 
 	return _instance;
-};
+}
 
 var realtime = {
 	timeline: timeline
@@ -2213,94 +2354,10 @@ var timeline$1 = {
 	line: line
 };
 
-var multiExtent = function(config) {
-
-	/**
-	 * Private variables
-	 */
-
-	var _fn = {
-		values: function(d) { return d.values; }
-	};
-
-	var _extent = extent();
-
-	/**
-	 * Private Functions
-	 */
-
-	function setExtent(v) {
-		_extent = v;
-	}
-
-	/*
-	 * Constructor/initialization method
-	 */
-	function _instance(config) {
-		if(null != config && null != config.extent) {
-			setExtent(config.extent);
-		}
-	}
-
-
-	/**
-	 * Public API
-	 */
-
-	/*
-	 * Get/Set the extent to use 
-	 */
-	_instance.extent = function(v) {
-		if(!arguments.length) { return _extent; }
-		setExtent(v);
-		return _instance;
-	};
-
-	/*
-	 * Get/Set the values accessor function
-	 */
-	_instance.values = function(v) {
-		if(!arguments.length) { return _fn.values; }
-		_fn.values = v;
-		return _instance;
-	};
-
-	/*
-	 * Calculate the extent given some data.
-	 * - Default values are used in the absence of data
-	 * - Override values are used to clamp or extend the extent
-	 */
-	_instance.getExtent = function(data) {
-		var toReturn;
-
-		data.forEach(function(e) {
-			var tExtent = _extent.getExtent(_fn.values(e));
-			if(null == toReturn) {
-				toReturn = tExtent;
-			}
-			else {
-				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
-				toReturn[1] = Math.max(toReturn[1], tExtent[1]);
-			}
-		});
-
-		// In case there was no data
-		if(null == toReturn) {
-			toReturn = _extent.getExtent([]);
-		}
-
-		return toReturn;
-	};
-
-	// Initialize the model
-	_instance(config);
-
-	return _instance;
-};
-
 var util = {
 	extent: extent,
-	multiExtent: multiExtent
+	multiExtent: multiExtent,
+	timelineFilter: timelineFilter
 };
 
 exports.chart = chart;
