@@ -58,7 +58,7 @@ describe('Timeline Filter', function() {
 			});
 
 			it('should accept a new filter and apply it correctly', function() {
-				var changed = filter.setFilter([0, 1000]);
+				var changed = filter.setFilter([0, 1000], filter.getFilter());
 				should(changed).be.true();
 
 				var state = filter.getFilter();
@@ -68,7 +68,7 @@ describe('Timeline Filter', function() {
 			});
 
 			it('should clear the filter when attempting to set it to an invalid value', function() {
-				var changed = filter.setFilter([NaN, 100]);
+				var changed = filter.setFilter([NaN, 100], filter.getFilter());
 				should(changed).be.true();
 
 				var state = filter.getFilter();
