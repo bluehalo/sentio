@@ -46,8 +46,8 @@ function timelineFilter(config) {
 	/*
 	 * Set the state of the filter, return true if filter changed
 	 */
-	function setFilter(ne) {
-		var oe = cleanFilter(getFilter());
+	function setFilter(ne, oe) {
+		var oe = cleanFilter(oe);
 		ne = cleanFilter(ne);
 
 		// Fire the event if the extents are different
@@ -107,8 +107,8 @@ function timelineFilter(config) {
 		return getFilter();
 	};
 
-	_instance.setFilter = function(v) {
-		return setFilter(v);
+	_instance.setFilter = function(n, o) {
+		return setFilter(n, o);
 	};
 
 	// Initialize the model

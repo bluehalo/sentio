@@ -63,11 +63,11 @@ function rtBins(config) {
 			throw new Error('You must provide an initial binSize and binCount');
 		}
 
-		_config.binSize = rtConfig.binSize;
-		_config.binCount = rtConfig.binCount;
+		_config.binSize = Number(rtConfig.binSize);
+		_config.binCount = Number(rtConfig.binCount);
 
 		if(null != rtConfig.delay) {
-			_config.delay = rtConfig.delay;
+			_config.delay = Number(rtConfig.delay);
 		}
 
 		_model = bins({
@@ -124,7 +124,8 @@ function rtBins(config) {
 	controller.binSize = function(v) {
 		if(!arguments.length) { return _config.binSize; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
@@ -138,7 +139,8 @@ function rtBins(config) {
 	controller.binCount = function(v) {
 		if(!arguments.length) { return _config.binCount; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 

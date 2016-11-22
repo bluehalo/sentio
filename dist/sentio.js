@@ -1291,9 +1291,9 @@ function bins(config) {
 		if(null == binConfig || null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
 			throw new Error('You must provide an initial size, count, and lwm');
 		}
-		_config.size = binConfig.size;
-		_config.count = binConfig.count;
-		_config.lwm = binConfig.lwm;
+		_config.size = Number(binConfig.size);
+		_config.count = Number(binConfig.count);
+		_config.lwm = Number(binConfig.lwm);
 
 		if(null != binConfig.createSeed) { _fn.createSeed = binConfig.createSeed; }
 		if(null != binConfig.getKey) { _fn.getKey = binConfig.getKey; }
@@ -1442,7 +1442,7 @@ function bins(config) {
 	};
 
 	/**
-	 * Get/Set the afterAdd callback function
+	 * Get/Set the afterUpdate callback function
 	 */
 	model.afterUpdate = function(v) {
 		if(!arguments.length) { return _fn.afterUpdate; }
@@ -1456,13 +1456,14 @@ function bins(config) {
 	model.size = function(v) {
 		if(!arguments.length) { return _config.size; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
 		// Only change stuff if the size actually changes
-		if(Number(v) !== _config.size) {
-			_config.size = Number(v);
+		if(v !== _config.size) {
+			_config.size = v;
 			calculateHwm();
 			clearData();
 			updateState();
@@ -1477,13 +1478,14 @@ function bins(config) {
 	model.count = function(v) {
 		if(!arguments.length) { return _config.count; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
 		// Only change stuff if the count actually changes
-		if(Number(v) !== _config.count) {
-			_config.count = Math.floor(Number(v));
+		if(v !== _config.count) {
+			_config.count = Math.floor(v);
 			calculateHwm();
 			updateState();
 		}
@@ -1591,11 +1593,11 @@ function rtBins(config) {
 			throw new Error('You must provide an initial binSize and binCount');
 		}
 
-		_config.binSize = rtConfig.binSize;
-		_config.binCount = rtConfig.binCount;
+		_config.binSize = Number(rtConfig.binSize);
+		_config.binCount = Number(rtConfig.binCount);
 
 		if(null != rtConfig.delay) {
-			_config.delay = rtConfig.delay;
+			_config.delay = Number(rtConfig.delay);
 		}
 
 		_model = bins({
@@ -1652,7 +1654,8 @@ function rtBins(config) {
 	controller.binSize = function(v) {
 		if(!arguments.length) { return _config.binSize; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
@@ -1666,7 +1669,8 @@ function rtBins(config) {
 	controller.binCount = function(v) {
 		if(!arguments.length) { return _config.binCount; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
@@ -1737,8 +1741,8 @@ function timelineFilter(config) {
 	/*
 	 * Set the state of the filter, return true if filter changed
 	 */
-	function setFilter(ne) {
-		var oe = cleanFilter(getFilter());
+	function setFilter(ne, oe) {
+		var oe = cleanFilter(oe);
 		ne = cleanFilter(ne);
 
 		// Fire the event if the extents are different
@@ -1798,8 +1802,8 @@ function timelineFilter(config) {
 		return getFilter();
 	};
 
-	_instance.setFilter = function(v) {
-		return setFilter(v);
+	_instance.setFilter = function(n, o) {
+		return setFilter(n, o);
 	};
 
 	// Initialize the model
@@ -1895,41 +1899,23 @@ function line() {
 	};
 
 	function brushstart() {
-		var extent$$1 = _filter.getFilter();
-		var isEmpty = (null == extent$$1);
-
-		var min = (isEmpty)? undefined : extent$$1[0];
-		var max = (isEmpty)? undefined : extent$$1[1];
-
-		_dispatch.filterstart([isEmpty, min, max]);
+		_dispatch.filterstart(_filter.getFilter());
 	}
 	function brush() {
-		var extent$$1 = _filter.getFilter();
-		var isEmpty = (null == extent$$1);
-
-		var min = (isEmpty)? undefined : extent$$1[0];
-		var max = (isEmpty)? undefined : extent$$1[1];
-
-		_dispatch.filter([isEmpty, min, max]);
+		_dispatch.filter(_filter.getFilter());
 	}
 	function brushend() {
-		var extent$$1 = _filter.getFilter();
-		var isEmpty = (null == extent$$1);
-
-		var min = (isEmpty)? undefined : extent$$1[0];
-		var max = (isEmpty)? undefined : extent$$1[1];
-
-		_dispatch.filterend([isEmpty, min, max]);
+		_dispatch.filterend(_filter.getFilter());
 	}
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) {}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create a container div
 		_element.div = container.append('div').attr('class', 'sentio timeline');
 
@@ -2135,15 +2121,13 @@ function line() {
 		_filter.brush().x(_scale.x);
 
 		// Derive the overall plot extent from the collection of series
-		var plotExtent = multiExtent(_data, _extent.x);
+		var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
 
 		// If there was no previous extent, then there is no brush to update
 		if(null != extent$$1) {
 			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
 			var nExtent = [ Math.max(plotExtent[0], extent$$1[0]), Math.min(plotExtent[1], extent$$1[1]) ];
-			if(_filter.setFilter(nExtent)) {
-				_filter.brush().event(_element.g.brush);
-			}
+			setFilter(nExtent, extent$$1);
 		}
 
 		_element.g.brush
@@ -2156,39 +2140,45 @@ function line() {
 			.style('display', (_filter.enabled())? 'unset' : 'none');
 	}
 
+	function setFilter(n, o) {
+		if(_filter.setFilter(n, o)) {
+			_filter.brush().event(_element.g.brush);
+		}
+	}
+
 	// Basic Getters/Setters
-	_instance.width = function(v){
+	_instance.width = function(v) {
 		if(!arguments.length) { return _width; }
 		_width = v;
 		return _instance;
 	};
-	_instance.height = function(v){
+	_instance.height = function(v) {
 		if(!arguments.length) { return _height; }
 		_height = v;
 		return _instance;
 	};
-	_instance.margin = function(v){
+	_instance.margin = function(v) {
 		if(!arguments.length) { return _margin; }
 		_margin = v;
 		return _instance;
 	};
-	_instance.interpolation = function(v){
+	_instance.interpolation = function(v) {
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
 		return _instance;
 	};
-	_instance.xAxis = function(v){
+	_instance.xAxis = function(v) {
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
 		return _instance;
 	};
-	_instance.yAxis = function(v){
+	_instance.yAxis = function(v) {
 		if(!arguments.length) { return _axis.y; }
 		_axis.y = v;
 		return _instance;
 	};
-	_instance.xScale = function(v){
+	_instance.xScale = function(v) {
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if(null != _axis.x) {
@@ -2196,7 +2186,7 @@ function line() {
 		}
 		return _instance;
 	};
-	_instance.yScale = function(v){
+	_instance.yScale = function(v) {
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
 		if(null != _axis.y) {
@@ -2204,32 +2194,32 @@ function line() {
 		}
 		return _instance;
 	};
-	_instance.xValue = function(v){
+	_instance.xValue = function(v) {
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
 		return _instance;
 	};
-	_instance.yValue = function(v){
+	_instance.yValue = function(v) {
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
 		return _instance;
 	};
-	_instance.yExtent = function(v){
+	_instance.yExtent = function(v) {
 		if(!arguments.length) { return _extent.y; }
 		_extent.y = v;
 		return _instance;
 	};
-	_instance.xExtent = function(v){
+	_instance.xExtent = function(v) {
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
 		return _instance;
 	};
-	_instance.markerXValue = function(v){
+	_instance.markerXValue = function(v) {
 		if(!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
 		return _instance;
 	};
-	_instance.markerLabelValue = function(v){
+	_instance.markerLabelValue = function(v) {
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
 		return _instance;
@@ -2244,7 +2234,7 @@ function line() {
 		return _instance;
 	};
 	_instance.setFilter = function(v) {
-		return _filter.setFilter(v);
+		return setFilter(v, _filter.getFilter());
 	};
 	_instance.getFilter = function() {
 		return _filter.getFilter();

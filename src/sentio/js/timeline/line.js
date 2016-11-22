@@ -89,41 +89,23 @@ function line() {
 	};
 
 	function brushstart() {
-		var extent = _filter.getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filterstart([isEmpty, min, max]);
+		_dispatch.filterstart(_filter.getFilter());
 	}
 	function brush() {
-		var extent = _filter.getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filter([isEmpty, min, max]);
+		_dispatch.filter(_filter.getFilter());
 	}
 	function brushend() {
-		var extent = _filter.getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filterend([isEmpty, min, max]);
+		_dispatch.filterend(_filter.getFilter());
 	}
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) {}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create a container div
 		_element.div = container.append('div').attr('class', 'sentio timeline');
 
@@ -329,15 +311,13 @@ function line() {
 		_filter.brush().x(_scale.x);
 
 		// Derive the overall plot extent from the collection of series
-		var plotExtent = multiExtent(_data, _extent.x);
+		var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
 
 		// If there was no previous extent, then there is no brush to update
 		if(null != extent) {
 			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
 			var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
-			if(_filter.setFilter(nExtent)) {
-				_filter.brush().event(_element.g.brush);
-			}
+			setFilter(nExtent, extent);
 		}
 
 		_element.g.brush
@@ -350,39 +330,45 @@ function line() {
 			.style('display', (_filter.enabled())? 'unset' : 'none');
 	}
 
+	function setFilter(n, o) {
+		if(_filter.setFilter(n, o)) {
+			_filter.brush().event(_element.g.brush);
+		}
+	}
+
 	// Basic Getters/Setters
-	_instance.width = function(v){
+	_instance.width = function(v) {
 		if(!arguments.length) { return _width; }
 		_width = v;
 		return _instance;
 	};
-	_instance.height = function(v){
+	_instance.height = function(v) {
 		if(!arguments.length) { return _height; }
 		_height = v;
 		return _instance;
 	};
-	_instance.margin = function(v){
+	_instance.margin = function(v) {
 		if(!arguments.length) { return _margin; }
 		_margin = v;
 		return _instance;
 	};
-	_instance.interpolation = function(v){
+	_instance.interpolation = function(v) {
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
 		return _instance;
 	};
-	_instance.xAxis = function(v){
+	_instance.xAxis = function(v) {
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
 		return _instance;
 	};
-	_instance.yAxis = function(v){
+	_instance.yAxis = function(v) {
 		if(!arguments.length) { return _axis.y; }
 		_axis.y = v;
 		return _instance;
 	};
-	_instance.xScale = function(v){
+	_instance.xScale = function(v) {
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if(null != _axis.x) {
@@ -390,7 +376,7 @@ function line() {
 		}
 		return _instance;
 	};
-	_instance.yScale = function(v){
+	_instance.yScale = function(v) {
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
 		if(null != _axis.y) {
@@ -398,32 +384,32 @@ function line() {
 		}
 		return _instance;
 	};
-	_instance.xValue = function(v){
+	_instance.xValue = function(v) {
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
 		return _instance;
 	};
-	_instance.yValue = function(v){
+	_instance.yValue = function(v) {
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
 		return _instance;
 	};
-	_instance.yExtent = function(v){
+	_instance.yExtent = function(v) {
 		if(!arguments.length) { return _extent.y; }
 		_extent.y = v;
 		return _instance;
 	};
-	_instance.xExtent = function(v){
+	_instance.xExtent = function(v) {
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
 		return _instance;
 	};
-	_instance.markerXValue = function(v){
+	_instance.markerXValue = function(v) {
 		if(!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
 		return _instance;
 	};
-	_instance.markerLabelValue = function(v){
+	_instance.markerLabelValue = function(v) {
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
 		return _instance;
@@ -438,7 +424,7 @@ function line() {
 		return _instance;
 	};
 	_instance.setFilter = function(v) {
-		return _filter.setFilter(v);
+		return setFilter(v, _filter.getFilter());
 	};
 	_instance.getFilter = function() {
 		return _filter.getFilter();
