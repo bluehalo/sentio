@@ -1,5 +1,7 @@
-import { default as timeline } from './timeline';
+import { timeline } from './timeline';
 
-export var realtime = {
+var realtime = {
 	timeline: timeline
 };
+
+export { realtime };

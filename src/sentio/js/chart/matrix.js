@@ -1,4 +1,7 @@
-export default function() {
+import { extent } from '../util/extent';
+import { multiExtent } from '../util/multi_extent';
+
+function matrix() {
 
 	// Chart dimensions
 	var _cellSize = 16;
@@ -55,9 +58,9 @@ export default function() {
 
 	// Extents
 	var _extent = {
-		x: sentio.util.extent().getValue(_fn.key),
-		value: sentio.util.extent().getValue(_fn.value),
-		multi: sentio.util.multiExtent()
+		x: extent().getValue(_fn.key),
+		value: extent().getValue(_fn.value),
+		multi: multiExtent()
 	};
 
 	// Scales for x, y, and color
@@ -341,3 +344,5 @@ export default function() {
 
 	return _instance;
 }
+
+export { matrix };

@@ -1,5 +1,7 @@
-import { default as line } from './line';
+import { line } from './line';
 
-export var timeline = {
+var timeline = {
 	line: line
 };
+
+export { timeline };

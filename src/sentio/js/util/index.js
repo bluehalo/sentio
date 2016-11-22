@@ -1,7 +1,9 @@
-import { default as extent } from './extent'
-import { default as multiExtent } from './multi_extent';
+import { extent } from './extent'
+import { multiExtent } from './multi_extent';
+import { timelineFilter } from './timeline_filter';
 
 export var util = {
 	extent: extent,
-	multiExtent: multiExtent
+	multiExtent: multiExtent,
+	timelineFilter: timelineFilter
 };

@@ -1,4 +1,4 @@
-export default function(config) {
+function bins(config) {
 
 	/**
 	 * Private variables
@@ -138,9 +138,9 @@ export default function(config) {
 		if(null == binConfig || null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
 			throw new Error('You must provide an initial size, count, and lwm');
 		}
-		_config.size = binConfig.size;
-		_config.count = binConfig.count;
-		_config.lwm = binConfig.lwm;
+		_config.size = Number(binConfig.size);
+		_config.count = Number(binConfig.count);
+		_config.lwm = Number(binConfig.lwm);
 
 		if(null != binConfig.createSeed) { _fn.createSeed = binConfig.createSeed; }
 		if(null != binConfig.getKey) { _fn.getKey = binConfig.getKey; }
@@ -289,7 +289,7 @@ export default function(config) {
 	};
 
 	/**
-	 * Get/Set the afterAdd callback function
+	 * Get/Set the afterUpdate callback function
 	 */
 	model.afterUpdate = function(v) {
 		if(!arguments.length) { return _fn.afterUpdate; }
@@ -303,13 +303,14 @@ export default function(config) {
 	model.size = function(v) {
 		if(!arguments.length) { return _config.size; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
 		// Only change stuff if the size actually changes
-		if(Number(v) !== _config.size) {
-			_config.size = Number(v);
+		if(v !== _config.size) {
+			_config.size = v;
 			calculateHwm();
 			clearData();
 			updateState();
@@ -324,13 +325,14 @@ export default function(config) {
 	model.count = function(v) {
 		if(!arguments.length) { return _config.count; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
 		// Only change stuff if the count actually changes
-		if(Number(v) !== _config.count) {
-			_config.count = Math.floor(Number(v));
+		if(v !== _config.count) {
+			_config.count = Math.floor(v);
 			calculateHwm();
 			updateState();
 		}
@@ -374,3 +376,5 @@ export default function(config) {
 
 	return model;
 }
+
+export { bins };

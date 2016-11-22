@@ -1,6 +1,8 @@
-import {default as extent} from '../util/extent';
+import { extent } from '../util/extent';
+import { multiExtent } from '../util/multi_extent';
+import { timelineFilter } from '../util/timeline_filter';
 
-export default function() {
+function line() {
 
 	// Layout properties
 	var _id = 'timeline_line_' + Date.now();
@@ -29,7 +31,7 @@ export default function() {
 			getValue: function(d) { return d[1]; }
 		})
 	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
+	var _multiExtent = multiExtent().values(function(d) { return d.data; });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -77,10 +79,7 @@ export default function() {
 	});
 
 	// Brush filter
-	var _filter = {
-		enabled: false,
-		brush: d3.svg.brush()
-	};
+	var _filter = timelineFilter();
 
 	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout')
 	var _data = [];
@@ -90,41 +89,23 @@ export default function() {
 	};
 
 	function brushstart() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filterstart([isEmpty, min, max]);
+		_dispatch.filterstart(_filter.getFilter());
 	}
 	function brush() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filter([isEmpty, min, max]);
+		_dispatch.filter(_filter.getFilter());
 	}
 	function brushend() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_dispatch.filterend([isEmpty, min, max]);
+		_dispatch.filterend(_filter.getFilter());
 	}
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) {}
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create a container div
 		_element.div = container.append('div').attr('class', 'sentio timeline');
 
@@ -143,7 +124,7 @@ export default function() {
 
 		// Add the filter brush element and set up brush callbacks
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-		_filter.brush
+		_filter.brush()
 			.on('brushend', brushend)
 			.on('brushstart', brushstart)
 			.on('brush', brush);
@@ -212,23 +193,18 @@ export default function() {
 		return _instance;
 	};
 
-	// Multi Extent Combiner
-	function multiExtent(data, extent) {
-		return _multiExtent.extent(extent).getExtent(data);
-	}
-
 	/*
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
 		// Need to grab the filter extent before we change anything
-		var filterExtent = getFilter();
+		var filterExtent = _filter.getFilter();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(multiExtent(_data, _extent.x));
+		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain(multiExtent(_data, _extent.y));
+		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
 
 		// Update the plot elements
 		updateAxes();
@@ -252,8 +228,8 @@ export default function() {
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
-			.data(_data, function(d) { 
-				return d.key; 
+			.data(_data, function(d) {
+				return d.key;
 			});
 
 		// Enter
@@ -281,7 +257,7 @@ export default function() {
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
 			.data(_markers.values, function(d) {
-				return _markerValue.x(d); 
+				return _markerValue.x(d);
 			});
 
 		// Enter
@@ -320,49 +296,10 @@ export default function() {
 
 	}
 
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
-	 */
-	function getFilter() {
-		var extent;
-		if(_filter.enabled && !_filter.brush.empty()) {
-			extent = _filter.brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
-		}
-
-		return extent;
-	}
-
-	/*
-	 * Set the state of the filter, firing events if necessary
-	 */
-	function setFilter(newExtent, oldExtent) {
-		// Fire the event if the extents are different
-		var suppressEvent =
-			newExtent === oldExtent || newExtent == null || oldExtent == null
-			|| (newExtent[0] === oldExtent[0] && newExtent[1] === oldExtent[1]);
-
-		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
-
-		// either clear the filter or assert it
-		if(clearFilter) {
-			_filter.brush.clear();
-		} else {
-			_filter.brush.extent([ new Date(newExtent[0]), new Date(newExtent[1]) ]);
-		}
-
-		// fire the event if anything changed
-		if(!suppressEvent) {
-			_filter.brush.event(_element.g.brush);
-		}
-	}
 
 	/*
 	 * Update the state of the existing filter (if any) on the plot.
-	 * 
+	 *
 	 * This method accepts the extent of the brush before any plot changes were applied
 	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
 	 * There is also logic to clip the brush if the extent has moved such that the brush
@@ -371,10 +308,10 @@ export default function() {
 	 */
 	function updateFilter(extent) {
 		// Reassert the x scale of the brush (in case the scale has changed)
-		_filter.brush.x(_scale.x);
+		_filter.brush().x(_scale.x);
 
 		// Derive the overall plot extent from the collection of series
-		var plotExtent = multiExtent(_data, _extent.x);
+		var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
 
 		// If there was no previous extent, then there is no brush to update
 		if(null != extent) {
@@ -384,48 +321,54 @@ export default function() {
 		}
 
 		_element.g.brush
-			.call(_filter.brush)
+			.call(_filter.brush())
 			.selectAll('rect')
 			.attr('y', -6)
 				.attr('height', _height - _margin.top - _margin.bottom + 7);
 
 		_element.g.brush
-			.style('display', (_filter.enabled)? 'unset' : 'none');
+			.style('display', (_filter.enabled())? 'unset' : 'none');
+	}
+
+	function setFilter(n, o) {
+		if(_filter.setFilter(n, o)) {
+			_filter.brush().event(_element.g.brush);
+		}
 	}
 
 	// Basic Getters/Setters
-	_instance.width = function(v){
+	_instance.width = function(v) {
 		if(!arguments.length) { return _width; }
 		_width = v;
 		return _instance;
 	};
-	_instance.height = function(v){
+	_instance.height = function(v) {
 		if(!arguments.length) { return _height; }
 		_height = v;
 		return _instance;
 	};
-	_instance.margin = function(v){
+	_instance.margin = function(v) {
 		if(!arguments.length) { return _margin; }
 		_margin = v;
 		return _instance;
 	};
-	_instance.interpolation = function(v){
+	_instance.interpolation = function(v) {
 		if(!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
 		return _instance;
 	};
-	_instance.xAxis = function(v){
+	_instance.xAxis = function(v) {
 		if(!arguments.length) { return _axis.x; }
 		_axis.x = v;
 		return _instance;
 	};
-	_instance.yAxis = function(v){
+	_instance.yAxis = function(v) {
 		if(!arguments.length) { return _axis.y; }
 		_axis.y = v;
 		return _instance;
 	};
-	_instance.xScale = function(v){
+	_instance.xScale = function(v) {
 		if(!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if(null != _axis.x) {
@@ -433,7 +376,7 @@ export default function() {
 		}
 		return _instance;
 	};
-	_instance.yScale = function(v){
+	_instance.yScale = function(v) {
 		if(!arguments.length) { return _scale.y; }
 		_scale.y = v;
 		if(null != _axis.y) {
@@ -441,63 +384,53 @@ export default function() {
 		}
 		return _instance;
 	};
-	_instance.xValue = function(v){
+	_instance.xValue = function(v) {
 		if(!arguments.length) { return _value.x; }
 		_value.x = v;
 		return _instance;
 	};
-	_instance.yValue = function(v){
+	_instance.yValue = function(v) {
 		if(!arguments.length) { return _value.y; }
 		_value.y = v;
 		return _instance;
 	};
-	_instance.yExtent = function(v){
+	_instance.yExtent = function(v) {
 		if(!arguments.length) { return _extent.y; }
 		_extent.y = v;
 		return _instance;
 	};
-	_instance.xExtent = function(v){
+	_instance.xExtent = function(v) {
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
 		return _instance;
 	};
-	_instance.markerXValue = function(v){
+	_instance.markerXValue = function(v) {
 		if(!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
 		return _instance;
 	};
-	_instance.markerLabelValue = function(v){
+	_instance.markerLabelValue = function(v) {
 		if(!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
 		return _instance;
 	};
 	_instance.filter = function(v) {
 		if(!arguments.length) { return _filter.enabled; }
-		_filter.enabled = v;
+		_filter.enabled(v);
 		return _instance;
 	};
 	_instance.dispatch = function(v) {
 		if(!arguments.length) { return _dispatch; }
 		return _instance;
 	};
-
-	// Expects milliseconds time
-	_instance.setFilter = function(extent) {
-		var oldExtent = getFilter();
-		if(null != extent && extent.length === 2) {
-			// Convert to Dates and assert filter
-			if(extent[0] instanceof Date) {
-				extent[0] = extent[0].getTime();
-			}
-			if(extent[1] instanceof Date) {
-				extent[1] = extent[1].getTime();
-			}
-		}
-
-		setFilter(extent, oldExtent);
-		_instance.redraw();
-		return _instance;
+	_instance.setFilter = function(v) {
+		return setFilter(v, _filter.getFilter());
+	};
+	_instance.getFilter = function() {
+		return _filter.getFilter();
 	};
 
 	return _instance;
 }
+
+export { line };

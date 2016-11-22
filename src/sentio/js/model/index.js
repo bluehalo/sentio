@@ -1,5 +1,7 @@
-import { default as bins } from './bins';
+import { bins } from './bins';
 
-export var model = {
+var model = {
 	bins: bins
 };
+
+export { model };

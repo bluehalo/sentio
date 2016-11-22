@@ -1,4 +1,4 @@
-export default function() {
+function donut() {
 
 	// Chart height/width
 	var _width = 400;
@@ -344,3 +344,5 @@ export default function() {
 
 	return _instance;
 }
+
+export { donut };

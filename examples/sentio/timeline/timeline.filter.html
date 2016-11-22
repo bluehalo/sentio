@@ -27,7 +27,8 @@
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
-			.on('filterend', function(val) { console.log({ msg: 'filterend', val }); });
+			.on('filterend', function(val) { console.log({ msg: 'filterend', val }); })
+			.on('filterstart', function(val) { console.log({ msg: 'filterstart', val }); });
 
 		var interval = 60000;
 		var binSize = 1000;
@@ -94,10 +95,12 @@
 			var newFilter = [lf, hf];
 			console.log({m: 'Applying filter', filter: newFilter});
 			timeline.setFilter(newFilter);
+			timeline.redraw();
 		}
 
 		function clearFilter() {
 			timeline.setFilter(null);
+			timeline.redraw();
 		}
 
 	</script>
