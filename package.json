@@ -21,6 +21,8 @@
 	},
 
 	"devDependencies": {
+		"d3": "3.5",
+
 		"q": "1.4",
 		"rollup-stream": "1.14",
 		"vinyl-buffer": "1.0",
