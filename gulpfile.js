@@ -49,13 +49,13 @@ function doRollup(config, artifactName) {
 		.pipe(plugins.sourcemaps.init({ loadMaps: true }))
 		.pipe(plugins.rename(artifactName + '.js'))
 		.pipe(plugins.sourcemaps.write('.'))
-		.pipe(gulp.dest('dist'))
+		.pipe(gulp.dest(assets.dist.dir))
 
 		// Uglify
 		.pipe(plugins.filter('**/' + artifactName + '.js'))
 		.pipe(plugins.uglify({ preserveComments: 'license' }))
 		.pipe(plugins.rename(artifactName + '.min.js'))
-		.pipe(gulp.dest('dist'));
+		.pipe(gulp.dest(assets.dist.dir));
 }
 
 gulp.task('build-js-iife', function() {
@@ -106,19 +106,19 @@ gulp.task('build-css', function() {
 			.pipe(plugins.concat(pkg.artifactName + '.css'))
 			.pipe(plugins.insert.prepend(bannerString))
 		.pipe(plugins.sourcemaps.write('.'))
-		.pipe(gulp.dest('dist'))
+		.pipe(gulp.dest(assets.dist.dir))
 
 		// Clean the CSS
-		.pipe(plugins.filter('dist/' + pkg.artifactName + '.css'))
+		.pipe(plugins.filter(assets.dist.dir + '/' + pkg.artifactName + '.css'))
 		.pipe(plugins.cleanCss())
 		.pipe(plugins.rename(pkg.artifactName + '.min.css'))
-		.pipe(gulp.dest('dist'));
+		.pipe(gulp.dest(assets.dist.dir));
 });
 
 // Tests
 gulp.task('build-tests', function() {
 	// Generate a list of the test sources in a deterministic manner
-	let sourceArr = [ './dist/version.js' ];
+	let sourceArr = [ ];
 	assets.tests.js.forEach(function(f) {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
@@ -132,7 +132,7 @@ gulp.task('build-tests', function() {
 
 		// Concat
 		.pipe(plugins.concat(pkg.artifactName + '-tests.js'))
-		.pipe(gulp.dest('dist'));
+		.pipe(gulp.dest(assets.dist.dir));
 });
 
 

@@ -2,7 +2,7 @@
 	"name": "@asymmetrik/sentio",
 	"artifactName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "2.0.4",
+	"version": "2.0.5",
 	"author": "Asymmetrik, Ltd.",
 	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
 	"license": "UNLICENSED",
@@ -16,8 +16,8 @@
 		"url": "https://github.com/Asymmetrik/sentio.git"
 	},
 
-	"dependencies": {
-		"d3": "3.5"
+	"peerDependencies": {
+		"d3": "3"
 	},
 
 	"devDependencies": {
