@@ -5,9 +5,9 @@ declare namespace sentio {
 	 */
 	namespace chart {
 
-		export function donut(): any;
-		export function matrix(): any;
-		export function verticalBars(): any;
+		export function donut(config?: any): any;
+		export function matrix(config?: any): any;
+		export function verticalBars(config?: any): any;
 
 	}
 
@@ -16,7 +16,7 @@ declare namespace sentio {
 	 */
 	namespace controller {
 
-		export function rtBins(): any;
+		export function rtBins(config?: any): any;
 
 	}
 
@@ -25,7 +25,7 @@ declare namespace sentio {
 	 */
 	namespace model {
 
-		export function bins(): any;
+		export function bins(config?: any): any;
 
 	}
 
@@ -34,7 +34,7 @@ declare namespace sentio {
 	 */
 	namespace realtime {
 
-		export function timeline(): any;
+		export function timeline(config?: any): any;
 
 	}
 
@@ -43,7 +43,7 @@ declare namespace sentio {
 	 */
 	namespace timeline {
 
-		export function line(): any;
+		export function line(config?: any): any;
 
 	}
 
@@ -52,8 +52,8 @@ declare namespace sentio {
 	 */
 	namespace util {
 
-		export function extent(): any;
-		export function multiExtent(): any;
+		export function extent(config?: any): any;
+		export function multiExtent(config?: any): any;
 
 	}
 }
