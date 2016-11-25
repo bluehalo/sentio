@@ -1,7 +1,6 @@
 'use strict';
 
 let
-	chalk = require('chalk'),
 	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
@@ -38,47 +37,25 @@ gulp.task('validate-js', function() {
  * Build
  */
 
-function doRollup(config, artifactName) {
-
-	return rollup(config)
-		.pipe(source(config.entry))
-		.pipe(buffer())
-		.pipe(plugins.rename(artifactName + '.js'))
-		.pipe(gulp.dest(assets.dist.dir))
-
-		// Uglify
-		.pipe(plugins.filter('**/' + artifactName + '.js'))
-		.pipe(plugins.uglify({ preserveComments: 'license' }))
-		.pipe(plugins.rename(artifactName + '.min.js'))
-		.pipe(gulp.dest(assets.dist.dir));
-
-}
-
-gulp.task('build-js-iife', function() {
-
-	return doRollup({
-			entry: assets.src.js,
-			format: 'iife',
-			moduleName: pkg.artifactName,
-			sourceMap: true,
-			banner: bannerString
-		},
-		pkg.artifactName
-	);
-
-});
-
 gulp.task('build-js-umd', function() {
 
-	return doRollup({
+	return rollup({
 			entry: assets.src.js,
 			format: 'umd',
 			moduleName: pkg.artifactName,
 			sourceMap: true,
 			banner: bannerString
-		},
-		pkg.artifactName + '.umd'
-	);
+		})
+		.pipe(source(assets.src.js))
+		.pipe(buffer())
+		.pipe(plugins.rename(pkg.artifactName + '.js'))
+		.pipe(gulp.dest(assets.dist.dir))
+
+		// Uglify
+		.pipe(plugins.filter(pkg.artifactName + '.js'))
+		.pipe(plugins.uglify({ preserveComments: 'license' }))
+		.pipe(plugins.rename(pkg.artifactName + '.min.js'))
+		.pipe(gulp.dest(assets.dist.dir));
 
 });
 
@@ -148,7 +125,7 @@ gulp.task('build-tests', function() {
 
 gulp.task('build', [ 'build-js', 'build-css' ]);
 
-gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-iife', 'build-js-umd' ], done); } );
+gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-umd' ], done); } );
 
 gulp.task('test', [ 'build-js' ], function() {
 	return gulp.src('test/runner.html')
