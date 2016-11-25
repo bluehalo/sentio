@@ -2,11 +2,9 @@
 
 let
 	chalk = require('chalk'),
-	fs = require('fs'),
 	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
-	path = require('path'),
 	rollup = require('rollup-stream'),
 	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
@@ -26,16 +24,17 @@ let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright
  */
 
 gulp.task('validate-js', function() {
+
 	return gulp.src(assets.src.js)
 		// ESLint
 		.pipe(plugins.eslint('./config/eslint.conf.json'))
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError());
+
 });
 
 
-
-/*
+/**
  * Build
  */
 
@@ -52,9 +51,11 @@ function doRollup(config, artifactName) {
 		.pipe(plugins.uglify({ preserveComments: 'license' }))
 		.pipe(plugins.rename(artifactName + '.min.js'))
 		.pipe(gulp.dest(assets.dist.dir));
+
 }
 
 gulp.task('build-js-iife', function() {
+
 	return doRollup({
 			entry: assets.src.js,
 			format: 'iife',
@@ -64,9 +65,11 @@ gulp.task('build-js-iife', function() {
 		},
 		pkg.artifactName
 	);
+
 });
 
 gulp.task('build-js-umd', function() {
+
 	return doRollup({
 			entry: assets.src.js,
 			format: 'umd',
@@ -76,10 +79,11 @@ gulp.task('build-js-umd', function() {
 		},
 		pkg.artifactName + '.umd'
 	);
+
 });
 
-
 gulp.task('build-css', function() {
+
 	// Generate a list of the sources in a deterministic manner
 	let sourceArr = [];
 	assets.src.sass.forEach(function(f) {
@@ -109,10 +113,12 @@ gulp.task('build-css', function() {
 		.pipe(plugins.cleanCss())
 		.pipe(plugins.rename(pkg.artifactName + '.min.css'))
 		.pipe(gulp.dest(assets.dist.dir));
+
 });
 
 // Tests
 gulp.task('build-tests', function() {
+
 	// Generate a list of the test sources in a deterministic manner
 	let sourceArr = [ ];
 	assets.tests.js.forEach(function(f) {
@@ -129,6 +135,7 @@ gulp.task('build-tests', function() {
 		// Concat
 		.pipe(plugins.concat(pkg.artifactName + '-tests.js'))
 		.pipe(gulp.dest(assets.dist.dir));
+
 });
 
 
