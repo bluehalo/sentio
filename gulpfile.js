@@ -2,13 +2,11 @@
 
 let
 	chalk = require('chalk'),
-	del = require('del'),
 	fs = require('fs'),
 	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
 	path = require('path'),
-	q = require('q'),
 	rollup = require('rollup-stream'),
 	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
@@ -44,11 +42,9 @@ gulp.task('validate-js', function() {
 function doRollup(config, artifactName) {
 
 	return rollup(config)
-		.pipe(source('main.js', './src'))
+		.pipe(source(config.entry))
 		.pipe(buffer())
-		.pipe(plugins.sourcemaps.init({ loadMaps: true }))
 		.pipe(plugins.rename(artifactName + '.js'))
-		.pipe(plugins.sourcemaps.write('.'))
 		.pipe(gulp.dest(assets.dist.dir))
 
 		// Uglify
@@ -150,10 +146,6 @@ gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'b
 gulp.task('test', [ 'build-js' ], function() {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
-});
-
-gulp.task('test-ci', [ 'build-js' ], function() {
-
 });
 
 // Default task builds and tests
