@@ -5,7 +5,7 @@
 
 	<link rel="stylesheet" href="../../../dist/sentio.css" />
 
-	<script src="../../../node_modules/d3/d3.js" charset="utf-8"></script>
+	<script src="../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
 	<script src="../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
@@ -29,10 +29,10 @@
 				.label(function(d) { return 'label: ' + d.key + ' (' + d.value + ')'; });
 
 		var colorOptions = [
-				d3.scale.category10(),
-				d3.scale.category20(),
-				d3.scale.category20b(),
-				d3.scale.category20c()
+			d3.scaleOrdinal(d3.schemeCategory10),
+			d3.scaleOrdinal(d3.schemeCategory20),
+			d3.scaleOrdinal(d3.schemeCategory20b),
+			d3.scaleOrdinal(d3.schemeCategory20c),
 		];
 		var csi = 0;
 

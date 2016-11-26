@@ -8,7 +8,7 @@
 	"license": "UNLICENSED",
 
 	"main": "dist/sentio.js",
-	"module": "dist/sentio.js",
+	"module": "index.js",
 	"typings": "index.d.ts",
 
 	"repository": {

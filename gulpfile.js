@@ -4,7 +4,8 @@ let
 	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
-	rollup = require('rollup-stream'),
+	path = require('path'),
+	rollup = require('rollup'),
 	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
 	buffer = require('vinyl-buffer'),
@@ -40,23 +41,24 @@ gulp.task('validate-js', () => {
 
 gulp.task('build-js', () => {
 
-	return rollup({
-			entry: assets.src.js,
-			format: 'umd',
-			moduleName: pkg.artifactName,
-			sourceMap: true,
-			banner: bannerString
+	return rollup.rollup({
+			entry: assets.src.js
 		})
-		.pipe(source(assets.src.js))
-		.pipe(buffer())
-		.pipe(plugins.rename(pkg.artifactName + '.js'))
-		.pipe(gulp.dest(assets.dist.dir))
+		.then((bundle) => {
+			return bundle.write({
+				dest: path.join(assets.dist.dir, (pkg.artifactName + '.js')),
+				format: 'umd',
+				moduleName: 'sentio',
+				sourceMap: true,
+				banner: bannerString
+			});
+		});
 
 		// Uglify
-		.pipe(plugins.filter(pkg.artifactName + '.js'))
-		.pipe(plugins.uglify({ preserveComments: 'license' }))
-		.pipe(plugins.rename(pkg.artifactName + '.min.js'))
-		.pipe(gulp.dest(assets.dist.dir));
+		// .pipe(plugins.filter(path.join(assets.dist.dir, (pkg.artifactName + '.js'))))
+		// .pipe(plugins.uglify({ preserveComments: 'license' }))
+		// .pipe(plugins.rename(pkg.artifactName + '.min.js'))
+		// .pipe(gulp.dest(assets.dist.dir));
 
 });
 
