@@ -35,10 +35,13 @@
 		// draw divs for each bin
 		function redraw() {
 			var chart = d3.select('#chart');
+
 			var join = chart.selectAll('div').data(controller.bins(), function(d) { return d[0]; } );
-			join.enter().append('div').attr('background-color', 'light-gray');
-			join.text(function(d) { return d[0] + " : " + d[1].length; } )
+			var enter = join.enter().append('div').attr('background-color', 'light-gray');
+
+			enter.merge(join).text(function(d) { return d[0] + " : " + d[1].length; } )
 				.attr('class', function(d) { return (d[0] + controller.binSize() < Date.now())? 'black': 'red'; } )
+
 			join.exit().remove();
 		}
 

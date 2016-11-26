@@ -3,36 +3,37 @@ function timelineFilter(config) {
 	/**
 	 * Private variables
 	 */
-
-	var _brush = d3.svg.brush();
+	var _brush;
 	var _enabled = false;
+
 
 	/**
 	 * Private Functions
 	 */
 
-	function setBrush(v) {
-		_brush = v;
-	}
-
 	function setEnabled(v) {
 		_enabled = v;
+	}
+
+	function getEnabled() {
+		return _enabled && null != _brush;
 	}
 
 	/*
 	 * Get the current state of the filter
 	 * Returns undefined if the filter is disabled or not set, millisecond time otherwise
 	 */
-	function getFilter() {
-		var extent;
-		if(_enabled && !_brush.empty()) {
-			extent = _brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
+	function getBrushSelection(node, scale) {
+		var selection = d3.brushSelection(node);
+
+		if(null != selection && _brushEnabled && Array.isArray(selection)) {
+			selection = selection.map(scale.invert)
+		}
+		else {
+			selection = undefined;
 		}
 
-		return extent;
+		return selection;
 	}
 
 	function cleanFilter(filter) {
@@ -46,7 +47,7 @@ function timelineFilter(config) {
 	/*
 	 * Set the state of the filter, return true if filter changed
 	 */
-	function setFilter(ne, oe) {
+	function setBrushSelection(node, scale, ne, oe) {
 		var oe = cleanFilter(oe);
 		ne = cleanFilter(ne);
 
@@ -56,9 +57,9 @@ function timelineFilter(config) {
 
 		// either clear the filter or assert it
 		if(clearFilter) {
-			_brush.clear();
+			_brush.move(node, undefined);
 		} else {
-			_brush.extent([ new Date(ne[0]), new Date(ne[1]) ]);
+			_brush.move(node, [ scale(new Date(ne[0])), scale(new Date(ne[1])) ]);
 		}
 
 		// fire the event if anything changed
@@ -71,12 +72,11 @@ function timelineFilter(config) {
 	 */
 	function _instance(config) {
 		if (null != config) {
-			if (null != config.brush) {
-				setBrush(config.brush);
-			}
-			if (null != config.enabled) {
-				setEnabled(config.enabled);
-			}
+			if (null != config.brush) { setBrush(config.brush); }
+			if (null != config.scale) { setScale(_scale = config.scale); }
+			if (null != config.node) { setNode(_node = config.node); }
+
+			if (null != config.enabled) { setEnabled(config.enabled); }
 		}
 	}
 
@@ -90,12 +90,12 @@ function timelineFilter(config) {
 	 */
 	_instance.brush = function(v) {
 		if(!arguments.length) { return _brush; }
-		setBrush(v);
+		_brush = v;
 		return _instance;
 	};
 
 	/*
-	 * Get/Set the values accessor function
+	 * Get/Set the enabled state
 	 */
 	_instance.enabled = function(v) {
 		if(!arguments.length) { return _enabled; }
@@ -103,12 +103,12 @@ function timelineFilter(config) {
 		return _instance;
 	};
 
-	_instance.getFilter = function() {
-		return getFilter();
+	_instance.getFilter = function(node, scale) {
+		return getBrushSelection(node, scale);
 	};
 
-	_instance.setFilter = function(n, o) {
-		return setFilter(n, o);
+	_instance.setFilter = function(newValue, oldValue) {
+		return setBrushSelection(node, scale, newValue, oldValue);
 	};
 
 	// Initialize the model

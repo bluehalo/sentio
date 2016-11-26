@@ -1706,125 +1706,6 @@ var model = {
 	bins: bins
 };
 
-function timelineFilter(config) {
-
-	/**
-	 * Private variables
-	 */
-
-	var _brush = d3.svg.brush();
-	var _enabled = false;
-
-	/**
-	 * Private Functions
-	 */
-
-	function setBrush(v) {
-		_brush = v;
-	}
-
-	function setEnabled(v) {
-		_enabled = v;
-	}
-
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millisecond time otherwise
-	 */
-	function getFilter() {
-		var extent;
-		if(_enabled && !_brush.empty()) {
-			extent = _brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
-		}
-
-		return extent;
-	}
-
-	function cleanFilter(filter) {
-		if(!Array.isArray(filter) || filter.length != 2 || isNaN(filter[0]) || isNaN(filter[1])) {
-			filter = undefined;
-		}
-
-		return filter;
-	}
-
-	/*
-	 * Set the state of the filter, return true if filter changed
-	 */
-	function setFilter(ne, oe) {
-		var oe = cleanFilter(oe);
-		ne = cleanFilter(ne);
-
-		// Fire the event if the extents are different
-		var suppressEvent = ne === oe || (null != ne && null != oe && ne[0] === oe[0] && ne[1] === oe[1]);
-		var clearFilter = (null == ne || ne[0] >= ne[1]);
-
-		// either clear the filter or assert it
-		if(clearFilter) {
-			_brush.clear();
-		} else {
-			_brush.extent([ new Date(ne[0]), new Date(ne[1]) ]);
-		}
-
-		// fire the event if anything changed
-		return !(suppressEvent);
-
-	}
-
-	/*
-	 * Constructor/initialization method
-	 */
-	function _instance(config) {
-		if (null != config) {
-			if (null != config.brush) {
-				setBrush(config.brush);
-			}
-			if (null != config.enabled) {
-				setEnabled(config.enabled);
-			}
-		}
-	}
-
-
-	/**
-	 * Public API
-	 */
-
-	/*
-	 * Get/Set the brush to use
-	 */
-	_instance.brush = function(v) {
-		if(!arguments.length) { return _brush; }
-		setBrush(v);
-		return _instance;
-	};
-
-	/*
-	 * Get/Set the values accessor function
-	 */
-	_instance.enabled = function(v) {
-		if(!arguments.length) { return _enabled; }
-		setEnabled(v);
-		return _instance;
-	};
-
-	_instance.getFilter = function() {
-		return getFilter();
-	};
-
-	_instance.setFilter = function(n, o) {
-		return setFilter(n, o);
-	};
-
-	// Initialize the model
-	_instance(config);
-
-	return _instance;
-}
-
 function line() {
 
 	// Layout properties
@@ -1858,14 +1739,14 @@ function line() {
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.time.scale(),
-		y: d3.scale.linear()
+		x: d3.scaleTime(),
+		y: d3.scaleLinear()
 	};
 
 	// Default Axis definitions
 	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(3)
+		x: d3.axisBottom().scale(_scale.x),
+		y: d3.axisLeft().scale(_scale.y).ticks(3)
 	};
 
 	// g elements
@@ -1884,7 +1765,7 @@ function line() {
 	};
 
 	// Line generator for the plot
-	var _line = d3.svg.line().interpolate('linear');
+	var _line = d3.line();
 	_line.x(function(d, i) {
 		return _scale.x(_value.x(d, i));
 	});
@@ -1893,7 +1774,7 @@ function line() {
 	});
 
 	// Area generator for the plot
-	var _area = d3.svg.area().interpolate('linear');
+	var _area = d3.area();
 	_area.x(function(d, i) {
 		return _scale.x(_value.x(d, i));
 	});
@@ -1901,8 +1782,75 @@ function line() {
 		return _scale.y(_value.y(d, i));
 	});
 
+
+	/**
+	 * BRUSH
+	 */
 	// Brush filter
-	var _filter = timelineFilter();
+	var _brush = d3.brushX()
+		.on('end', brushend)
+		.on('start', brushstart)
+		.on('brush', brush);
+
+	function brushstart() {
+		_dispatch.call('filterstart', this, getBrushSelection(_element.g.brush, _scale.x));
+	}
+	function brush() {
+		_dispatch.call('filter', this, getBrushSelection(_element.g.brush, _scale.x));
+	}
+	function brushend() {
+		_dispatch.call('filterend', this, getBrushSelection(_element.g.brush, _scale.x));
+	}
+
+	var _brushEnabled = false;
+	function getBrushSelection(node, scale) {
+		var selection = d3.brushSelection(node);
+
+		if(null != selection && _brushEnabled && Array.isArray(selection)) {
+			selection = selection.map(scale.invert);
+		}
+		else {
+			selection = undefined;
+		}
+
+		return selection;
+	}
+
+	/*
+	 * Update the state of the existing brush (if any) on the plot.
+	 *
+	 * This method accepts the extent of the brush before any plot changes were applied
+	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
+	 * There is also logic to clip the brush if the extent has moved such that the brush
+	 * has moved partially out of the plot boundaries, as well as to clear the brush if it
+	 * has moved completely outside of the boundaries of the plot.
+	 */
+	function updateBrush(previousExtent) {
+
+		// Derive the overall plot extent from the collection of series
+		var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+
+		// If there was no previous extent, then there is no brush to update
+		if (null != previousExtent) {
+			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
+			var nExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
+			setBrush(nExtent, extent);
+		}
+
+		_element.g.brush
+			.call(_brush);
+
+		_element.g.brush
+			.style('display', (_brushEnabled)? 'unset' : 'none');
+	}
+
+	function setBrush(n, o) {
+		_brush.move(_scale.x.map(n));
+	}
+
+
+
+
 
 	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
 	var _data = [];
@@ -1911,18 +1859,9 @@ function line() {
 		values: []
 	};
 
-	function brushstart() {
-		_dispatch.filterstart(_filter.getFilter());
-	}
-	function brush() {
-		_dispatch.filter(_filter.getFilter());
-	}
-	function brushend() {
-		_dispatch.filterend(_filter.getFilter());
-	}
-
 	// Chart create/init method
 	function _instance(selection) {}
+
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
@@ -1947,10 +1886,7 @@ function line() {
 
 		// Add the filter brush element and set up brush callbacks
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-		_filter.brush()
-			.on('brushend', brushend)
-			.on('brushstart', brushstart)
-			.on('brush', brush);
+		_element.g.brush.call(_brush);
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
@@ -1968,7 +1904,7 @@ function line() {
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
+		if (!arguments.length) { return _data; }
 		_data = v;
 
 		return _instance;
@@ -1978,7 +1914,7 @@ function line() {
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers.values; }
+		if (!arguments.length) { return _markers.values; }
 		_markers.values = v;
 		return _instance;
 	};
@@ -1987,7 +1923,6 @@ function line() {
 	 * Updates all the elements that depend on the size of the various components
 	 */
 	_instance.resize = function() {
-		var now = Date.now();
 
 		// Set up the scales
 		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
@@ -2013,6 +1948,13 @@ function line() {
 		// update the margins on the main draw group
 		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
 
+		// Update the size of the brush
+		_element.g.brush
+			.selectAll('rect')
+			.attr('y', 0)
+			.attr('height', _height - _margin.top - _margin.bottom + 4);
+		_brush.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
+
 		return _instance;
 	};
 
@@ -2020,8 +1962,12 @@ function line() {
 	 * Redraw the graphic
 	 */
 	_instance.redraw = function() {
-		// Need to grab the filter extent before we change anything
-		var filterExtent = _filter.getFilter();
+
+		/**
+		 * BRUSH
+		 */
+		// Need to grab the brush extent before we change anything
+		var brushSelection = getBrushSelection(_element.g.brush, _scale.x);
 
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
@@ -2033,21 +1979,27 @@ function line() {
 		updateAxes();
 		updateLine();
 		updateMarkers();
-		updateFilter(filterExtent);
+
+
+		/**
+		 * BRUSH
+		 */
+		updateBrush(brushSelection);
 
 		return _instance;
 	};
 
 	function updateAxes() {
-		if(null != _axis.x) {
+		if (null != _axis.x) {
 			_element.g.xAxis.call(_axis.x);
 		}
-		if(null != _axis.y) {
+		if (null != _axis.y) {
 			_element.g.yAxis.call(_axis.y);
 		}
 	}
 
 	function updateLine() {
+
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
@@ -2059,15 +2011,15 @@ function line() {
 		var plotEnter = plotJoin.enter().append('g')
 			.attr('class', 'plot');
 
-		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
+		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
 
 		var lineUpdate = plotJoin.select('.line');
 		var areaUpdate = plotJoin.select('.area');
 
-		// Update
-		lineUpdate.datum(function(d) { return d.data; }).attr('d', _line);
-		areaUpdate.datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
+		// Enter + Update
+		lineEnter.merge(lineUpdate).datum(function(d) { return d.data; }).attr('d', _line);
+		areaEnter.merge(areaUpdate).datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
 
 		// Exit
 		var plotExit = plotJoin.exit();
@@ -2076,6 +2028,7 @@ function line() {
 	}
 
 	function updateMarkers() {
+
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
@@ -2086,15 +2039,12 @@ function line() {
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
 			.attr('class', 'marker')
-			.on('mouseover', _dispatch.markerMouseover)
-			.on('mouseout', _dispatch.markerMouseout)
-			.on('click', _dispatch.markerClick);
+			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
+			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
+			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
 
 		var lineEnter = markerEnter.append('line');
 		var textEnter = markerEnter.append('text');
-
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
 
 		lineEnter
 			.attr('y1', function(d) { return _scale.y.range()[1]; })
@@ -2106,12 +2056,15 @@ function line() {
 			.attr('text-anchor', 'middle')
 			.text(function(d) { return _markerValue.label(d); });
 
-		// Update
-		lineUpdate
+		// Enter + Update
+		var lineUpdate = markerJoin.select('line');
+		var textUpdate = markerJoin.select('text');
+
+		lineEnter.merge(lineUpdate)
 			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
 			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
 
-		textUpdate
+		textEnter.merge(textUpdate)
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
 		// Exit
@@ -2120,137 +2073,100 @@ function line() {
 	}
 
 
-	/*
-	 * Update the state of the existing filter (if any) on the plot.
-	 *
-	 * This method accepts the extent of the brush before any plot changes were applied
-	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
-	 * There is also logic to clip the brush if the extent has moved such that the brush
-	 * has moved partially out of the plot boundaries, as well as to clear the brush if it
-	 * has moved completely outside of the boundaries of the plot.
-	 */
-	function updateFilter(extent$$1) {
-		// Reassert the x scale of the brush (in case the scale has changed)
-		_filter.brush().x(_scale.x);
-
-		// Derive the overall plot extent from the collection of series
-		var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
-
-		// If there was no previous extent, then there is no brush to update
-		if(null != extent$$1) {
-			// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-			var nExtent = [ Math.max(plotExtent[0], extent$$1[0]), Math.min(plotExtent[1], extent$$1[1]) ];
-			setFilter(nExtent, extent$$1);
-		}
-
-		_element.g.brush
-			.call(_filter.brush())
-			.selectAll('rect')
-			.attr('y', -6)
-				.attr('height', _height - _margin.top - _margin.bottom + 7);
-
-		_element.g.brush
-			.style('display', (_filter.enabled())? 'unset' : 'none');
-	}
-
-	function setFilter(n, o) {
-		if(_filter.setFilter(n, o)) {
-			_filter.brush().event(_element.g.brush);
-		}
-	}
-
 	// Basic Getters/Setters
 	_instance.width = function(v) {
-		if(!arguments.length) { return _width; }
+		if (!arguments.length) { return _width; }
 		_width = v;
 		return _instance;
 	};
 	_instance.height = function(v) {
-		if(!arguments.length) { return _height; }
+		if (!arguments.length) { return _height; }
 		_height = v;
 		return _instance;
 	};
 	_instance.margin = function(v) {
-		if(!arguments.length) { return _margin; }
+		if (!arguments.length) { return _margin; }
 		_margin = v;
 		return _instance;
 	};
 	_instance.interpolation = function(v) {
-		if(!arguments.length) { return _line.interpolate(); }
+		if (!arguments.length) { return _line.interpolate(); }
 		_line.interpolate(v);
 		_area.interpolate(v);
 		return _instance;
 	};
 	_instance.xAxis = function(v) {
-		if(!arguments.length) { return _axis.x; }
+		if (!arguments.length) { return _axis.x; }
 		_axis.x = v;
 		return _instance;
 	};
 	_instance.yAxis = function(v) {
-		if(!arguments.length) { return _axis.y; }
+		if (!arguments.length) { return _axis.y; }
 		_axis.y = v;
 		return _instance;
 	};
 	_instance.xScale = function(v) {
-		if(!arguments.length) { return _scale.x; }
+		if (!arguments.length) { return _scale.x; }
 		_scale.x = v;
-		if(null != _axis.x) {
+		if (null != _axis.x) {
 			_axis.x.scale(v);
 		}
 		return _instance;
 	};
 	_instance.yScale = function(v) {
-		if(!arguments.length) { return _scale.y; }
+		if (!arguments.length) { return _scale.y; }
 		_scale.y = v;
-		if(null != _axis.y) {
+		if (null != _axis.y) {
 			_axis.y.scale(v);
 		}
 		return _instance;
 	};
 	_instance.xValue = function(v) {
-		if(!arguments.length) { return _value.x; }
+		if (!arguments.length) { return _value.x; }
 		_value.x = v;
 		return _instance;
 	};
 	_instance.yValue = function(v) {
-		if(!arguments.length) { return _value.y; }
+		if (!arguments.length) { return _value.y; }
 		_value.y = v;
 		return _instance;
 	};
 	_instance.yExtent = function(v) {
-		if(!arguments.length) { return _extent.y; }
+		if (!arguments.length) { return _extent.y; }
 		_extent.y = v;
 		return _instance;
 	};
 	_instance.xExtent = function(v) {
-		if(!arguments.length) { return _extent.x; }
+		if (!arguments.length) { return _extent.x; }
 		_extent.x = v;
 		return _instance;
 	};
 	_instance.markerXValue = function(v) {
-		if(!arguments.length) { return _markerValue.x; }
+		if (!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
 		return _instance;
 	};
 	_instance.markerLabelValue = function(v) {
-		if(!arguments.length) { return _markerValue.label; }
+		if (!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
 		return _instance;
 	};
-	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.enabled; }
-		_filter.enabled(v);
+	_instance.dispatch = function(v) {
+		if (!arguments.length) { return _dispatch; }
 		return _instance;
 	};
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
+
+
+	_instance.filter = function(v) {
+		if (!arguments.length) { return _brushEnabled; }
+		_brushEnabled = v;
 		return _instance;
 	};
 	_instance.setFilter = function(v) {
-		return setFilter(v, _filter.getFilter());
+		// set brush selection
 	};
 	_instance.getFilter = function() {
-		return _filter.getFilter();
+		// get brush selection
 	};
 
 	return _instance;
@@ -2359,6 +2275,125 @@ var realtime = {
 var timeline$1 = {
 	line: line
 };
+
+function timelineFilter(config) {
+
+	/**
+	 * Private variables
+	 */
+	var _brush;
+	var _enabled = false;
+
+
+	/**
+	 * Private Functions
+	 */
+
+	function setEnabled(v) {
+		_enabled = v;
+	}
+
+	function getEnabled() {
+		return _enabled && null != _brush;
+	}
+
+	/*
+	 * Get the current state of the filter
+	 * Returns undefined if the filter is disabled or not set, millisecond time otherwise
+	 */
+	function getBrushSelection(node, scale) {
+		var selection = d3.brushSelection(node);
+
+		if(null != selection && _brushEnabled && Array.isArray(selection)) {
+			selection = selection.map(scale.invert);
+		}
+		else {
+			selection = undefined;
+		}
+
+		return selection;
+	}
+
+	function cleanFilter(filter) {
+		if(!Array.isArray(filter) || filter.length != 2 || isNaN(filter[0]) || isNaN(filter[1])) {
+			filter = undefined;
+		}
+
+		return filter;
+	}
+
+	/*
+	 * Set the state of the filter, return true if filter changed
+	 */
+	function setBrushSelection(node, scale, ne, oe) {
+		var oe = cleanFilter(oe);
+		ne = cleanFilter(ne);
+
+		// Fire the event if the extents are different
+		var suppressEvent = ne === oe || (null != ne && null != oe && ne[0] === oe[0] && ne[1] === oe[1]);
+		var clearFilter = (null == ne || ne[0] >= ne[1]);
+
+		// either clear the filter or assert it
+		if(clearFilter) {
+			_brush.move(node, undefined);
+		} else {
+			_brush.move(node, [ scale(new Date(ne[0])), scale(new Date(ne[1])) ]);
+		}
+
+		// fire the event if anything changed
+		return !(suppressEvent);
+
+	}
+
+	/*
+	 * Constructor/initialization method
+	 */
+	function _instance(config) {
+		if (null != config) {
+			if (null != config.brush) { setBrush(config.brush); }
+			if (null != config.scale) { setScale(_scale = config.scale); }
+			if (null != config.node) { setNode(_node = config.node); }
+
+			if (null != config.enabled) { setEnabled(config.enabled); }
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	/*
+	 * Get/Set the brush to use
+	 */
+	_instance.brush = function(v) {
+		if(!arguments.length) { return _brush; }
+		_brush = v;
+		return _instance;
+	};
+
+	/*
+	 * Get/Set the enabled state
+	 */
+	_instance.enabled = function(v) {
+		if(!arguments.length) { return _enabled; }
+		setEnabled(v);
+		return _instance;
+	};
+
+	_instance.getFilter = function(node, scale) {
+		return getBrushSelection(node, scale);
+	};
+
+	_instance.setFilter = function(newValue, oldValue) {
+		return setBrushSelection(node, scale, newValue, oldValue);
+	};
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
+}
 
 var util = {
 	extent: extent,
