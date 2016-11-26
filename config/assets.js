@@ -13,7 +13,7 @@ module.exports = {
 
 	// Source files and directories
 	src: {
-		js: './index.js',
+		js: 'src/js/index.js',
 		sass: [
 			'src/sass/**/*.scss'
 		]

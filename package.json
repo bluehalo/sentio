@@ -9,7 +9,7 @@
 
 	"main": "dist/sentio.js",
 	"module": "dist/sentio.js",
-	"typings": "./index.d.ts",
+	"typings": "index.d.ts",
 
 	"repository": {
 		"type": "git",
