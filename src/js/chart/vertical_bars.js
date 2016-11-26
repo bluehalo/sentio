@@ -13,13 +13,13 @@ function verticalBars() {
 	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
 		mouseover: function(d, i) {
-			_dispatch.mouseover(d, this);
+			_dispatch.call('mouseover', this, d, i);
 		},
 		mouseout: function(d, i) {
-			_dispatch.mouseout(d, this);
+			_dispatch.call('mouseout', this, d, i);
 		},
 		click: function(d, i) {
-			_dispatch.click(d, this);
+			_dispatch.call('click', this, d, i);
 		}
 	};
 
@@ -32,8 +32,8 @@ function verticalBars() {
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.scale.linear(),
-		y: d3.scale.linear()
+		x: d3.scaleLinear(),
+		y: d3.scaleLinear()
 	};
 
 	// Extents
@@ -99,13 +99,13 @@ function verticalBars() {
 		_scale.y.range([0, (_barHeight + _barPadding) * _data.length]);
 
 		// Data Join
-		var div = _element.div.selectAll('div.bar')
+		var bar = _element.div.selectAll('div.bar')
 			.data(_data, _value.key);
 
 		// Update Only
 
 		// Enter
-		var bar = div.enter().append('div')
+		var barEnter = bar.enter().append('div')
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
@@ -114,22 +114,22 @@ function verticalBars() {
 			.on('click', _fn.click)
 			.style('opacity', 0.01);
 
-		bar.append('div')
+		var barLabel = barEnter.append('div')
 			.attr('class', 'bar-label');
 
 		// Enter + Update
-		div.transition().duration(_duration)
+		barEnter.merge(bar).transition().duration(_duration)
 			.style('opacity', 1)
 			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
 			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
 			.style('left', _margin.left + 'px');
 
-		div.select('div.bar-label')
+		barLabel.merge(bar.select('div.bar-label'))
 			.html(_value.label)
 			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
 
 		// Exit
-		div.exit()
+		bar.exit()
 			.transition().duration(_duration)
 			.style('opacity', 0.01)
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
