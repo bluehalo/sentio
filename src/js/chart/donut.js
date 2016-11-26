@@ -52,14 +52,14 @@ function donut() {
 		},
 		mouseover: function(d, i) {
 			_fn.updateActiveElement(d);
-			_dispatch.apply('mouseover', this, [d, this]);
+			_dispatch.call('mouseover', this, d, i);
 		},
 		mouseout: function(d, i) {
 			_fn.updateActiveElement();
-			_dispatch.apply('mouseout', this, [d, this]);
+			_dispatch.call('mouseout', this, d, i);
 		},
 		click: function(d, i) {
-			_dispatch.apply('click', this, [d, this]);
+			_dispatch.call('click', this, d, i);
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },

@@ -22,7 +22,7 @@ function matrix() {
 			if(null != d) {
 				// Set the highlight on the row
 				var seriesKey = _fn.seriesKey(d);
-				seriesLabels.classed('active', function(series, i){ return _fn.seriesKey(series) == seriesKey; });
+				seriesLabels.classed('active', function(series, i) { return _fn.seriesKey(series) == seriesKey; });
 			}
 			else {
 				// Now update the style
@@ -31,23 +31,23 @@ function matrix() {
 		},
 		rowMouseover: function(d, i) {
 			_fn.updateActiveSeries(d);
-			_dispatch.rowMouseover(d, this);
+			_dispatch.call('rowMouseover', this, d, i);
 		},
 		rowMouseout: function(d, i) {
 			_fn.updateActiveSeries();
-			_dispatch.rowMouseout(d, this);
+			_dispatch.call('rowMouseout', this, d, i);
 		},
 		rowClick: function(d, i) {
-			_dispatch.rowClick(d, this);
+			_dispatch.call('rowClick', this, d, i);
 		},
 		cellMouseover: function(d, i) {
-			_dispatch.cellMouseover(d, this);
+			_dispatch.call('cellMouseover', this, d, i);
 		},
 		cellMouseout: function(d, i) {
-			_dispatch.cellMouseout(d, this);
+			_dispatch.call('cellMouseout', this, d, i);
 		},
 		cellClick: function(d, i) {
-			_dispatch.cellClick(d, this);
+			_dispatch.call('cellClick', this, d, i);
 		},
 		seriesKey: function(d) { return d.key; },
 		seriesLabel: function(d) { return d.label; },
@@ -65,13 +65,13 @@ function matrix() {
 
 	// Scales for x, y, and color
 	var _scale = {
-		x: d3.scale.linear(),
-		y: d3.scale.ordinal(),
-		color: d3.scale.linear().range(['#e7e7e7', '#008500'])
+		x: d3.scaleLinear(),
+		y: d3.scaleOrdinal(),
+		color: d3.scaleLinear().range(['#e7e7e7', '#008500'])
 	};
 
 	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('top').outerTickSize(0).innerTickSize(2)
+		x: d3.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
 	};
 
 	var _element = {
@@ -190,14 +190,15 @@ function matrix() {
 		 * Row Enter + Update
 		 */
 		// Transition rows to their new positions
-		row.transition().duration(_duration)
+		var rowEnterUpdate = rowEnter.merge(row);
+		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
 			.attr('transform', function(d, i){
 				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
 			});
 
 		// Update the series labels in case they changed
-		row.select('text.series.label')
+		rowEnterUpdate.select('text.series.label')
 			.text(_fn.seriesLabel);
 
 		/*
@@ -212,7 +213,7 @@ function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = row.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -221,7 +222,7 @@ function matrix() {
 		/*
 		 * Cell Enter Only
 		 */
-		rowCell.enter().append('rect')
+		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
 			.style('opacity', 0.1)
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
@@ -237,7 +238,8 @@ function matrix() {
 		 * Cell Enter + Update
 		 * Update fill, move to proper x coordinate
 		 */
-		rowCell.transition().duration(_duration)
+		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
+		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
 			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });

@@ -5,7 +5,7 @@
 
 	<link rel="stylesheet" href="../../../dist/sentio.css" />
 
-	<script src="../../../node_modules/d3/d3.js" charset="utf-8"></script>
+	<script src="../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
 	<script src="../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
@@ -28,8 +28,8 @@
 			.cellMargin(2);
 
 		chart.dispatch()
-			.on('cellMouseover', function(d) { console.log({ msg: 'cellMouseover', d: d }); })
-			.on('rowMouseover', function(d) { console.log({ msg: 'rowMouseover', d: d }); });
+			.on('cellMouseover', function(d, i) { console.log({ type: 'cellMouseover', event: d, index: i, context: this }); })
+			.on('rowMouseover', function(d, i) { console.log({ type: 'rowMouseover', event: d, index: i, context: this }); });
 
 		chart.init(chartDiv);
 		updateData();
