@@ -22,11 +22,12 @@ let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright
  * Validation Tasks
  */
 
-gulp.task('validate-js', function() {
+gulp.task('validate-js', () => {
 
 	return gulp.src(assets.src.js)
+
 		// ESLint
-		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint())
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError());
 
@@ -37,7 +38,7 @@ gulp.task('validate-js', function() {
  * Build
  */
 
-gulp.task('build-js-umd', function() {
+gulp.task('build-js', () => {
 
 	return rollup({
 			entry: assets.src.js,
@@ -59,11 +60,11 @@ gulp.task('build-js-umd', function() {
 
 });
 
-gulp.task('build-css', function() {
+gulp.task('build-css', () => {
 
 	// Generate a list of the sources in a deterministic manner
 	let sourceArr = [];
-	assets.src.sass.forEach(function(f) {
+	assets.src.sass.forEach((f) => {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
@@ -75,7 +76,7 @@ gulp.task('build-css', function() {
 			rules: require('./config/sasslint.conf.js')
 		}))
 		.pipe(plugins.sassLint.format())
-		.pipe(plugins.sassLint.failOnError())
+		.pipe(plugins.sassLint.failAfterError())
 
 		// Compile and concat the sass (w/sourcemaps)
 		.pipe(plugins.sourcemaps.init())
@@ -94,18 +95,18 @@ gulp.task('build-css', function() {
 });
 
 // Tests
-gulp.task('build-tests', function() {
+gulp.task('build-tests', () => {
 
 	// Generate a list of the test sources in a deterministic manner
 	let sourceArr = [ ];
-	assets.tests.js.forEach(function(f) {
+	assets.tests.js.forEach((f) => {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
 	return gulp.src(sourceArr)
 
 		// ESLint
-		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint())
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError())
 
@@ -115,6 +116,11 @@ gulp.task('build-tests', function() {
 
 });
 
+// Run Tests
+gulp.task('run-tests', () => {
+	return gulp.src('test/runner.html')
+		.pipe(plugins.mochaPhantomjs());
+});
 
 
 /**
@@ -123,14 +129,8 @@ gulp.task('build-tests', function() {
  * --------------------------
  */
 
-gulp.task('build', [ 'build-js', 'build-css' ]);
-
-gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-umd' ], done); } );
-
-gulp.task('test', [ 'build-js' ], function() {
-	return gulp.src('test/runner.html')
-		.pipe(plugins.mochaPhantomjs());
-});
+gulp.task('build', (done) => { runSequence('validate-js', [ 'build-css', 'build-tests', 'build-js' ], done); } );
+gulp.task('test', (done) => { runSequence('build', 'run-tests', done); } );
 
 // Default task builds and tests
-gulp.task('default', [ 'build', 'test' ]);
+gulp.task('default', [ 'test' ]);
