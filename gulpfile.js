@@ -76,7 +76,7 @@ gulp.task('build-css', () => {
 			rules: require('./config/sasslint.conf.js')
 		}))
 		.pipe(plugins.sassLint.format())
-		.pipe(plugins.sassLint.failAfterError())
+		.pipe(plugins.sassLint.failOnError())
 
 		// Compile and concat the sass (w/sourcemaps)
 		.pipe(plugins.sourcemaps.init())
