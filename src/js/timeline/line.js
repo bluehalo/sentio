@@ -106,8 +106,8 @@ function line() {
 	}
 
 	/**
-	 * Set the current brush state in terms of the x data domain, in ms epoch time
-	 * @param v The new value of the brush (in ms epoch time)
+	 * Set the current brush state in terms of the x data domain
+	 * @param v The new value of the brush
 	 *
 	 */
 	function setBrush(v) {

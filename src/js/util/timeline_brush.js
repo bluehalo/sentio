@@ -101,7 +101,7 @@ function timelineBrush(config) {
 			selection = d3.brushSelection(node);
 
 			if (null != selection && Array.isArray(selection)) {
-				selection = selection.map(_scale.invert)
+				selection = convertSelection(selection.map(_scale.invert));
 			}
 			else {
 				selection = undefined;
