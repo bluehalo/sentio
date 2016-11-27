@@ -1706,13 +1706,29 @@ var model = {
 	bins: bins
 };
 
-function brushWrapper1d(config) {
+function timelineBrush(config) {
 
 	/**
 	 * Private variables
 	 */
+
+	// The brush object
 	var _brush;
+
+	// The scale object to use for mapping between the domain and range
+	var _scale;
+
+	// Event dispatcher
+	var _dispatch = d3.dispatch('brush', 'start', 'end');
+
+	// The current state of the brush selection
+	var _selection = undefined;
+
+	// Enable or disable the brush
 	var _enabled = false;
+
+	// Flag to track programmatic changes
+	var _programmaticChange = false;
 
 
 	/**
@@ -1728,18 +1744,72 @@ function brushWrapper1d(config) {
 		return _enabled && null != _brush;
 	}
 
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millisecond time otherwise
+	/**
+	 * Convert a brushSelection to ms epoch time
+	 * @param brushSelection Null, or an array brushSelection that may be in either Date or ms epoch
+	 *        time representation
+	 * @returns {*} Brush selection in ms epoch time form
 	 */
-	function getBrushSelection(node, scale) {
+	function convertSelection(selection) {
+		if(null != selection && Array.isArray(selection)) {
+			selection = selection.map(function(d) { return +d; });
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Clean selection to make sure it's valid or set it to undefined if it's invalid
+	 * @param selection
+	 * @returns {*}
+	 */
+	function cleanSelection(selection) {
+		if(!Array.isArray(selection) || selection.length != 2 || isNaN(selection[0]) || isNaN(selection[1])) {
+			selection = undefined;
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Wrapper for event handler to filter out duplicate events
+	 * @param eventType
+	 * @returns {Function}
+	 */
+	function eventFilter(eventType) {
+		return function(args) {
+
+			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
+			var o = _selection;
+
+			// Fire the event if the extents are different
+			var duplicateEvent = n === o || (null != n && null != o && n[0] === o[0] && n[1] === o[1]);
+			var fireEvent = !(duplicateEvent && _programmaticChange);
+
+			// Store the new selection only on the 'end' event
+			if(eventType === 'end') {
+				// Reset the selection
+				_selection = n;
+
+				// Reset the flag
+				_programmaticChange = false;
+			}
+
+			// Suppress event if it's duplicate and programmatic
+			if(fireEvent) {
+				_dispatch.apply(eventType, this, args);
+			}
+		}
+	}
+
+	function getSelection(node) {
 		var selection = undefined;
 
-		if(_enabled && null != node && null != scale) {
+		if(_enabled && null != node && null != _scale) {
 			selection = d3.brushSelection(node);
 
 			if (null != selection && Array.isArray(selection)) {
-				selection = selection.map(scale.invert);
+				selection = selection.map(_scale.invert);
 			}
 			else {
 				selection = undefined;
@@ -1749,45 +1819,40 @@ function brushWrapper1d(config) {
 		return selection;
 	}
 
-	function cleanBrushSelection(filter) {
-		if(!Array.isArray(filter) || filter.length != 2 || isNaN(filter[0]) || isNaN(filter[1])) {
-			filter = undefined;
-		}
+	function setSelection(group, v) {
+		v = cleanSelection(v);
 
-		return filter;
-	}
+		var clearFilter = (null == v || v[0] >= v[1]);
 
-	/*
-	 * Set the state of the filter, return true if filter changed
-	 */
-	function setBrushSelection(groupSelection, scale, n, o) {
-		o = cleanBrushSelection(o);
-		n = cleanBrushSelection(n);
-
-		// Fire the event if the extents are different
-		var suppressEvent = n === o || (null != n && null != o && n[0] === o[0] && n[1] === o[1]);
-
-		var clearFilter = (null == n || n[0] >= n[1]);
-
-		// either clear the filter or assert it
+		// either clear the filter or move it
+		_programmaticChange = true;
 		if(clearFilter) {
-			_brush.move(groupSelection, undefined);
+			_brush.move(group, undefined);
 		} else {
-			_brush.move(groupSelection, [ scale(n[0]), scale(n[1]) ]);
-		}
-
-		// If there's no actual change to the filter, don't apply it
-		if(!suppressEvent) {
-			// Fire filter change events
+			_brush.move(group, v.map(_scale));
 		}
 	}
 
-	/*
-	 * Constructor/initialization method
-	 */
 	function _instance(config) {
 		if (null != config) {
-			if (null != config.brush) { _brush = config.brush; }
+			if (null != config.brush) {
+				_brush = config.brush;
+				_brush
+					.on('brush', eventFilter('brush'))
+					.on('start', eventFilter('start'))
+					.on('end', eventFilter('end'));
+			}
+			else {
+				throw new Error('Must provide a brush');
+			}
+
+			if (null != config.scale) {
+				_scale = config.scale;
+			}
+			else {
+				throw new Error('Must provide a scale');
+			}
+
 			if (null != config.enabled) { setEnabled(config.enabled); }
 		}
 	}
@@ -1797,11 +1862,18 @@ function brushWrapper1d(config) {
 	 * Public API
 	 */
 
-	// Get/Set brush
-	_instance.brush = function(v) {
-		if(!arguments.length) { return _brush; }
-		_brush = v;
+	_instance.scale = function(v) {
+		if(!arguments.length) { return _scale; }
+		_scale = v;
 		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.brush = function() {
+		return _brush;
 	};
 
 	// Get/Set enabled state
@@ -1811,12 +1883,12 @@ function brushWrapper1d(config) {
 		return _instance;
 	};
 
-	_instance.getBrushSelection = function(node, scale) {
-		return getBrushSelection(node, scale);
+	_instance.getSelection = function(node) {
+		return getSelection(node);
 	};
 
-	_instance.setBrushSelection = function(groupSelection, scale, newValue, oldValue) {
-		return setBrushSelection(groupSelection, scale, newValue, oldValue);
+	_instance.setSelection = function(group, v) {
+		return setSelection(group, v);
 	};
 
 	// Initialize the model
@@ -1907,25 +1979,13 @@ function line() {
 
 
 	// Brush Management
-	var _brush = brushWrapper1d({ brush: d3.brushX() });
-	_brush.brush()
+	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
+	_brush.dispatch()
 		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
 		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
 		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
 
-	/**
-	 * Convert a brushSelection to ms epoch time
-	 * @param brushSelection Null, or an array brushSelection that may be in either Date or ms epoch
-	 *        time representation
-	 * @returns {*} Brush selection in ms epoch time form
-	 */
-	function convertBrushSelection(brushSelection) {
-		if(null != brushSelection && Array.isArray(brushSelection)) {
-			brushSelection = brushSelection.map(function(d) { return +d; });
-		}
 
-		return brushSelection;
-	}
 
 	/**
 	 * Get the current brush state in terms of the x data domain, in ms epoch time
@@ -1936,28 +1996,17 @@ function line() {
 		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
 
 		// Get the current brush selection
-		var brushSelection = _brush.getBrushSelection(node, _scale.x);
-
-		// Convert to ts
-		return convertBrushSelection(brushSelection);
+		return _brush.getSelection(node);
 
 	}
 
 	/**
 	 * Set the current brush state in terms of the x data domain, in ms epoch time
-	 * @param n The new value of the brush (in ms epoch time)
-	 * @param o The previous value of the brush - the new and old brushes are compared in order to
-	 *          suppress unnecessary state change events and avoid infinite loops. The reason the
-	 *          old brush is provided as a parameter is because if the brush is being set as part of
-	 *          updating the plot (eg. the extent has changed), we have no way to determine what the
-	 *          old state was.
+	 * @param v The new value of the brush (in ms epoch time)
+	 *
 	 */
-	function setBrush(n, o) {
-		// Make sure to convert the brush selections to ms epoch time
-		n = convertBrushSelection(n);
-		o = convertBrushSelection(o);
-
-		_brush.setBrushSelection(_element.g.brush, _scale.x, n, o);
+	function setBrush(v) {
+		_brush.setSelection(_element.g.brush, v);
 	}
 
 	/**
@@ -1986,13 +2035,12 @@ function line() {
 
 				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
 				var newExtent = [Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1])];
-
-				setBrush([ newExtent[0], newExtent[1] ], previousExtent);
+				setBrush(newExtent);
 
 			}
 			else {
 				// There is no plot/data so just clear the filter
-				setBrush(undefined, previousExtent);
+				setBrush(undefined);
 			}
 		}
 
@@ -2320,7 +2368,7 @@ function line() {
 		return _instance;
 	};
 	_instance.setFilter = function(v) {
-		setBrush(v, getBrush());
+		setBrush(v);
 		return _instance;
 	};
 	_instance.getFilter = function() {
@@ -2437,7 +2485,7 @@ var timeline$1 = {
 var util = {
 	extent: extent,
 	multiExtent: multiExtent,
-	brushWrapper1d: brushWrapper1d
+	timelineBrush: timelineBrush
 };
 
 exports.chart = chart;
