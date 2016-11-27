@@ -2,14 +2,14 @@
 	"name": "@asymmetrik/sentio",
 	"artifactName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "2.0.7",
+	"version": "2.0.8",
 	"author": "Asymmetrik, Ltd.",
 	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
 	"license": "UNLICENSED",
 
-	"main": "dist/sentio.umd.js",
-	"module": "./index.js",
-	"typings": "./index.d.ts",
+	"main": "dist/sentio.js",
+	"module": "index.js",
+	"typings": "index.d.ts",
 
 	"repository": {
 		"type": "git",
@@ -17,11 +17,11 @@
 	},
 
 	"peerDependencies": {
-		"d3": "3"
+		"d3": "4"
 	},
 
 	"devDependencies": {
-		"d3": "3.5",
+		"d3": "4.4",
 
 		"rollup-stream": "1.14",
 		"vinyl-buffer": "1.0",

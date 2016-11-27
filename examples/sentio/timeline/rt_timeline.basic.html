@@ -5,7 +5,7 @@
 
 	<link rel="stylesheet" href="../../../dist/sentio.css" />
 
-	<script src="../../../node_modules/d3/d3.js" charset="utf-8"></script>
+	<script src="../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
 	<script src="../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
@@ -21,7 +21,7 @@
 			.height(100)
 			.width(600)
 			.interval(10000)
-			.interpolation('basis')
+			.curve(d3.curveBasis)
 			.delay(1000);
 		timeline.yExtent().overrideValue([0, undefined]);
 

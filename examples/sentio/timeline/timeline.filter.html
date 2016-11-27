@@ -5,7 +5,7 @@
 
 	<link rel="stylesheet" href="../../../dist/sentio.css" />
 
-	<script src="../../../node_modules/d3/d3.js" charset="utf-8"></script>
+	<script src="../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
 	<script src="../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
@@ -17,6 +17,7 @@
 	<button onclick="updateData()">Update Data</button>
 	<button onclick="updateFilter()">Update Filter</button>
 	<button onclick="clearFilter()">Clear Filter</button>
+	<button onclick="toggleEnable()">Disable/Enable Filter</button>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -101,6 +102,10 @@
 		function clearFilter() {
 			timeline.setFilter(null);
 			timeline.redraw();
+		}
+
+		function toggleEnable() {
+			timeline.filter(!timeline.filter()).redraw();
 		}
 
 	</script>

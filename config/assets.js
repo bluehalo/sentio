@@ -8,14 +8,14 @@ module.exports = {
 
 	// Test files
 	tests: {
-		js: [ 'test/sentio/js/**/*.js' ]
+		js: [ 'test/js/**/*.js' ]
 	},
 
 	// Source files and directories
 	src: {
-		js: './index.js',
+		js: 'src/js/index.js',
 		sass: [
-			'src/sentio/sass/**/*.scss'
+			'src/sass/**/*.scss'
 		]
 	},
 

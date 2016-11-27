@@ -1,1 +1,1 @@
-export * from './src/sentio/js/index';
+export * from './src/js/index';

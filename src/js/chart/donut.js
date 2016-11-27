@@ -52,14 +52,14 @@ function donut() {
 		},
 		mouseover: function(d, i) {
 			_fn.updateActiveElement(d);
-			_dispatch.mouseover(d, this);
+			_dispatch.call('mouseover', this, d, i);
 		},
 		mouseout: function(d, i) {
 			_fn.updateActiveElement();
-			_dispatch.mouseout(d, this);
+			_dispatch.call('mouseout', this, d, i);
 		},
 		click: function(d, i) {
-			_dispatch.click(d, this);
+			_dispatch.call('click', this, d, i);
 		},
 		key: function(d, i) { return d.key; },
 		value: function(d, i) { return d.value; },
@@ -72,12 +72,12 @@ function donut() {
 	};
 
 	var _scale = {
-		color: d3.scale.category10()
+		color: d3.scaleOrdinal(d3.schemeCategory10)
 	};
 
 	var _layout = {
-		arc: d3.svg.arc(),
-		pie: d3.layout.pie().value(_fn.value).sort(null)
+		arc: d3.arc().padAngle(0.01),
+		pie: d3.pie().value(_fn.value).sort(null)
 	};
 
 	// elements
@@ -192,7 +192,8 @@ function donut() {
 		 * Enter + Update
 		 * Apply the update from current angle to next angle
 		 */
-		g.transition().duration(_duration)
+		var gEnterUpdate = gEnter.merge(g);
+		gEnterUpdate.transition().duration(_duration)
 			.attrTween('d', function(d) {
 				var interpolate = d3.interpolate(this._current, d);
 				this._current = interpolate(0);
@@ -201,9 +202,13 @@ function donut() {
 				};
 			});
 
-		g.attr('key', function(d, i) { return _fn.key(d.data, i); })
+		gEnterUpdate
+			.attr('key', function(d, i) { return _fn.key(d.data, i); })
 			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data, i)); });
 
+		/*
+		 * Exit
+		 */
 		g.exit().remove();
 	}
 
@@ -253,7 +258,7 @@ function donut() {
 			.attr('height', _legend.markSize);
 
 		// Add the legend text
-		gLegendGroupEnter
+		var text = gLegendGroupEnter
 			.append('text')
 			.attr('x', _legend.markSize + _legend.markMargin)
 			.attr('y', _legend.markSize - _legend.labelOffset);
@@ -261,14 +266,14 @@ function donut() {
 		/*
 		 * Enter + Update
 		 */
-		gLegendGroup.select('text')
+		text.merge(gLegendGroup.select('text'))
 			.text(function(d, i) { return _fn.label(d, i); });
 
-		gLegendGroup.select('rect')
+		rect.merge(gLegendGroup.select('rect'))
 			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
 
 		// Position each rect on both enter and update to fully account for changing widths and sizes
-		gLegendGroup
+		gLegendGroupEnter.merge(gLegendGroup)
 			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
 			.each(function(d, i) {
 				if (i === 0) {
@@ -282,6 +287,9 @@ function donut() {
 		// Reassert the legend position
 		_element.gLegend.attr('transform', legendTransform());
 
+		/*
+		 * Exit
+		 */
 		gLegendGroup.exit().remove();
 	}
 

@@ -1,11 +1,11 @@
 'use strict';
 
 let
-	chalk = require('chalk'),
 	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
-	rollup = require('rollup-stream'),
+	path = require('path'),
+	rollup = require('rollup'),
 	runSequence = require('run-sequence'),
 	source = require('vinyl-source-stream'),
 	buffer = require('vinyl-buffer'),
@@ -23,11 +23,12 @@ let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright
  * Validation Tasks
  */
 
-gulp.task('validate-js', function() {
+gulp.task('validate-js', () => {
 
 	return gulp.src(assets.src.js)
+
 		// ESLint
-		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint())
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError());
 
@@ -38,55 +39,34 @@ gulp.task('validate-js', function() {
  * Build
  */
 
-function doRollup(config, artifactName) {
+gulp.task('build-js', () => {
 
-	return rollup(config)
-		.pipe(source(config.entry))
-		.pipe(buffer())
-		.pipe(plugins.rename(artifactName + '.js'))
-		.pipe(gulp.dest(assets.dist.dir))
+	return rollup.rollup({
+			entry: assets.src.js
+		})
+		.then((bundle) => {
+			return bundle.write({
+				dest: path.join(assets.dist.dir, (pkg.artifactName + '.js')),
+				format: 'umd',
+				moduleName: 'sentio',
+				sourceMap: true,
+				banner: bannerString
+			});
+		});
 
 		// Uglify
-		.pipe(plugins.filter('**/' + artifactName + '.js'))
-		.pipe(plugins.uglify({ preserveComments: 'license' }))
-		.pipe(plugins.rename(artifactName + '.min.js'))
-		.pipe(gulp.dest(assets.dist.dir));
-
-}
-
-gulp.task('build-js-iife', function() {
-
-	return doRollup({
-			entry: assets.src.js,
-			format: 'iife',
-			moduleName: pkg.artifactName,
-			sourceMap: true,
-			banner: bannerString
-		},
-		pkg.artifactName
-	);
+		// .pipe(plugins.filter(path.join(assets.dist.dir, (pkg.artifactName + '.js'))))
+		// .pipe(plugins.uglify({ preserveComments: 'license' }))
+		// .pipe(plugins.rename(pkg.artifactName + '.min.js'))
+		// .pipe(gulp.dest(assets.dist.dir));
 
 });
 
-gulp.task('build-js-umd', function() {
-
-	return doRollup({
-			entry: assets.src.js,
-			format: 'umd',
-			moduleName: pkg.artifactName,
-			sourceMap: true,
-			banner: bannerString
-		},
-		pkg.artifactName + '.umd'
-	);
-
-});
-
-gulp.task('build-css', function() {
+gulp.task('build-css', () => {
 
 	// Generate a list of the sources in a deterministic manner
 	let sourceArr = [];
-	assets.src.sass.forEach(function(f) {
+	assets.src.sass.forEach((f) => {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
@@ -117,18 +97,18 @@ gulp.task('build-css', function() {
 });
 
 // Tests
-gulp.task('build-tests', function() {
+gulp.task('build-tests', () => {
 
 	// Generate a list of the test sources in a deterministic manner
 	let sourceArr = [ ];
-	assets.tests.js.forEach(function(f) {
+	assets.tests.js.forEach((f) => {
 		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
 	return gulp.src(sourceArr)
 
 		// ESLint
-		.pipe(plugins.eslint('./config/eslint.conf.json'))
+		.pipe(plugins.eslint())
 		.pipe(plugins.eslint.format())
 		.pipe(plugins.eslint.failAfterError())
 
@@ -138,6 +118,11 @@ gulp.task('build-tests', function() {
 
 });
 
+// Run Tests
+gulp.task('run-tests', () => {
+	return gulp.src('test/runner.html')
+		.pipe(plugins.mochaPhantomjs());
+});
 
 
 /**
@@ -146,14 +131,8 @@ gulp.task('build-tests', function() {
  * --------------------------
  */
 
-gulp.task('build', [ 'build-js', 'build-css' ]);
-
-gulp.task('build-js', (done) => { runSequence('validate-js', [ 'build-tests', 'build-js-iife', 'build-js-umd' ], done); } );
-
-gulp.task('test', [ 'build-js' ], function() {
-	return gulp.src('test/runner.html')
-		.pipe(plugins.mochaPhantomjs());
-});
+gulp.task('build', (done) => { runSequence('validate-js', [ 'build-css', 'build-tests', 'build-js' ], done); } );
+gulp.task('test', (done) => { runSequence('build', 'run-tests', done); } );
 
 // Default task builds and tests
-gulp.task('default', [ 'build', 'test' ]);
+gulp.task('default', [ 'test' ]);
