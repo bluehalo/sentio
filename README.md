@@ -5,6 +5,8 @@
 ## What is it?
 Sentio.js is a JavaScript libarary for visualizing and analyzing data. Sentio leverages several existing technologies, including [D3.js](http://d3js.org).
 
+Sentio now supports D3 v4.
+
 ## How do I build this project?
 There are several tools you will need to install to build this project:
 * [Node](http://nodejs.org/)
@@ -16,3 +18,8 @@ First, you will need to install the build dependencies for the project using nod
 npm install
 gulp
 ```
+
+
+[travis-url]: https://travis-ci.org/Asymmetrik/sentio/
+[travis-image]: https://travis-ci.org/Asymmetrik/sentio.svg
+
