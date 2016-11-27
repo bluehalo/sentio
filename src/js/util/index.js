@@ -1,9 +1,9 @@
 import { extent } from './extent'
 import { multiExtent } from './multi_extent';
-import { timelineFilter } from './timeline_filter';
+import { brushWrapper1d } from './brush_wrapper_1d';
 
 export var util = {
 	extent: extent,
 	multiExtent: multiExtent,
-	timelineFilter: timelineFilter
+	brushWrapper1d: brushWrapper1d
 };
