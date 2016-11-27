@@ -7,8 +7,6 @@ let
 	path = require('path'),
 	rollup = require('rollup'),
 	runSequence = require('run-sequence'),
-	source = require('vinyl-source-stream'),
-	buffer = require('vinyl-buffer'),
 
 	plugins = gulpLoadPlugins(),
 	pkg = require('./package.json'),
