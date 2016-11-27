@@ -43,7 +43,6 @@ gulp.task('build-js', ['rollup-js'], () => {
 
 	// Uglify
 	return gulp.src(path.join(assets.dist.dir, (pkg.artifactName + '.js')))
-		.pipe(plugins.filter(path.join(assets.dist.dir, (pkg.artifactName + '.js'))))
 		.pipe(plugins.uglify({ preserveComments: 'license' }))
 		.pipe(plugins.rename(pkg.artifactName + '.min.js'))
 		.pipe(gulp.dest(assets.dist.dir));
