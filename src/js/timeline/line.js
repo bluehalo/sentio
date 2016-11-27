@@ -393,10 +393,10 @@ function line() {
 		_margin = v;
 		return _instance;
 	};
-	_instance.interpolation = function(v) {
-		if (!arguments.length) { return _line.interpolate(); }
-		_line.interpolate(v);
-		_area.interpolate(v);
+	_instance.curve = function(v) {
+		if (!arguments.length) { return _line.curve(); }
+		_line.curve(v);
+		_area.curve(v);
 		return _instance;
 	};
 	_instance.xAxis = function(v) {

@@ -17,6 +17,7 @@
 	<button onclick="updateData()">Update Data</button>
 	<button onclick="updateFilter()">Update Filter</button>
 	<button onclick="clearFilter()">Clear Filter</button>
+	<button onclick="toggleEnable()">Disable/Enable Filter</button>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -101,6 +102,10 @@
 		function clearFilter() {
 			timeline.setFilter(null);
 			timeline.redraw();
+		}
+
+		function toggleEnable() {
+			timeline.filter(!timeline.filter()).redraw();
 		}
 
 	</script>

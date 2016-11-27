@@ -45,7 +45,7 @@
 			return toReturn;
 		}
 
-		function updateData(){
+		function updateData() {
 			data.push({ key: 'series' + series++, data: generateData(hwm - 1000*15, 15) });
 			timeline.redraw();
 		}
