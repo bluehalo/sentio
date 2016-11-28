@@ -193,9 +193,8 @@ function line() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
-		// Add the filter brush element and set up brush callbacks
+		// Add the filter brush element
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
-		_element.g.brush.call(_brush.brush());
 
 		// Append a group for the markers
 		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
