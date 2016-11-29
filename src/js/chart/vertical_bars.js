@@ -39,7 +39,7 @@ function verticalBars() {
 	// Extents
 	var _extent = {
 		width: extent({
-			defaultValue: [0, 10],
+			defaultValue: [ 0, 10 ],
 			getValue: _value.value
 		})
 	};
@@ -52,13 +52,13 @@ function verticalBars() {
 	var _data = [];
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) { }
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create the DIV element
 		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
 		_instance.resize();
@@ -81,7 +81,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([0, _width - _margin.right - _margin.left]);
+		_scale.x.range([ 0, _width - _margin.right - _margin.left ]);
 
 		return _instance;
 	};
@@ -95,8 +95,8 @@ function verticalBars() {
 		_scale.x.domain(_extent.width.getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain([0, _data.length]);
-		_scale.y.range([0, (_barHeight + _barPadding) * _data.length]);
+		_scale.y.domain([ 0, _data.length ]);
+		_scale.y.range([ 0, (_barHeight + _barPadding) * _data.length ]);
 
 		// Data Join
 		var bar = _element.div.selectAll('div.bar')

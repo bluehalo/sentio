@@ -45,10 +45,10 @@ function donut() {
 			if(null != d) {
 				// Set the highlight on the row
 				var key = _fn.key(d);
-				legendEntries.classed('active', function(e){
+				legendEntries.classed('active', function(e) {
 					return _fn.key(e) == key;
 				});
-				arcs.classed('active', function(e){
+				arcs.classed('active', function(e) {
 					return _fn.key(e.data) == key;
 				});
 			}
@@ -74,10 +74,6 @@ function donut() {
 	};
 
 
-	// Extents
-	var _extent = {
-	};
-
 	var _scale = {
 		color: d3.scaleOrdinal(d3.schemeCategory10)
 	};
@@ -98,13 +94,13 @@ function donut() {
 	var _data = [];
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) { }
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create the DIV element
 		_element.div = container.append('div').attr('class', 'sentio donut');
 
@@ -234,7 +230,8 @@ function donut() {
 			var offsetY = legendHeight/2;
 
 			return 'translate(' + (centerX - offsetX) + ',' + (centerY - offsetY) + ')';
-		} else {
+		}
+		else {
 			// TODO
 		}
 	}
@@ -286,7 +283,8 @@ function donut() {
 				if (i === 0) {
 					// Reset
 					_element.gLegend._maxWidth = this.getBBox().width;
-				} else {
+				}
+				else {
 					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
 				}
 			});
@@ -367,7 +365,7 @@ function extent(config) {
 	 */
 	// Configuration
 	var _config = {
-		defaultValue: [0, 10],
+		defaultValue: [ 0, 10 ],
 		overrideValue: undefined
 	};
 
@@ -476,7 +474,7 @@ function extent(config) {
 		// Check to see if we need to calculate the extent
 		if(null == ov || null == ov[0] || null == ov[1]) {
 			// Since the override isn't complete, we need to calculate the extent
-			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			toReturn = [ Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY ];
 			var foundData = false;
 
 			if(null != data) {
@@ -514,7 +512,8 @@ function extent(config) {
 					}
 				}
 			}
-		} else {
+		}
+		else {
 			// Since the override is fully specified, use it
 			toReturn = ov;
 		}
@@ -680,7 +679,7 @@ function matrix() {
 	var _scale = {
 		x: d3.scaleLinear(),
 		y: d3.scaleOrdinal(),
-		color: d3.scaleLinear().range(['#e7e7e7', '#008500'])
+		color: d3.scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
 	var _axis = {
@@ -750,7 +749,7 @@ function matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _cellMargin - cellSpan]);
+		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
 		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
 
 		// Draw the x axis
@@ -806,7 +805,7 @@ function matrix() {
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
-			.attr('transform', function(d, i){
+			.attr('transform', function(d, i) {
 				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
 			});
 
@@ -839,7 +838,7 @@ function matrix() {
 			.attr('class', 'cell')
 			.style('opacity', 0.1)
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
@@ -854,7 +853,7 @@ function matrix() {
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
 
 		/*
@@ -999,7 +998,7 @@ function verticalBars() {
 	// Extents
 	var _extent = {
 		width: extent({
-			defaultValue: [0, 10],
+			defaultValue: [ 0, 10 ],
 			getValue: _value.value
 		})
 	};
@@ -1012,13 +1011,13 @@ function verticalBars() {
 	var _data = [];
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) { }
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create the DIV element
 		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
 		_instance.resize();
@@ -1041,7 +1040,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([0, _width - _margin.right - _margin.left]);
+		_scale.x.range([ 0, _width - _margin.right - _margin.left ]);
 
 		return _instance;
 	};
@@ -1055,8 +1054,8 @@ function verticalBars() {
 		_scale.x.domain(_extent.width.getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain([0, _data.length]);
-		_scale.y.range([0, (_barHeight + _barPadding) * _data.length]);
+		_scale.y.domain([ 0, _data.length ]);
+		_scale.y.range([ 0, (_barHeight + _barPadding) * _data.length ]);
 
 		// Data Join
 		var bar = _element.div.selectAll('div.bar')
@@ -1257,17 +1256,17 @@ function bins(config) {
 
 		// if we emptied the array, add an element for the lwm
 		if(_data.length === 0) {
-			_data.push([_config.lwm, _fn.createSeed()]);
+			_data.push([ _config.lwm, _fn.createSeed() ]);
 		}
 
 		// fill in any missing values from the lowest bin to the lwm
 		for(var i=_data[0][0] - _config.size; i >= _config.lwm; i -= _config.size) {
-			_data.unshift([i, _fn.createSeed()]);
+			_data.unshift([ i, _fn.createSeed() ]);
 		}
 
 		// pad above the hwm
 		while(_data[_data.length - 1][0] < _config.hwm - _config.size) {
-			_data.push([_data[_data.length-1][0] + _config.size, _fn.createSeed()]);
+			_data.push([ _data[_data.length-1][0] + _config.size, _fn.createSeed() ]);
 		}
 		if (_fn.afterUpdate) {
 			_fn.afterUpdate.call(model, _data, _dataCount, prevCount);
@@ -1828,7 +1827,8 @@ function timelineBrush(config) {
 		_programmaticChange = true;
 		if(clearFilter) {
 			_brush.move(group, undefined);
-		} else {
+		}
+		else {
 			_brush.move(group, v.map(_scale));
 		}
 	}
@@ -1923,7 +1923,7 @@ function line() {
 	var now = Date.now();
 	var _extent = {
 		x: extent({
-			defaultValue: [now - 60000*5, now],
+			defaultValue: [ now - 60000*5, now ],
 			getValue: function(d) { return d[0]; }
 		}),
 		y: extent({
@@ -2034,7 +2034,7 @@ function line() {
 			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
 
 				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var newExtent = [Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1])];
+				var newExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
 				setBrush(newExtent);
 
 			}
@@ -2128,8 +2128,8 @@ function line() {
 	_instance.resize = function() {
 
 		// Set up the scales
-		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
+		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
+		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
 
 		// Append the clip path
 		_element.plotClipPath
@@ -2266,7 +2266,7 @@ function line() {
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
 		// Exit
-		var markerExit = markerJoin.exit().remove();
+		markerJoin.exit().remove();
 
 	}
 
@@ -2412,14 +2412,14 @@ function timeline() {
 	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
 		var now = new Date();
-		_instance.xExtent().overrideValue([now - _delay - _interval, now - _delay]);
+		_instance.xExtent().overrideValue([ now - _delay - _interval, now - _delay ]);
 
 		parentRedraw();
 		return _instance;
 	};
 
 	_instance.start = function() {
-		if(_running){ return; }
+		if(_running) { return; }
 		_running = true;
 
 		tick();
@@ -2453,7 +2453,7 @@ function timeline() {
 		return _instance;
 	};
 
-	_instance.fps = function(v){
+	_instance.fps = function(v) {
 		if(!arguments.length) { return _fps; }
 		_fps = v;
 		if(_running) {

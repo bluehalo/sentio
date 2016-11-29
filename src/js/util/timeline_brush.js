@@ -120,7 +120,8 @@ function timelineBrush(config) {
 		_programmaticChange = true;
 		if(clearFilter) {
 			_brush.move(group, undefined);
-		} else {
+		}
+		else {
 			_brush.move(group, v.map(_scale));
 		}
 	}

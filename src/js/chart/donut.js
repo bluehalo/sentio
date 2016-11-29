@@ -38,10 +38,10 @@ function donut() {
 			if(null != d) {
 				// Set the highlight on the row
 				var key = _fn.key(d);
-				legendEntries.classed('active', function(e){
+				legendEntries.classed('active', function(e) {
 					return _fn.key(e) == key;
 				});
-				arcs.classed('active', function(e){
+				arcs.classed('active', function(e) {
 					return _fn.key(e.data) == key;
 				});
 			}
@@ -67,10 +67,6 @@ function donut() {
 	};
 
 
-	// Extents
-	var _extent = {
-	};
-
 	var _scale = {
 		color: d3.scaleOrdinal(d3.schemeCategory10)
 	};
@@ -91,13 +87,13 @@ function donut() {
 	var _data = [];
 
 	// Chart create/init method
-	function _instance(selection){}
+	function _instance(selection) { }
 
 	/*
 	 * Initialize the chart (should only call this once). Performs all initial chart
 	 * creation and setup
 	 */
-	_instance.init = function(container){
+	_instance.init = function(container) {
 		// Create the DIV element
 		_element.div = container.append('div').attr('class', 'sentio donut');
 
@@ -227,7 +223,8 @@ function donut() {
 			var offsetY = legendHeight/2;
 
 			return 'translate(' + (centerX - offsetX) + ',' + (centerY - offsetY) + ')';
-		} else {
+		}
+		else {
 			// TODO
 		}
 	}
@@ -279,7 +276,8 @@ function donut() {
 				if (i === 0) {
 					// Reset
 					_element.gLegend._maxWidth = this.getBBox().width;
-				} else {
+				}
+				else {
 					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
 				}
 			});

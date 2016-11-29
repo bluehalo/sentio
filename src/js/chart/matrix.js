@@ -67,7 +67,7 @@ function matrix() {
 	var _scale = {
 		x: d3.scaleLinear(),
 		y: d3.scaleOrdinal(),
-		color: d3.scaleLinear().range(['#e7e7e7', '#008500'])
+		color: d3.scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
 	var _axis = {
@@ -137,7 +137,7 @@ function matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _cellMargin - cellSpan]);
+		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
 		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
 
 		// Draw the x axis
@@ -193,7 +193,7 @@ function matrix() {
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
-			.attr('transform', function(d, i){
+			.attr('transform', function(d, i) {
 				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
 			});
 
@@ -226,7 +226,7 @@ function matrix() {
 			.attr('class', 'cell')
 			.style('opacity', 0.1)
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
@@ -241,7 +241,7 @@ function matrix() {
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', 1)
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
 
 		/*

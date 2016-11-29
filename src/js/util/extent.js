@@ -5,7 +5,7 @@ function extent(config) {
 	 */
 	// Configuration
 	var _config = {
-		defaultValue: [0, 10],
+		defaultValue: [ 0, 10 ],
 		overrideValue: undefined
 	};
 
@@ -114,7 +114,7 @@ function extent(config) {
 		// Check to see if we need to calculate the extent
 		if(null == ov || null == ov[0] || null == ov[1]) {
 			// Since the override isn't complete, we need to calculate the extent
-			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			toReturn = [ Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY ];
 			var foundData = false;
 
 			if(null != data) {
@@ -152,7 +152,8 @@ function extent(config) {
 					}
 				}
 			}
-		} else {
+		}
+		else {
 			// Since the override is fully specified, use it
 			toReturn = ov;
 		}

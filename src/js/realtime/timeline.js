@@ -43,14 +43,14 @@ function timeline() {
 	_instance.redraw = function() {
 		// Update the x domain (to the latest time window)
 		var now = new Date();
-		_instance.xExtent().overrideValue([now - _delay - _interval, now - _delay]);
+		_instance.xExtent().overrideValue([ now - _delay - _interval, now - _delay ]);
 
 		parentRedraw();
 		return _instance;
 	};
 
 	_instance.start = function() {
-		if(_running){ return; }
+		if(_running) { return; }
 		_running = true;
 
 		tick();
@@ -84,7 +84,7 @@ function timeline() {
 		return _instance;
 	};
 
-	_instance.fps = function(v){
+	_instance.fps = function(v) {
 		if(!arguments.length) { return _fps; }
 		_fps = v;
 		if(_running) {

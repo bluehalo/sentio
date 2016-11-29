@@ -91,17 +91,17 @@ function bins(config) {
 
 		// if we emptied the array, add an element for the lwm
 		if(_data.length === 0) {
-			_data.push([_config.lwm, _fn.createSeed()]);
+			_data.push([ _config.lwm, _fn.createSeed() ]);
 		}
 
 		// fill in any missing values from the lowest bin to the lwm
 		for(var i=_data[0][0] - _config.size; i >= _config.lwm; i -= _config.size) {
-			_data.unshift([i, _fn.createSeed()]);
+			_data.unshift([ i, _fn.createSeed() ]);
 		}
 
 		// pad above the hwm
 		while(_data[_data.length - 1][0] < _config.hwm - _config.size) {
-			_data.push([_data[_data.length-1][0] + _config.size, _fn.createSeed()]);
+			_data.push([ _data[_data.length-1][0] + _config.size, _fn.createSeed() ]);
 		}
 		if (_fn.afterUpdate) {
 			_fn.afterUpdate.call(model, _data, _dataCount, prevCount);

@@ -9,8 +9,8 @@ let
 	runSequence = require('run-sequence'),
 
 	plugins = gulpLoadPlugins(),
-	pkg = require('./package.json'),
-	assets = require('./config/assets');
+	assets = require('./config/assets'),
+	pkg = require('./package.json');
 
 
 // Banner to append to generated files
@@ -49,7 +49,7 @@ gulp.task('build-js', ['rollup-js'], () => {
 
 gulp.task('rollup-js', () => {
 	return rollup.rollup({
-			entry: assets.src.js
+			entry: assets.src.entry
 		})
 		.then((bundle) => {
 			return bundle.write({
@@ -90,7 +90,7 @@ gulp.task('build-css', () => {
 		.pipe(gulp.dest(assets.dist.dir))
 
 		// Clean the CSS
-		.pipe(plugins.filter(assets.dist.dir + '/' + pkg.artifactName + '.css'))
+		.pipe(plugins.filter(path.join(assets.dist.dir, (pkg.artifactName + '.css'))))
 		.pipe(plugins.cleanCss())
 		.pipe(plugins.rename(pkg.artifactName + '.min.css'))
 		.pipe(gulp.dest(assets.dist.dir));

@@ -28,7 +28,7 @@ function line() {
 	var now = Date.now();
 	var _extent = {
 		x: extent({
-			defaultValue: [now - 60000*5, now],
+			defaultValue: [ now - 60000*5, now ],
 			getValue: function(d) { return d[0]; }
 		}),
 		y: extent({
@@ -139,7 +139,7 @@ function line() {
 			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
 
 				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var newExtent = [Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1])];
+				var newExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
 				setBrush(newExtent);
 
 			}
@@ -233,8 +233,8 @@ function line() {
 	_instance.resize = function() {
 
 		// Set up the scales
-		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
+		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
+		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
 
 		// Append the clip path
 		_element.plotClipPath
@@ -371,7 +371,7 @@ function line() {
 			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
 
 		// Exit
-		var markerExit = markerJoin.exit().remove();
+		markerJoin.exit().remove();
 
 	}
 
