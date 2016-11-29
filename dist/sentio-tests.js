@@ -107,7 +107,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should all get added', function() {
-				layout.add([30, 31, 40, 50, 55, 70, 35]);
+				layout.add([ 30, 31, 40, 50, 55, 70, 35 ]);
 				var bins = layout.bins();
 
 				bins.length.should.equal(5);
@@ -136,7 +136,7 @@ describe('Bin Layout', function() {
 					lwm: 30
 				});
 
-				layout.add([29, 0, -1, 100, 51, 55, 10]);
+				layout.add([ 29, 0, -1, 100, 51, 55, 10 ]);
 				var bins = layout.bins();
 
 				bins.length.should.equal(5);
@@ -167,7 +167,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(20);
 			var bins = layout.bins();
 
@@ -203,7 +203,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(-20);
 			var bins = layout.bins();
 
@@ -236,7 +236,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(0);
 			var bins = layout.bins();
 
@@ -269,7 +269,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60, 75]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60, 75 ]);
 			layout.lwm(15);
 			var bins = layout.bins();
 
@@ -352,7 +352,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should throw an error', function() {
-				(function(){
+				(function() {
 					layout.count(-1);
 				}).should.throw();
 			});
@@ -372,7 +372,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 0, 1]);
+			layout.add([ 0, 1, 2, 0, 1 ]);
 			layout.size(3);
 			var bins = layout.bins();
 
@@ -401,7 +401,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 15, 19]);
+			layout.add([ 0, 1, 2, 15, 19 ]);
 			layout.size(3);
 			var bins = layout.bins();
 
@@ -432,7 +432,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 1, 0]);
+			layout.add([ 0, 1, 2, 1, 0 ]);
 			layout.size(1);
 			var bins = layout.bins();
 
@@ -459,7 +459,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should throw an error', function() {
-				(function(){
+				(function() {
 					layout.size(-1);
 				}).should.throw();
 			});
@@ -486,7 +486,7 @@ describe('Bin Layout', function() {
 				.updateBin(function(bin, d) { bin[1] += d; })
 				.createSeed(function() { return 0; });
 
-			layout.add([{key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
+			layout.add([ {key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4} ]);
 
 			it('should aggregate properly', function() {
 				var bins = layout.bins();
@@ -516,7 +516,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 3]);
+			layout.add([ 0, 1, 2, 3 ]);
 
 			it('should result in empty arrays', function() {
 				var bins = layout.bins();
@@ -548,7 +548,7 @@ describe('Bin Layout', function() {
 				.updateBin(function(bin, d) { bin[1] += 1; })
 				.createSeed(function() { return 0; });
 
-			layout.add([0, 1, 2, 3]);
+			layout.add([ 0, 1, 2, 3 ]);
 
 			it('should result in 0 values', function() {
 				var bins = layout.bins();
@@ -585,7 +585,7 @@ describe('Bin Layout', function() {
 			});
 
 			it ('should start with max items', function() {
-				layout.add([0, 1, 2, 3, 4, 5]);
+				layout.add([ 0, 1, 2, 3, 4, 5 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(3);
@@ -595,7 +595,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should limit next addition', function() {
-				layout.add([6]);
+				layout.add([ 6 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(0);
@@ -605,7 +605,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should not limit next 2 additions', function() {
-				layout.add([1, 7]);
+				layout.add([ 1, 7 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(1);
@@ -633,7 +633,7 @@ describe('Bin Layout', function() {
 				});
 
 			it ('should start with max items', function() {
-				layout.add([0, 1, 2, 3, 4, 5]);
+				layout.add([ 0, 1, 2, 3, 4, 5 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(3);
@@ -643,7 +643,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should limit next addition', function() {
-				layout.add([6]);
+				layout.add([ 6 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(0);
@@ -653,7 +653,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should not limit next 2 additions', function() {
-				layout.add([1, 7]);
+				layout.add([ 1, 7 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(1);
@@ -686,8 +686,8 @@ describe('Extent', function() {
 			it('should not throw an error when configuring', function() {
 				(function() {
 					sentio.util.extent({
-						defaultValue: [0, 1],
-						overrideValue: [0, 10],
+						defaultValue: [ 0, 1 ],
+						overrideValue: [ 0, 10 ],
 						getValue: function(d) { return 0; },
 						filter: function(d) { return true; }
 					});
@@ -711,7 +711,7 @@ describe('Extent', function() {
 	describe('Usage', function() {
 		context('when configured with a default value', function() {
 			var extentController = sentio.util.extent({
-				defaultValue: [0, 1]
+				defaultValue: [ 0, 1 ]
 			});
 
 			it('should return the default value if passed empty data', function() {
@@ -722,17 +722,17 @@ describe('Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([0, 1, 2, 3, 4, 5, 6, 7]);
+				var extent = extentController.getExtent([ 0, 1, 2, 3, 4, 5, 6, 7 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(7);
 
-				extent = extentController.getExtent([-10, 10, 2, 3, 7, 1]);
+				extent = extentController.getExtent([ -10, 10, 2, 3, 7, 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(-10);
 				extent[1].should.equal(10);
 
-				extent = extentController.getExtent([1]);
+				extent = extentController.getExtent([ 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(1);
 				extent[1].should.equal(1);
@@ -741,7 +741,7 @@ describe('Extent', function() {
 
 		context('when configured with a override value', function() {
 			var extentController = sentio.util.extent({
-				overrideValue: [0, 1]
+				overrideValue: [ 0, 1 ]
 			});
 
 			it('should return the override value if passed empty data', function() {
@@ -752,29 +752,29 @@ describe('Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([0, 1, 2, 3, 4, 5, 6, 7]);
+				var extent = extentController.getExtent([ 0, 1, 2, 3, 4, 5, 6, 7 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 
-				extent = extentController.getExtent([-10, 10, 2, 3, 7, 1]);
+				extent = extentController.getExtent([ -10, 10, 2, 3, 7, 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 
-				extent = extentController.getExtent([1]);
+				extent = extentController.getExtent([ 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 			});
 
 			it('should return the extent if passed only one value', function() {
-				var extent = extentController.getExtent([0]);
+				var extent = extentController.getExtent([ 0 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 
-				extent = extentController.getExtent([0, 0, 0]);
+				extent = extentController.getExtent([ 0, 0, 0 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
@@ -784,7 +784,7 @@ describe('Extent', function() {
 
 		context('when configured with a partial override value', function() {
 			var extentController = sentio.util.extent({
-				overrideValue: [0, undefined]
+				overrideValue: [ 0, undefined ]
 			});
 
 			it('should return the default value combined with the override value if passed empty data', function() {
@@ -795,29 +795,29 @@ describe('Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([0, 1, 2, 3, 4, 5, 6, 7]);
+				var extent = extentController.getExtent([ 0, 1, 2, 3, 4, 5, 6, 7 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(7);
 
-				extent = extentController.getExtent([-10, 10, 2, 3, 7, 1]);
+				extent = extentController.getExtent([ -10, 10, 2, 3, 7, 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(10);
 
-				extent = extentController.getExtent([1]);
+				extent = extentController.getExtent([ 1 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
 			});
 
 			it('should return the extent if passed only one value', function() {
-				var extent = extentController.getExtent([0]);
+				var extent = extentController.getExtent([ 0 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(0);
 
-				extent = extentController.getExtent([0, 0, 0]);
+				extent = extentController.getExtent([ 0, 0, 0 ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(0);
@@ -858,7 +858,7 @@ describe('Multi Extent', function() {
 		context('when configured correctly', function() {
 			var extentController = sentio.util.multiExtent({
 				extent: sentio.util.extent({
-					defaultValue: [0, 1]
+					defaultValue: [ 0, 1 ]
 				})
 			});
 
@@ -870,12 +870,12 @@ describe('Multi Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([{ values: [0, 1] }, { values: [-5, 11] }, { values: [4, 17] }]);
+				var extent = extentController.getExtent([ { values: [ 0, 1 ] }, { values: [ -5, 11 ] }, { values: [ 4, 17 ] } ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(-5);
 				extent[1].should.equal(17);
 
-				extent = extentController.getExtent([{ values: [] }, { values: [] } ]);
+				extent = extentController.getExtent([ { values: [] }, { values: [] } ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
@@ -890,7 +890,7 @@ describe('Multi Extent', function() {
 		context('when configured with a custom values accessor', function() {
 			var extentController = sentio.util.multiExtent({
 				extent: sentio.util.extent({
-					defaultValue: [0, 1]
+					defaultValue: [ 0, 1 ]
 				})
 			}).values(function(d) { return d; } );
 
@@ -902,12 +902,12 @@ describe('Multi Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([[3], [4, 5], [6, 7]]);
+				var extent = extentController.getExtent([ [ 3 ], [ 4, 5 ], [ 6, 7 ] ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(3);
 				extent[1].should.equal(7);
 
-				extent = extentController.getExtent([[3], [], [0, -1]]);
+				extent = extentController.getExtent([ [ 3 ], [], [ 0, -1 ] ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(-1);
 				extent[1].should.equal(3);

@@ -30,7 +30,7 @@ describe('Multi Extent', function() {
 		context('when configured correctly', function() {
 			var extentController = sentio.util.multiExtent({
 				extent: sentio.util.extent({
-					defaultValue: [0, 1]
+					defaultValue: [ 0, 1 ]
 				})
 			});
 
@@ -42,12 +42,12 @@ describe('Multi Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([{ values: [0, 1] }, { values: [-5, 11] }, { values: [4, 17] }]);
+				var extent = extentController.getExtent([ { values: [ 0, 1 ] }, { values: [ -5, 11 ] }, { values: [ 4, 17 ] } ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(-5);
 				extent[1].should.equal(17);
 
-				extent = extentController.getExtent([{ values: [] }, { values: [] } ]);
+				extent = extentController.getExtent([ { values: [] }, { values: [] } ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(0);
 				extent[1].should.equal(1);
@@ -62,7 +62,7 @@ describe('Multi Extent', function() {
 		context('when configured with a custom values accessor', function() {
 			var extentController = sentio.util.multiExtent({
 				extent: sentio.util.extent({
-					defaultValue: [0, 1]
+					defaultValue: [ 0, 1 ]
 				})
 			}).values(function(d) { return d; } );
 
@@ -74,12 +74,12 @@ describe('Multi Extent', function() {
 			});
 
 			it('should return the extent if passed actual data', function() {
-				var extent = extentController.getExtent([[3], [4, 5], [6, 7]]);
+				var extent = extentController.getExtent([ [ 3 ], [ 4, 5 ], [ 6, 7 ] ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(3);
 				extent[1].should.equal(7);
 
-				extent = extentController.getExtent([[3], [], [0, -1]]);
+				extent = extentController.getExtent([ [ 3 ], [], [ 0, -1 ] ]);
 				extent.length.should.equal(2);
 				extent[0].should.equal(-1);
 				extent[1].should.equal(3);

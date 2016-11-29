@@ -61,7 +61,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should all get added', function() {
-				layout.add([30, 31, 40, 50, 55, 70, 35]);
+				layout.add([ 30, 31, 40, 50, 55, 70, 35 ]);
 				var bins = layout.bins();
 
 				bins.length.should.equal(5);
@@ -90,7 +90,7 @@ describe('Bin Layout', function() {
 					lwm: 30
 				});
 
-				layout.add([29, 0, -1, 100, 51, 55, 10]);
+				layout.add([ 29, 0, -1, 100, 51, 55, 10 ]);
 				var bins = layout.bins();
 
 				bins.length.should.equal(5);
@@ -121,7 +121,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(20);
 			var bins = layout.bins();
 
@@ -157,7 +157,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(-20);
 			var bins = layout.bins();
 
@@ -190,7 +190,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60 ]);
 			layout.lwm(0);
 			var bins = layout.bins();
 
@@ -223,7 +223,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60, 75]);
+			layout.add([ 0, 1, 2, 10, 15, 16, 17, 24, 35, 59, 60, 75 ]);
 			layout.lwm(15);
 			var bins = layout.bins();
 
@@ -306,7 +306,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should throw an error', function() {
-				(function(){
+				(function() {
 					layout.count(-1);
 				}).should.throw();
 			});
@@ -326,7 +326,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 0, 1]);
+			layout.add([ 0, 1, 2, 0, 1 ]);
 			layout.size(3);
 			var bins = layout.bins();
 
@@ -355,7 +355,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 15, 19]);
+			layout.add([ 0, 1, 2, 15, 19 ]);
 			layout.size(3);
 			var bins = layout.bins();
 
@@ -386,7 +386,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 1, 0]);
+			layout.add([ 0, 1, 2, 1, 0 ]);
 			layout.size(1);
 			var bins = layout.bins();
 
@@ -413,7 +413,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should throw an error', function() {
-				(function(){
+				(function() {
 					layout.size(-1);
 				}).should.throw();
 			});
@@ -440,7 +440,7 @@ describe('Bin Layout', function() {
 				.updateBin(function(bin, d) { bin[1] += d; })
 				.createSeed(function() { return 0; });
 
-			layout.add([{key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4}]);
+			layout.add([ {key: 3, value: 2}, {key: 4, value:5}, {key:20, value:4} ]);
 
 			it('should aggregate properly', function() {
 				var bins = layout.bins();
@@ -470,7 +470,7 @@ describe('Bin Layout', function() {
 				lwm: 0
 			});
 
-			layout.add([0, 1, 2, 3]);
+			layout.add([ 0, 1, 2, 3 ]);
 
 			it('should result in empty arrays', function() {
 				var bins = layout.bins();
@@ -502,7 +502,7 @@ describe('Bin Layout', function() {
 				.updateBin(function(bin, d) { bin[1] += 1; })
 				.createSeed(function() { return 0; });
 
-			layout.add([0, 1, 2, 3]);
+			layout.add([ 0, 1, 2, 3 ]);
 
 			it('should result in 0 values', function() {
 				var bins = layout.bins();
@@ -539,7 +539,7 @@ describe('Bin Layout', function() {
 			});
 
 			it ('should start with max items', function() {
-				layout.add([0, 1, 2, 3, 4, 5]);
+				layout.add([ 0, 1, 2, 3, 4, 5 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(3);
@@ -549,7 +549,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should limit next addition', function() {
-				layout.add([6]);
+				layout.add([ 6 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(0);
@@ -559,7 +559,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should not limit next 2 additions', function() {
-				layout.add([1, 7]);
+				layout.add([ 1, 7 ]);
 
 				var bins = layout.bins();
 				bins[0][1].length.should.equal(1);
@@ -587,7 +587,7 @@ describe('Bin Layout', function() {
 				});
 
 			it ('should start with max items', function() {
-				layout.add([0, 1, 2, 3, 4, 5]);
+				layout.add([ 0, 1, 2, 3, 4, 5 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(3);
@@ -597,7 +597,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should limit next addition', function() {
-				layout.add([6]);
+				layout.add([ 6 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(0);
@@ -607,7 +607,7 @@ describe('Bin Layout', function() {
 			});
 
 			it('should not limit next 2 additions', function() {
-				layout.add([1, 7]);
+				layout.add([ 1, 7 ]);
 
 				var bins = layout.bins();
 				bins[0][1].should.equal(1);
