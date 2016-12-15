@@ -1,23 +1,41 @@
-# Sentio JS
+# @asymmetrik/sentio
 
 [![Build Status][travis-image]][travis-url]
 
-## What is it?
-Sentio.js is a JavaScript libarary for visualizing and analyzing data. Sentio leverages several existing technologies, including [D3.js](http://d3js.org).
+> Sentio JS
+> Provides a JavaScript library for visualizing and analyzing data. Sentio leverages several existing technologies, including [D3.js](http://d3js.org).
+> Now supports D3 v4
 
-Sentio now supports D3 v4.
 
-## How do I build this project?
-There are several tools you will need to install to build this project:
-* [Node](http://nodejs.org/)
-* [Gulp](http://http://gulpjs.com/)
+## Table of Contents
+- [Install](#install)
+- [Usage](#usage)
+- [API](#api)
+- [Contribute](#contribute)
+- [License](#license)
 
-First, you will need to install the build dependencies for the project using node. If you want to use the examples, you will need to install the javascript dependencies for the project using bower. Finally, to build the project and generate the artifacts in the /dist directory, you will need to build the project using gulp. 
 
-```bash
-npm install
-gulp
+## Install 
+Install the package via npm:
 ```
+npm install @asymmetrik/sentio
+```
+
+## Usage
+TODO: Add basic usage examples using demo as a basis
+Include note about markers issue and workaround for Webpack
+
+
+## API
+TODO: Add full details of each directive
+
+
+## Contribute
+PRs accepted. If you are part of Asymmetrik, please make contributions on feature branches off of the ```develop``` branch. If you are outside of Asymmetrik, please fork our repo to make contributions.
+
+
+## License
+See LICENSE in repository for details.
 
 
 [travis-url]: https://travis-ci.org/Asymmetrik/sentio/
