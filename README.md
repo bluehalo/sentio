@@ -16,18 +16,17 @@
 
 
 ## Install 
-Install the package via npm:
+Install the package and its peer dependencies via npm:
 ```
+npm install d3
 npm install @asymmetrik/sentio
 ```
 
 ## Usage
 TODO: Add basic usage examples using demo as a basis
-Include note about markers issue and workaround for Webpack
 
 
 ## API
-TODO: Add full details of each directive
 
 
 ## Contribute
