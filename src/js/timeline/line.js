@@ -223,7 +223,7 @@ function line() {
 	 */
 	_instance.markers = function(v) {
 		if (!arguments.length) { return _markers.values; }
-		_markers.values = v;
+		_markers.values = (null != v)? v : [];
 		return _instance;
 	};
 
