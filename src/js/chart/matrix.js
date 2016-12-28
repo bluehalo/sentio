@@ -103,11 +103,11 @@ function matrix() {
 		return _instance;
 	};
 
-	_instance.data = function(d) {
+	_instance.data = function(v) {
 		if(!arguments.length) {
 			return _data;
 		}
-		_data = d || [];
+		_data = (null != v)? v : [];
 		return _instance;
 	};
 
