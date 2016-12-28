@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio-2.0.13 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
+/*! @asymmetrik/sentio-2.0.14 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -123,7 +123,7 @@ function donut() {
 	 */
 	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
-		_data = v || [];
+		_data = (null != v)? v : [];
 		return _instance;
 	};
 
@@ -715,11 +715,11 @@ function matrix() {
 		return _instance;
 	};
 
-	_instance.data = function(d) {
+	_instance.data = function(v) {
 		if(!arguments.length) {
 			return _data;
 		}
-		_data = d || [];
+		_data = (null != v)? v : [];
 		return _instance;
 	};
 
@@ -1030,7 +1030,7 @@ function verticalBars() {
 	 */
 	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
-		_data = v || [];
+		_data = (null != v)? v : [];
 
 		return _instance;
 	};
@@ -2108,7 +2108,7 @@ function line() {
 	 */
 	_instance.data = function(v) {
 		if (!arguments.length) { return _data; }
-		_data = v;
+		_data = (null != v)? v : [];
 
 		return _instance;
 	};
@@ -2118,7 +2118,7 @@ function line() {
 	 */
 	_instance.markers = function(v) {
 		if (!arguments.length) { return _markers.values; }
-		_markers.values = v;
+		_markers.values = (null != v)? v : [];
 		return _instance;
 	};
 

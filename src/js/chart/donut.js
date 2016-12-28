@@ -116,7 +116,7 @@ function donut() {
 	 */
 	_instance.data = function(v) {
 		if(!arguments.length) { return _data; }
-		_data = v || [];
+		_data = (null != v)? v : [];
 		return _instance;
 	};
 
