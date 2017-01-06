@@ -112,14 +112,14 @@ function verticalBars() {
 			.on('mouseover', _fn.mouseover)
 			.on('mouseout', _fn.mouseout)
 			.on('click', _fn.click)
-			.style('opacity', 0.01);
+			.style('opacity', '0.01');
 
 		var barLabel = barEnter.append('div')
 			.attr('class', 'bar-label');
 
 		// Enter + Update
 		barEnter.merge(bar).transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
 			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
 			.style('left', _margin.left + 'px');
@@ -131,7 +131,7 @@ function verticalBars() {
 		// Exit
 		bar.exit()
 			.transition().duration(_duration)
-			.style('opacity', 0.01)
+			.style('opacity', '0.01')
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
 			.remove();
 
