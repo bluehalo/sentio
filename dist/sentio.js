@@ -775,7 +775,7 @@ function matrix() {
 		 */
 		var rowEnter = row.enter().append('g');
 		rowEnter
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.attr('class', 'row')
 			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
 			.on('mouseover', _fn.rowMouseover)
@@ -804,7 +804,7 @@ function matrix() {
 		// Transition rows to their new positions
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.attr('transform', function(d, i) {
 				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
 			});
@@ -818,7 +818,7 @@ function matrix() {
 		 */
 		row.exit()
 			.transition().duration(_duration)
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.remove();
 
 
@@ -836,7 +836,7 @@ function matrix() {
 		 */
 		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
 			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.attr('y', _cellMargin)
@@ -852,7 +852,7 @@ function matrix() {
 		 */
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
 
@@ -861,7 +861,7 @@ function matrix() {
 		 */
 		rowCell.exit().transition().duration(_duration)
 			.attr('width', 0)
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.remove();
 
 		return _instance;
@@ -1071,14 +1071,14 @@ function verticalBars() {
 			.on('mouseover', _fn.mouseover)
 			.on('mouseout', _fn.mouseout)
 			.on('click', _fn.click)
-			.style('opacity', 0.01);
+			.style('opacity', '0.01');
 
 		var barLabel = barEnter.append('div')
 			.attr('class', 'bar-label');
 
 		// Enter + Update
 		barEnter.merge(bar).transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
 			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
 			.style('left', _margin.left + 'px');
@@ -1090,7 +1090,7 @@ function verticalBars() {
 		// Exit
 		bar.exit()
 			.transition().duration(_duration)
-			.style('opacity', 0.01)
+			.style('opacity', '0.01')
 			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
 			.remove();
 

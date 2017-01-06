@@ -163,7 +163,7 @@ function matrix() {
 		 */
 		var rowEnter = row.enter().append('g');
 		rowEnter
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.attr('class', 'row')
 			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
 			.on('mouseover', _fn.rowMouseover)
@@ -192,7 +192,7 @@ function matrix() {
 		// Transition rows to their new positions
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.attr('transform', function(d, i) {
 				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
 			});
@@ -206,7 +206,7 @@ function matrix() {
 		 */
 		row.exit()
 			.transition().duration(_duration)
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.remove();
 
 
@@ -224,7 +224,7 @@ function matrix() {
 		 */
 		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
 			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.attr('y', _cellMargin)
@@ -240,7 +240,7 @@ function matrix() {
 		 */
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
-			.style('opacity', 1)
+			.style('opacity', '1')
 			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
 			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
 
@@ -249,7 +249,7 @@ function matrix() {
 		 */
 		rowCell.exit().transition().duration(_duration)
 			.attr('width', 0)
-			.style('opacity', 0.1)
+			.style('opacity', '0.1')
 			.remove();
 
 		return _instance;
