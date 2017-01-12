@@ -111,12 +111,12 @@ function bins(config) {
 	function addData(dataToAdd) {
 		var prevCount = _dataCount;
 
-		dataToAdd.forEach(function(element) {
-			var i = getIndex(_fn.getKey(element));
+		dataToAdd.forEach(function(element, index) {
+			var i = getIndex(_fn.getKey(element, index));
 			if(i >= 0 && i < _data.length) {
-				var value = _fn.getValue(element);
+				var value = _fn.getValue(element, index);
 				var prevBinCount = _fn.countBin(_data[i]);
-				_fn.updateBin.call(model, _data[i], value);
+				_fn.updateBin.call(model, _data[i], value, index);
 				_dataCount += _fn.countBin(_data[i]) - prevBinCount;
 			}
 		});

@@ -1,6 +1,6 @@
-import { line } from '../timeline/line';
+import { timeline } from './timeline';
 
-function timeline() {
+function realtimeTimeline() {
 
 	// Default data delay, this is the difference between now and the latest tick shown on the timeline
 	var _delay = 0;
@@ -15,7 +15,7 @@ function timeline() {
 	// What is the refresh rate?
 	var _fps = 32;
 
-	var _instance = line();
+	var _instance = timeline();
 	_instance.yExtent().filter(function(d) {
 		var x = _instance.xValue()(d);
 		var xExtent = _instance.xExtent().getExtent();
@@ -96,4 +96,4 @@ function timeline() {
 	return _instance;
 }
 
-export { timeline };
+export { realtimeTimeline };

@@ -1,6 +1,6 @@
 import { extent } from './extent'
-import { multiExtent } from './multi_extent';
-import { timelineBrush } from './timeline_brush';
+import { multiExtent } from './multi-extent';
+import { timelineBrush } from './timeline-brush';
 
 export var util = {
 	extent: extent,

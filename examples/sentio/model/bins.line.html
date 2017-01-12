@@ -18,7 +18,7 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.timeline.line()
+		var timeline = sentio.chart.timeline()
 			.height(100)
 			.width(600)
 			.filter(true)
@@ -43,7 +43,7 @@
 		timeline
 			.xValue(function(d) { return d[0]; })
 			.yValue(function(d) { return d[1]; })
-			.init(timelineDiv).data([{ key: 'series1', data: layout.bins() }]).redraw();
+			.init(timelineDiv).data([{ key: 'series1', values: layout.bins() }]).redraw();
 
 		function generateData(range, samples) {
 			var toReturn = [];

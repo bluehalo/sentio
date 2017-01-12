@@ -1,8 +1,8 @@
-import { extent } from '../util/extent';
-import { multiExtent } from '../util/multi_extent';
-import { timelineBrush } from '../util/timeline_brush';
+import { extent } from '../../util/extent';
+import { multiExtent } from '../../util/multi-extent';
+import { timelineBrush } from '../../util/timeline-brush';
 
-function line() {
+function timeline() {
 
 	var _id = 'timeline_line_' + Date.now();
 
@@ -11,6 +11,18 @@ function line() {
 
 	// Height and width of the SVG element
 	var _height = 100, _width = 600;
+
+	var _fn = {
+		valueX: function(d) { return d[0]; },
+		valueY: function(d) { return d[1]; },
+
+		markerValueX: function(d) { return d[0]; },
+		markerLabel: function(d) { return d[1]; },
+
+		seriesKey: function(d) { return d.key; },
+		seriesValues: function(d) { return d.values; },
+		seriesLabel: function(d) { return d.label; }
+	};
 
 	// Default accessors for the dimensions of the data
 	var _value = {
@@ -29,13 +41,13 @@ function line() {
 	var _extent = {
 		x: extent({
 			defaultValue: [ now - 60000*5, now ],
-			getValue: function(d) { return d[0]; }
+			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
 		y: extent({
-			getValue: function(d) { return d[1]; }
+			getValue: function(d, i) { return _fn.valueY(d, i); }
 		})
 	};
-	var _multiExtent = multiExtent().values(function(d) { return d.data; });
+	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -67,19 +79,19 @@ function line() {
 	// Line generator for the plot
 	var _line = d3.line();
 	_line.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
+		return _scale.x(_fn.valueX(d, i));
 	});
 	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return _scale.y(_fn.valueY(d, i));
 	});
 
 	// Area generator for the plot
 	var _area = d3.area();
 	_area.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
+		return _scale.x(_fn.valueX(d, i));
 	});
 	_area.y1(function(d, i) {
-		return _scale.y(_value.y(d, i));
+		return _scale.y(_fn.valueY(d, i));
 	});
 
 
@@ -167,7 +179,7 @@ function line() {
 	};
 
 	// Chart create/init method
-	function _instance(selection) {}
+	function _instance() {}
 
 
 	/**
@@ -306,9 +318,7 @@ function line() {
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
-			.data(_data, function(d) {
-				return d.key;
-			});
+			.data(_data, _fn.seriesKey);
 
 		// Enter
 		var plotEnter = plotJoin.enter().append('g')
@@ -321,8 +331,8 @@ function line() {
 		var areaUpdate = plotJoin.select('.area');
 
 		// Enter + Update
-		lineEnter.merge(lineUpdate).datum(function(d) { return d.data; }).attr('d', _line);
-		areaEnter.merge(areaUpdate).datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
+		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
+		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
 
 		// Exit
 		var plotExit = plotJoin.exit();
@@ -335,9 +345,7 @@ function line() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
-			.data(_markers.values, function(d) {
-				return _markerValue.x(d);
-			});
+			.data(_markers.values, _markerValue.x);
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
@@ -357,18 +365,18 @@ function line() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(function(d) { return _markerValue.label(d); });
+			.text(_markerValue.label);
 
 		// Enter + Update
 		var lineUpdate = markerJoin.select('line');
 		var textUpdate = markerJoin.select('text');
 
 		lineEnter.merge(lineUpdate)
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
+			.attr('x1', function(d, i) { return _scale.x(_markerValue.x(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
 
 		textEnter.merge(textUpdate)
-			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
+			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
 
 		// Exit
 		markerJoin.exit().remove();
@@ -444,12 +452,27 @@ function line() {
 		_extent.x = v;
 		return _instance;
 	};
+	_instance.seriesKey = function(v) {
+		if(!arguments.length) { return _fn.seriesKey; }
+		_fn.seriesKey = v;
+		return _instance;
+	};
+	_instance.seriesLabel = function(v) {
+		if(!arguments.length) { return _fn.seriesLabel; }
+		_fn.seriesLabel = v;
+		return _instance;
+	};
+	_instance.seriesValues = function(v) {
+		if(!arguments.length) { return _fn.seriesValues; }
+		_fn.seriesValues = v;
+		return _instance;
+	};
 	_instance.markerXValue = function(v) {
 		if (!arguments.length) { return _markerValue.x; }
 		_markerValue.x = v;
 		return _instance;
 	};
-	_instance.markerLabelValue = function(v) {
+	_instance.markerLabel = function(v) {
 		if (!arguments.length) { return _markerValue.label; }
 		_markerValue.label = v;
 		return _instance;
@@ -474,4 +497,4 @@ function line() {
 	return _instance;
 }
 
-export { line };
+export { timeline };

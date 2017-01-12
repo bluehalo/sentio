@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio-2.0.15 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
+/*! @asymmetrik/sentio-3.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -34,22 +34,21 @@ function donut() {
 
 	// Function handlers
 	var _fn = {
-		updateActiveElement: function(d) {
+		getEventElement: function(d, i) {
+			return (null != d && null != d.data)? d.data : d;
+		},
+		updateActiveElement: function(d, i) {
 			var legendEntries = _element.gLegend.selectAll('g.entry');
 			var arcs = _element.gChart.selectAll('path.arc');
 
-			if(null != d && null != d.data) {
-				d = d.data;
-			}
-
 			if(null != d) {
 				// Set the highlight on the row
-				var key = _fn.key(d);
-				legendEntries.classed('active', function(e) {
-					return _fn.key(e) == key;
+				var key = _fn.key(d, i);
+				legendEntries.classed('active', function(e, ii) {
+					return _fn.key(e, ii) == key;
 				});
-				arcs.classed('active', function(e) {
-					return _fn.key(e.data) == key;
+				arcs.classed('active', function(e, ii) {
+					return _fn.key(e.data, ii) == key;
 				});
 			}
 			else {
@@ -58,19 +57,22 @@ function donut() {
 			}
 		},
 		mouseover: function(d, i) {
-			_fn.updateActiveElement(d);
+			d = _fn.getEventElement(d, i);
+			_fn.updateActiveElement(d, i);
 			_dispatch.call('mouseover', this, d, i);
 		},
 		mouseout: function(d, i) {
+			d = _fn.getEventElement(d, i);
 			_fn.updateActiveElement();
 			_dispatch.call('mouseout', this, d, i);
 		},
 		click: function(d, i) {
+			d = _fn.getEventElement(d, i);
 			_dispatch.call('click', this, d, i);
 		},
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; },
+		label: function(d) { return d.key + ' (' + d.value + ')'; }
 	};
 
 
@@ -80,7 +82,7 @@ function donut() {
 
 	var _layout = {
 		arc: d3.arc().padAngle(0.01),
-		pie: d3.pie().value(_fn.value).sort(null)
+		pie: d3.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
 	};
 
 	// elements
@@ -240,8 +242,7 @@ function donut() {
 		/*
 		 * Join the data
 		 */
-		var gLegendGroup = _element.gLegend.selectAll('g.entry')
-			.data(_data, function(d, i) { return _fn.key(d, i); });
+		var gLegendGroup = _element.gLegend.selectAll('g.entry').data(_data, _fn.key);
 
 		/*
 		 * Enter Only
@@ -270,11 +271,10 @@ function donut() {
 		/*
 		 * Enter + Update
 		 */
-		text.merge(gLegendGroup.select('text'))
-			.text(function(d, i) { return _fn.label(d, i); });
+		text.merge(gLegendGroup.select('text')).text(_fn.label);
 
 		rect.merge(gLegendGroup.select('rect'))
-			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
+			.style('fill', function(d, i) { return _scale.color(_fn.key(d, i)); });
 
 		// Position each rect on both enter and update to fully account for changing widths and sizes
 		gLegendGroupEnter.merge(gLegendGroup)
@@ -330,7 +330,6 @@ function donut() {
 	_instance.value = function(v) {
 		if(!arguments.length) { return _fn.value; }
 		_fn.value = v;
-		_layout.pie.value(v);
 		return _instance;
 	};
 	_instance.label = function(v) {
@@ -338,15 +337,14 @@ function donut() {
 		_fn.label = v;
 		return _instance;
 	};
-	_instance.color = function(v) {
+	_instance.colorScale = function(v) {
 		if(!arguments.length) { return _scale.color; }
 		_scale.color = v;
 		return _instance;
 	};
 
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
+	_instance.dispatch = function() {
+		return _dispatch;
 	};
 
 	_instance.legend = function(v) {
@@ -588,8 +586,8 @@ function multiExtent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e) {
-			var tExtent = _extent.getExtent(_fn.values(e));
+		data.forEach(function(e, i) {
+			var tExtent = _extent.getExtent(_fn.values(e, i));
 			if(null == toReturn) {
 				toReturn = tExtent;
 			}
@@ -628,13 +626,13 @@ function matrix() {
 
 	// Function handlers
 	var _fn = {
-		updateActiveSeries: function(d) {
+		updateActiveSeries: function(d, i) {
 			var seriesLabels = _element.g.chart.selectAll('.row text');
 
 			if(null != d) {
 				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d);
-				seriesLabels.classed('active', function(series, i) { return _fn.seriesKey(series) == seriesKey; });
+				var seriesKey = _fn.seriesKey(d, i);
+				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
 			}
 			else {
 				// Now update the style
@@ -642,7 +640,7 @@ function matrix() {
 			}
 		},
 		rowMouseover: function(d, i) {
-			_fn.updateActiveSeries(d);
+			_fn.updateActiveSeries(d, i);
 			_dispatch.call('rowMouseover', this, d, i);
 		},
 		rowMouseout: function(d, i) {
@@ -670,8 +668,8 @@ function matrix() {
 
 	// Extents
 	var _extent = {
-		x: extent().getValue(_fn.key),
-		value: extent().getValue(_fn.value),
+		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
+		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
 		multi: multiExtent()
 	};
 
@@ -750,7 +748,11 @@ function matrix() {
 
 		// Configure the scales
 		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
-		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
+		_scale.color.domain(
+			_extent.multi
+				.values(_fn.seriesValues)
+				.extent(_extent.value)
+				.getExtent(_data));
 
 		// Draw the x axis
 		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
@@ -825,7 +827,8 @@ function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = rowEnterUpdate.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate.selectAll('rect.cell')
+			.data(_fn.seriesValues, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -907,14 +910,12 @@ function matrix() {
 	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
-		_extent.x.getValue(v);
 		_fn.key = v;
 		return _instance;
 	};
 	_instance.value = function(v) {
 		if(!arguments.length) { return _fn.value; }
 		_fn.value = v;
-		_extent.value.getValue(v);
 		return _instance;
 	};
 
@@ -938,21 +939,804 @@ function matrix() {
 	_instance.xExtent = function(v) {
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v) {
-		if(!arguments.length) { return _extent.y; }
-		_extent.y = v;
+		_extent.x.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 	_instance.valueExtent = function(v) {
 		if(!arguments.length) { return _extent.value; }
 		_extent.value = v;
+		_extent.value.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	return _instance;
+}
+
+function timelineBrush(config) {
+
+	/**
+	 * Private variables
+	 */
+
+	// The brush object
+	var _brush;
+
+	// The scale object to use for mapping between the domain and range
+	var _scale;
+
+	// Event dispatcher
+	var _dispatch = d3.dispatch('brush', 'start', 'end');
+
+	// The current state of the brush selection
+	var _selection = undefined;
+
+	// Enable or disable the brush
+	var _enabled = false;
+
+	// Flag to track programmatic changes
+	var _programmaticChange = false;
+
+
+	/**
+	 * Private Functions
+	 */
+
+	function setEnabled(v) {
+		// Should probably fire event for new brush state
+		_enabled = v;
+	}
+
+	function getEnabled() {
+		return _enabled && null != _brush;
+	}
+
+	/**
+	 * Convert a brushSelection to ms epoch time
+	 * @param brushSelection Null, or an array brushSelection that may be in either Date or ms epoch
+	 *        time representation
+	 * @returns {*} Brush selection in ms epoch time form
+	 */
+	function convertSelection(selection) {
+		if(null != selection && Array.isArray(selection)) {
+			selection = selection.map(function(d) { return +d; });
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Clean selection to make sure it's valid or set it to undefined if it's invalid
+	 * @param selection
+	 * @returns {*}
+	 */
+	function cleanSelection(selection) {
+		if(!Array.isArray(selection) || selection.length != 2 || isNaN(selection[0]) || isNaN(selection[1])) {
+			selection = undefined;
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Wrapper for event handler to filter out duplicate events
+	 * @param eventType
+	 * @returns {Function}
+	 */
+	function eventFilter(eventType) {
+		return function(args) {
+
+			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
+			var o = _selection;
+
+			// Fire the event if the extents are different
+			var duplicateEvent = n === o || (null != n && null != o && n[0] === o[0] && n[1] === o[1]);
+			var fireEvent = !(duplicateEvent && _programmaticChange);
+
+			// Store the new selection only on the 'end' event
+			if(eventType === 'end') {
+				// Reset the selection
+				_selection = n;
+
+				// Reset the flag
+				_programmaticChange = false;
+			}
+
+			// Suppress event if it's duplicate and programmatic
+			if(fireEvent) {
+				_dispatch.apply(eventType, this, args);
+			}
+		}
+	}
+
+	function getSelection(node) {
+		var selection = undefined;
+
+		if(_enabled && null != node && null != _scale) {
+			selection = d3.brushSelection(node);
+
+			if (null != selection && Array.isArray(selection)) {
+				selection = convertSelection(selection.map(_scale.invert));
+			}
+			else {
+				selection = undefined;
+			}
+		}
+
+		return selection;
+	}
+
+	function setSelection(group, v) {
+		v = cleanSelection(v);
+
+		var clearFilter = (null == v || v[0] >= v[1]);
+
+		// either clear the filter or move it
+		_programmaticChange = true;
+		if(clearFilter) {
+			_brush.move(group, undefined);
+		}
+		else {
+			_brush.move(group, v.map(_scale));
+		}
+	}
+
+	function _instance(config) {
+
+		if (null != config) {
+			if (null != config.brush) {
+				_brush = config.brush;
+				_brush
+					.on('brush', eventFilter('brush'))
+					.on('start', eventFilter('start'))
+					.on('end', eventFilter('end'));
+			}
+			else {
+				throw new Error('Must provide a brush');
+			}
+
+			if (null != config.scale) {
+				_scale = config.scale;
+			}
+			else {
+				throw new Error('Must provide a scale');
+			}
+
+			if (null != config.enabled) { setEnabled(config.enabled); }
+		}
+		else {
+			throw new Error('Must provide a brush and a scale');
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	_instance.scale = function(v) {
+		if(!arguments.length) { return _scale; }
+		_scale = v;
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.brush = function() {
+		return _brush;
+	};
+
+	// Get/Set enabled state
+	_instance.enabled = function(v) {
+		if(!arguments.length) { return getEnabled(); }
+		setEnabled(v);
+		return _instance;
+	};
+
+	_instance.getSelection = function(node) {
+		return getSelection(node);
+	};
+
+	_instance.setSelection = function(group, v) {
+		return setSelection(group, v);
+	};
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
+}
+
+function timeline() {
+
+	var _id = 'timeline_line_' + Date.now();
+
+	// Margin between the main plot group and the svg border
+	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
+
+	// Height and width of the SVG element
+	var _height = 100, _width = 600;
+
+	var _fn = {
+		valueX: function(d) { return d[0]; },
+		valueY: function(d) { return d[1]; },
+
+		markerValueX: function(d) { return d[0]; },
+		markerLabel: function(d) { return d[1]; },
+
+		seriesKey: function(d) { return d.key; },
+		seriesValues: function(d) { return d.values; },
+		seriesLabel: function(d) { return d.label; }
+	};
+
+	// Default accessors for the dimensions of the data
+	var _value = {
+		x: function(d) { return d[0]; },
+		y: function(d) { return d[1]; }
+	};
+
+	// Accessors for the positions of the markers
+	var _markerValue = {
+		x: function(d, i) { return d[0]; },
+		label: function(d, i) { return d[1]; }
+	};
+
+	// Extent configuration for x and y dimensions of plot
+	var now = Date.now();
+	var _extent = {
+		x: extent({
+			defaultValue: [ now - 60000*5, now ],
+			getValue: function(d, i) { return _fn.valueX(d, i); }
+		}),
+		y: extent({
+			getValue: function(d, i) { return _fn.valueY(d, i); }
+		})
+	};
+	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
+
+	// Default scales for x and y dimensions
+	var _scale = {
+		x: d3.scaleTime(),
+		y: d3.scaleLinear()
+	};
+
+	// Default Axis definitions
+	var _axis = {
+		x: d3.axisBottom().scale(_scale.x),
+		y: d3.axisLeft().scale(_scale.y).ticks(3)
+	};
+
+	// Storage for commonly used DOM elements
+	var _element = {
+		svg: undefined,
+		g: {
+			container: undefined,
+			plots: undefined,
+			xAxis: undefined,
+			yAxis: undefined,
+			markers: undefined,
+			brush: undefined
+		},
+		plotClipPath: undefined,
+		markerClipPath: undefined
+	};
+
+	// Line generator for the plot
+	var _line = d3.line();
+	_line.x(function(d, i) {
+		return _scale.x(_fn.valueX(d, i));
+	});
+	_line.y(function(d, i) {
+		return _scale.y(_fn.valueY(d, i));
+	});
+
+	// Area generator for the plot
+	var _area = d3.area();
+	_area.x(function(d, i) {
+		return _scale.x(_fn.valueX(d, i));
+	});
+	_area.y1(function(d, i) {
+		return _scale.y(_fn.valueY(d, i));
+	});
+
+
+	// Brush Management
+	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
+	_brush.dispatch()
+		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
+		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
+		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
+
+
+
+	/**
+	 * Get the current brush state in terms of the x data domain, in ms epoch time
+	 */
+	function getBrush() {
+
+		// Try to get the node from the brush group selection
+		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
+
+		// Get the current brush selection
+		return _brush.getSelection(node);
+
+	}
+
+	/**
+	 * Set the current brush state in terms of the x data domain
+	 * @param v The new value of the brush
+	 *
+	 */
+	function setBrush(v) {
+		_brush.setSelection(_element.g.brush, v);
+	}
+
+	/**
+	 * Update the state of the brush (as part of redrawing everything)
+	 *
+	 * The purpose of this function is to update the state of the brush to reflect changes
+	 * to the rest of the chart as part of a normal update/redraw cycle. When the x extent
+	 * changes, the brush needs to move to stay correctly aligned with the x axis. Normally,
+	 * we are only updating the drawn position of the brush, so the brushSelection doesn't
+	 * actually change. However, if the change results in the brush extending partially or
+	 * wholly outside of the x extent, we might have to clip or clear the brush, which will
+	 * result in filter change events being propagated.
+	 *
+	 * @param previousExtent The previous state of the brush extent. Must be provided to
+	 *        accurately determine the extent of the brush in terms of the x data domain
+	 */
+	function updateBrush(previousExtent) {
+
+		// If there was no previous extent, then there is no brush to update
+		if (null != previousExtent) {
+
+			// Derive the overall plot extent from the collection of series
+			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+
+			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
+
+				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
+				var newExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
+				setBrush(newExtent);
+
+			}
+			else {
+				// There is no plot/data so just clear the filter
+				setBrush(undefined);
+			}
+		}
+
+		_element.g.brush
+			.style('display', (_brush.enabled())? 'unset' : 'none')
+			.call(_brush.brush());
+	}
+
+
+	// The dispatch object and all events
+	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
+
+	// The main data array
+	var _data = [];
+
+	// Markers data
+	var _markers = {
+		values: []
+	};
+
+	// Chart create/init method
+	function _instance() {}
+
+
+	/**
+	 * Initialize the chart (only called once). Performs all initial chart creation/setup
+	 *
+	 * @param container The container element to which to apply the chart
+	 * @returns {_instance} Instance of the chart
+	 */
+	_instance.init = function(container) {
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
+		// Create the SVG element
+		_element.svg = _element.div.append('svg');
+
+		// Add the defs and add the clip path definition
+		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
+
+		// Append a container for everything
+		_element.g.container = _element.svg.append('g');
+
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
+
+		// Add the filter brush element
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Append groups for the axes
+		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
+		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	/*
+	 * Set the _instance data
+	 */
+	_instance.data = function(v) {
+		if (!arguments.length) { return _data; }
+		_data = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
+	 * Set the markers data
+	 */
+	_instance.markers = function(v) {
+		if (!arguments.length) { return _markers.values; }
+		_markers.values = (null != v)? v : [];
+		return _instance;
+	};
+
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	_instance.resize = function() {
+
+		// Set up the scales
+		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
+		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
+
+		// Append the clip path
+		_element.plotClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+		_element.markerClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		// Now update the size of the svg pane
+		_element.svg.attr('width', _width).attr('height', _height);
+
+		// Update the positions of the axes
+		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
+		_element.g.yAxis.attr('class', 'y axis');
+
+		// update the margins on the main draw group
+		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
+
+		// Update the size of the brush
+		_element.g.brush
+			.selectAll('rect')
+			.attr('y', 0).attr('x', 0)
+			.attr('height', _width - _margin.left - _margin.right)
+			.attr('height', _height - _margin.top - _margin.bottom + 4);
+
+		_brush.brush()
+			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
+
+		return _instance;
+	};
+
+	/*
+	 * Redraw the graphic
+	 */
+	_instance.redraw = function() {
+
+		// Need to grab the brush extent before we change anything
+		var brushSelection = getBrush();
+
+		// Update the x domain (to the latest time window)
+		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
+
+		// Update the y domain (based on configuration and data)
+		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
+
+		// Update the plot elements
+		updateAxes();
+		updateLine();
+		updateMarkers();
+		updateBrush(brushSelection);
+
+		return _instance;
+	};
+
+	function updateAxes() {
+		if (null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
+		}
+		if (null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
+		}
+	}
+
+	function updateLine() {
+
+		// Join
+		var plotJoin = _element.g.plots
+			.selectAll('.plot')
+			.data(_data, _fn.seriesKey);
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g')
+			.attr('class', 'plot');
+
+		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
+		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
+	}
+
+	function updateMarkers() {
+
+		// Join
+		var markerJoin = _element.g.markers
+			.selectAll('.marker')
+			.data(_markers.values, _markerValue.x);
+
+		// Enter
+		var markerEnter = markerJoin.enter().append('g')
+			.attr('class', 'marker')
+			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
+			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
+			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
+
+		var lineEnter = markerEnter.append('line');
+		var textEnter = markerEnter.append('text');
+
+		lineEnter
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
+
+		textEnter
+			.attr('dy', '0em')
+			.attr('y', -3)
+			.attr('text-anchor', 'middle')
+			.text(_markerValue.label);
+
+		// Enter + Update
+		var lineUpdate = markerJoin.select('line');
+		var textUpdate = markerJoin.select('text');
+
+		lineEnter.merge(lineUpdate)
+			.attr('x1', function(d, i) { return _scale.x(_markerValue.x(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
+
+		textEnter.merge(textUpdate)
+			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
+
+		// Exit
+		markerJoin.exit().remove();
+
+	}
+
+
+	// Basic Getters/Setters
+	_instance.width = function(v) {
+		if (!arguments.length) { return _width; }
+		_width = v;
+		return _instance;
+	};
+	_instance.height = function(v) {
+		if (!arguments.length) { return _height; }
+		_height = v;
+		return _instance;
+	};
+	_instance.margin = function(v) {
+		if (!arguments.length) { return _margin; }
+		_margin = v;
+		return _instance;
+	};
+	_instance.curve = function(v) {
+		if (!arguments.length) { return _line.curve(); }
+		_line.curve(v);
+		_area.curve(v);
+		return _instance;
+	};
+	_instance.xAxis = function(v) {
+		if (!arguments.length) { return _axis.x; }
+		_axis.x = v;
+		return _instance;
+	};
+	_instance.yAxis = function(v) {
+		if (!arguments.length) { return _axis.y; }
+		_axis.y = v;
+		return _instance;
+	};
+	_instance.xScale = function(v) {
+		if (!arguments.length) { return _scale.x; }
+		_scale.x = v;
+		if (null != _axis.x) {
+			_axis.x.scale(v);
+		}
+		return _instance;
+	};
+	_instance.yScale = function(v) {
+		if (!arguments.length) { return _scale.y; }
+		_scale.y = v;
+		if (null != _axis.y) {
+			_axis.y.scale(v);
+		}
+		return _instance;
+	};
+	_instance.xValue = function(v) {
+		if (!arguments.length) { return _value.x; }
+		_value.x = v;
+		return _instance;
+	};
+	_instance.yValue = function(v) {
+		if (!arguments.length) { return _value.y; }
+		_value.y = v;
+		return _instance;
+	};
+	_instance.yExtent = function(v) {
+		if (!arguments.length) { return _extent.y; }
+		_extent.y = v;
+		return _instance;
+	};
+	_instance.xExtent = function(v) {
+		if (!arguments.length) { return _extent.x; }
+		_extent.x = v;
+		return _instance;
+	};
+	_instance.seriesKey = function(v) {
+		if(!arguments.length) { return _fn.seriesKey; }
+		_fn.seriesKey = v;
+		return _instance;
+	};
+	_instance.seriesLabel = function(v) {
+		if(!arguments.length) { return _fn.seriesLabel; }
+		_fn.seriesLabel = v;
+		return _instance;
+	};
+	_instance.seriesValues = function(v) {
+		if(!arguments.length) { return _fn.seriesValues; }
+		_fn.seriesValues = v;
+		return _instance;
+	};
+	_instance.markerXValue = function(v) {
+		if (!arguments.length) { return _markerValue.x; }
+		_markerValue.x = v;
+		return _instance;
+	};
+	_instance.markerLabel = function(v) {
+		if (!arguments.length) { return _markerValue.label; }
+		_markerValue.label = v;
+		return _instance;
+	};
 	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
+		if (!arguments.length) { return _dispatch; }
+		return _instance;
+	};
+	_instance.filter = function(v) {
+		if (!arguments.length) { return _brush.enabled(); }
+		_brush.enabled(v);
+		return _instance;
+	};
+	_instance.setFilter = function(v) {
+		setBrush(v);
+		return _instance;
+	};
+	_instance.getFilter = function() {
+		return getBrush();
+	};
+
+	return _instance;
+}
+
+function realtimeTimeline() {
+
+	// Default data delay, this is the difference between now and the latest tick shown on the timeline
+	var _delay = 0;
+
+	// Interval of the timeline, this is the amount of time being displayed by the timeline
+	var _interval = 60000;
+
+	// Is the timeline running?
+	var _running = false;
+	var _timeout = null;
+
+	// What is the refresh rate?
+	var _fps = 32;
+
+	var _instance = timeline();
+	_instance.yExtent().filter(function(d) {
+		var x = _instance.xValue()(d);
+		var xExtent = _instance.xExtent().getExtent();
+		return (x < xExtent[1] && x > xExtent[0]);
+	});
+
+	/*
+	 * This is the main update loop function. It is called every time the
+	 * _instance is updating to proceed through time.
+	 */
+	function tick() {
+		// If not running, let the loop die
+		if(!_running) return;
+
+		_instance.redraw();
+
+		// Schedule the next update
+		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
+	}
+
+	/*
+	 * Redraw the graphic
+	 */
+	var parentRedraw = _instance.redraw;
+	_instance.redraw = function() {
+		// Update the x domain (to the latest time window)
+		var now = new Date();
+		_instance.xExtent().overrideValue([ now - _delay - _interval, now - _delay ]);
+
+		parentRedraw();
+		return _instance;
+	};
+
+	_instance.start = function() {
+		if(_running) { return; }
+		_running = true;
+
+		tick();
+		return _instance;
+	};
+
+	_instance.stop = function() {
+		_running = false;
+
+		if(_timeout != null) {
+			window.clearTimeout(_timeout);
+		}
+		return _instance;
+	};
+
+	_instance.restart = function() {
+		_instance.stop();
+		_instance.start();
+		return _instance;
+	};
+
+	_instance.interval = function(v) {
+		if(!arguments.length) { return _interval; }
+		_interval = v;
+		return _instance;
+	};
+
+	_instance.delay = function(v) {
+		if(!arguments.length) { return _delay; }
+		_delay = v;
+		return _instance;
+	};
+
+	_instance.fps = function(v) {
+		if(!arguments.length) { return _fps; }
+		_fps = v;
+		if(_running) {
+			_instance.restart();
+		}
 		return _instance;
 	};
 
@@ -962,7 +1746,6 @@ function matrix() {
 function verticalBars() {
 
 	// Layout properties
-	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
 	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
@@ -979,15 +1762,12 @@ function verticalBars() {
 		},
 		click: function(d, i) {
 			_dispatch.call('click', this, d, i);
-		}
-	};
-
-	// Default accessors for the dimensions of the data
-	var _value = {
+		},
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; },
 		label: function(d) { return d.key + ' (' + d.value + ')'; }
 	};
+
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -999,7 +1779,7 @@ function verticalBars() {
 	var _extent = {
 		width: extent({
 			defaultValue: [ 0, 10 ],
-			getValue: _value.value
+			getValue: function(d, i) { return _fn.value(d, i); }
 		})
 	};
 
@@ -1040,7 +1820,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([ 0, _width - _margin.right - _margin.left ]);
+		_scale.x.range([ 0, _width ]);
 
 		return _instance;
 	};
@@ -1059,14 +1839,14 @@ function verticalBars() {
 
 		// Data Join
 		var bar = _element.div.selectAll('div.bar')
-			.data(_data, _value.key);
+			.data(_data, _fn.key);
 
 		// Update Only
 
 		// Enter
 		var barEnter = bar.enter().append('div')
 			.attr('class', 'bar')
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
 			.on('mouseover', _fn.mouseover)
 			.on('mouseout', _fn.mouseout)
@@ -1079,24 +1859,24 @@ function verticalBars() {
 		// Enter + Update
 		barEnter.merge(bar).transition().duration(_duration)
 			.style('opacity', '1')
-			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
-			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
-			.style('left', _margin.left + 'px');
+			.style('width', function(d, i) { return _scale.x(_fn.value(d, i)) + 'px'; })
+			.style('top', function(d, i) { return (_scale.y(i)) + 'px'; })
+			.style('left', '0px');
 
 		barLabel.merge(bar.select('div.bar-label'))
-			.html(_value.label)
+			.html(_fn.label)
 			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
 
 		// Exit
 		bar.exit()
 			.transition().duration(_duration)
 			.style('opacity', '0.01')
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px' )
 			.remove();
 
 		// Update the size of the parent div
 		_element.div
-			.style('height', (_margin.bottom + _margin.top + _scale.y.range()[1]) + 'px');
+			.style('height', (_scale.y.range()[1]) + 'px');
 
 		return _instance;
 	};
@@ -1118,30 +1898,25 @@ function verticalBars() {
 		_barPadding = v;
 		return _instance;
 	};
-	_instance.margin = function(v) {
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
 	_instance.key = function(v) {
-		if(!arguments.length) { return _value.key; }
-		_value.key = v;
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
 		return _instance;
 	};
 	_instance.value = function(v) {
-		if(!arguments.length) { return _value.value; }
-		_value.value = v;
-		_extent.width.getValue(v);
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
 		return _instance;
 	};
 	_instance.label = function(v) {
-		if(!arguments.length) { return _value.label; }
-		_value.label = v;
+		if(!arguments.length) { return _fn.label; }
+		_fn.label = v;
 		return _instance;
 	};
 	_instance.widthExtent = function(v) {
 		if(!arguments.length) { return _extent.width; }
 		_extent.width = v;
+		_extent.width.getValue(function(d, i) { return _fn.value(d, i); });
 		return _instance;
 	};
 	_instance.dispatch = function(v) {
@@ -1160,6 +1935,8 @@ function verticalBars() {
 var chart = {
 	donut: donut,
 	matrix: matrix,
+	realtimeTimeline: realtimeTimeline,
+	timeline: timeline,
 	verticalBars: verticalBars
 };
 
@@ -1276,12 +2053,12 @@ function bins(config) {
 	function addData(dataToAdd) {
 		var prevCount = _dataCount;
 
-		dataToAdd.forEach(function(element) {
-			var i = getIndex(_fn.getKey(element));
+		dataToAdd.forEach(function(element, index) {
+			var i = getIndex(_fn.getKey(element, index));
 			if(i >= 0 && i < _data.length) {
-				var value = _fn.getValue(element);
+				var value = _fn.getValue(element, index);
 				var prevBinCount = _fn.countBin(_data[i]);
-				_fn.updateBin.call(model, _data[i], value);
+				_fn.updateBin.call(model, _data[i], value, index);
 				_dataCount += _fn.countBin(_data[i]) - prevBinCount;
 			}
 		});
@@ -1546,7 +2323,7 @@ function bins(config) {
  * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
  * Every time binSize elapses, updates the lwm to keep the bins shifting.
  */
-function rtBins(config) {
+function realtimeBins(config) {
 
 	/**
 	 * Private variables
@@ -1699,778 +2476,10 @@ function rtBins(config) {
 	return controller;
 }
 
-var controller = { rtBins: rtBins };
+var controller = { realtimeBins: realtimeBins };
 
 var model = {
 	bins: bins
-};
-
-function timelineBrush(config) {
-
-	/**
-	 * Private variables
-	 */
-
-	// The brush object
-	var _brush;
-
-	// The scale object to use for mapping between the domain and range
-	var _scale;
-
-	// Event dispatcher
-	var _dispatch = d3.dispatch('brush', 'start', 'end');
-
-	// The current state of the brush selection
-	var _selection = undefined;
-
-	// Enable or disable the brush
-	var _enabled = false;
-
-	// Flag to track programmatic changes
-	var _programmaticChange = false;
-
-
-	/**
-	 * Private Functions
-	 */
-
-	function setEnabled(v) {
-		// Should probably fire event for new brush state
-		_enabled = v;
-	}
-
-	function getEnabled() {
-		return _enabled && null != _brush;
-	}
-
-	/**
-	 * Convert a brushSelection to ms epoch time
-	 * @param brushSelection Null, or an array brushSelection that may be in either Date or ms epoch
-	 *        time representation
-	 * @returns {*} Brush selection in ms epoch time form
-	 */
-	function convertSelection(selection) {
-		if(null != selection && Array.isArray(selection)) {
-			selection = selection.map(function(d) { return +d; });
-		}
-
-		return selection;
-	}
-
-	/**
-	 * Clean selection to make sure it's valid or set it to undefined if it's invalid
-	 * @param selection
-	 * @returns {*}
-	 */
-	function cleanSelection(selection) {
-		if(!Array.isArray(selection) || selection.length != 2 || isNaN(selection[0]) || isNaN(selection[1])) {
-			selection = undefined;
-		}
-
-		return selection;
-	}
-
-	/**
-	 * Wrapper for event handler to filter out duplicate events
-	 * @param eventType
-	 * @returns {Function}
-	 */
-	function eventFilter(eventType) {
-		return function(args) {
-
-			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
-			var o = _selection;
-
-			// Fire the event if the extents are different
-			var duplicateEvent = n === o || (null != n && null != o && n[0] === o[0] && n[1] === o[1]);
-			var fireEvent = !(duplicateEvent && _programmaticChange);
-
-			// Store the new selection only on the 'end' event
-			if(eventType === 'end') {
-				// Reset the selection
-				_selection = n;
-
-				// Reset the flag
-				_programmaticChange = false;
-			}
-
-			// Suppress event if it's duplicate and programmatic
-			if(fireEvent) {
-				_dispatch.apply(eventType, this, args);
-			}
-		}
-	}
-
-	function getSelection(node) {
-		var selection = undefined;
-
-		if(_enabled && null != node && null != _scale) {
-			selection = d3.brushSelection(node);
-
-			if (null != selection && Array.isArray(selection)) {
-				selection = convertSelection(selection.map(_scale.invert));
-			}
-			else {
-				selection = undefined;
-			}
-		}
-
-		return selection;
-	}
-
-	function setSelection(group, v) {
-		v = cleanSelection(v);
-
-		var clearFilter = (null == v || v[0] >= v[1]);
-
-		// either clear the filter or move it
-		_programmaticChange = true;
-		if(clearFilter) {
-			_brush.move(group, undefined);
-		}
-		else {
-			_brush.move(group, v.map(_scale));
-		}
-	}
-
-	function _instance(config) {
-		if (null != config) {
-			if (null != config.brush) {
-				_brush = config.brush;
-				_brush
-					.on('brush', eventFilter('brush'))
-					.on('start', eventFilter('start'))
-					.on('end', eventFilter('end'));
-			}
-			else {
-				throw new Error('Must provide a brush');
-			}
-
-			if (null != config.scale) {
-				_scale = config.scale;
-			}
-			else {
-				throw new Error('Must provide a scale');
-			}
-
-			if (null != config.enabled) { setEnabled(config.enabled); }
-		}
-	}
-
-
-	/**
-	 * Public API
-	 */
-
-	_instance.scale = function(v) {
-		if(!arguments.length) { return _scale; }
-		_scale = v;
-		return _instance;
-	};
-
-	_instance.dispatch = function() {
-		return _dispatch;
-	};
-
-	_instance.brush = function() {
-		return _brush;
-	};
-
-	// Get/Set enabled state
-	_instance.enabled = function(v) {
-		if(!arguments.length) { return getEnabled(); }
-		setEnabled(v);
-		return _instance;
-	};
-
-	_instance.getSelection = function(node) {
-		return getSelection(node);
-	};
-
-	_instance.setSelection = function(group, v) {
-		return setSelection(group, v);
-	};
-
-	// Initialize the model
-	_instance(config);
-
-	return _instance;
-}
-
-function line() {
-
-	var _id = 'timeline_line_' + Date.now();
-
-	// Margin between the main plot group and the svg border
-	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
-
-	// Height and width of the SVG element
-	var _height = 100, _width = 600;
-
-	// Default accessors for the dimensions of the data
-	var _value = {
-		x: function(d) { return d[0]; },
-		y: function(d) { return d[1]; }
-	};
-
-	// Accessors for the positions of the markers
-	var _markerValue = {
-		x: function(d, i) { return d[0]; },
-		label: function(d, i) { return d[1]; }
-	};
-
-	// Extent configuration for x and y dimensions of plot
-	var now = Date.now();
-	var _extent = {
-		x: extent({
-			defaultValue: [ now - 60000*5, now ],
-			getValue: function(d) { return d[0]; }
-		}),
-		y: extent({
-			getValue: function(d) { return d[1]; }
-		})
-	};
-	var _multiExtent = multiExtent().values(function(d) { return d.data; });
-
-	// Default scales for x and y dimensions
-	var _scale = {
-		x: d3.scaleTime(),
-		y: d3.scaleLinear()
-	};
-
-	// Default Axis definitions
-	var _axis = {
-		x: d3.axisBottom().scale(_scale.x),
-		y: d3.axisLeft().scale(_scale.y).ticks(3)
-	};
-
-	// Storage for commonly used DOM elements
-	var _element = {
-		svg: undefined,
-		g: {
-			container: undefined,
-			plots: undefined,
-			xAxis: undefined,
-			yAxis: undefined,
-			markers: undefined,
-			brush: undefined
-		},
-		plotClipPath: undefined,
-		markerClipPath: undefined
-	};
-
-	// Line generator for the plot
-	var _line = d3.line();
-	_line.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
-	});
-	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
-	});
-
-	// Area generator for the plot
-	var _area = d3.area();
-	_area.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
-	});
-	_area.y1(function(d, i) {
-		return _scale.y(_value.y(d, i));
-	});
-
-
-	// Brush Management
-	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
-	_brush.dispatch()
-		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
-		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
-
-
-
-	/**
-	 * Get the current brush state in terms of the x data domain, in ms epoch time
-	 */
-	function getBrush() {
-
-		// Try to get the node from the brush group selection
-		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
-
-		// Get the current brush selection
-		return _brush.getSelection(node);
-
-	}
-
-	/**
-	 * Set the current brush state in terms of the x data domain
-	 * @param v The new value of the brush
-	 *
-	 */
-	function setBrush(v) {
-		_brush.setSelection(_element.g.brush, v);
-	}
-
-	/**
-	 * Update the state of the brush (as part of redrawing everything)
-	 *
-	 * The purpose of this function is to update the state of the brush to reflect changes
-	 * to the rest of the chart as part of a normal update/redraw cycle. When the x extent
-	 * changes, the brush needs to move to stay correctly aligned with the x axis. Normally,
-	 * we are only updating the drawn position of the brush, so the brushSelection doesn't
-	 * actually change. However, if the change results in the brush extending partially or
-	 * wholly outside of the x extent, we might have to clip or clear the brush, which will
-	 * result in filter change events being propagated.
-	 *
-	 * @param previousExtent The previous state of the brush extent. Must be provided to
-	 *        accurately determine the extent of the brush in terms of the x data domain
-	 */
-	function updateBrush(previousExtent) {
-
-		// If there was no previous extent, then there is no brush to update
-		if (null != previousExtent) {
-
-			// Derive the overall plot extent from the collection of series
-			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
-
-			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
-
-				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var newExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
-				setBrush(newExtent);
-
-			}
-			else {
-				// There is no plot/data so just clear the filter
-				setBrush(undefined);
-			}
-		}
-
-		_element.g.brush
-			.style('display', (_brush.enabled())? 'unset' : 'none')
-			.call(_brush.brush());
-	}
-
-
-	// The dispatch object and all events
-	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
-
-	// The main data array
-	var _data = [];
-
-	// Markers data
-	var _markers = {
-		values: []
-	};
-
-	// Chart create/init method
-	function _instance(selection) {}
-
-
-	/**
-	 * Initialize the chart (only called once). Performs all initial chart creation/setup
-	 *
-	 * @param container The container element to which to apply the chart
-	 * @returns {_instance} Instance of the chart
-	 */
-	_instance.init = function(container) {
-		// Create a container div
-		_element.div = container.append('div').attr('class', 'sentio timeline');
-
-		// Create the SVG element
-		_element.svg = _element.div.append('svg');
-
-		// Add the defs and add the clip path definition
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
-
-		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
-
-		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// Add the filter brush element
-		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if (!arguments.length) { return _data; }
-		_data = (null != v)? v : [];
-
-		return _instance;
-	};
-
-	/*
-	 * Set the markers data
-	 */
-	_instance.markers = function(v) {
-		if (!arguments.length) { return _markers.values; }
-		_markers.values = (null != v)? v : [];
-		return _instance;
-	};
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-
-		// Set up the scales
-		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
-		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
-
-		// Append the clip path
-		_element.plotClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
-
-		// Update the positions of the axes
-		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
-
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
-
-		// Update the size of the brush
-		_element.g.brush
-			.selectAll('rect')
-			.attr('y', 0).attr('x', 0)
-			.attr('height', _width - _margin.left - _margin.right)
-			.attr('height', _height - _margin.top - _margin.bottom + 4);
-
-		_brush.brush()
-			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
-
-		return _instance;
-	};
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-
-		// Need to grab the brush extent before we change anything
-		var brushSelection = getBrush();
-
-		// Update the x domain (to the latest time window)
-		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
-
-		// Update the y domain (based on configuration and data)
-		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
-
-		// Update the plot elements
-		updateAxes();
-		updateLine();
-		updateMarkers();
-		updateBrush(brushSelection);
-
-		return _instance;
-	};
-
-	function updateAxes() {
-		if (null != _axis.x) {
-			_element.g.xAxis.call(_axis.x);
-		}
-		if (null != _axis.y) {
-			_element.g.yAxis.call(_axis.y);
-		}
-	}
-
-	function updateLine() {
-
-		// Join
-		var plotJoin = _element.g.plots
-			.selectAll('.plot')
-			.data(_data, function(d) {
-				return d.key;
-			});
-
-		// Enter
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
-
-		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
-
-		var lineUpdate = plotJoin.select('.line');
-		var areaUpdate = plotJoin.select('.area');
-
-		// Enter + Update
-		lineEnter.merge(lineUpdate).datum(function(d) { return d.data; }).attr('d', _line);
-		areaEnter.merge(areaUpdate).datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
-
-		// Exit
-		var plotExit = plotJoin.exit();
-		plotExit.remove();
-
-	}
-
-	function updateMarkers() {
-
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers.values, function(d) {
-				return _markerValue.x(d);
-			});
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
-			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
-			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
-
-		var lineEnter = markerEnter.append('line');
-		var textEnter = markerEnter.append('text');
-
-		lineEnter
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		textEnter
-			.attr('dy', '0em')
-			.attr('y', -3)
-			.attr('text-anchor', 'middle')
-			.text(function(d) { return _markerValue.label(d); });
-
-		// Enter + Update
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
-
-		lineEnter.merge(lineUpdate)
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		textEnter.merge(textUpdate)
-			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		// Exit
-		markerJoin.exit().remove();
-
-	}
-
-
-	// Basic Getters/Setters
-	_instance.width = function(v) {
-		if (!arguments.length) { return _width; }
-		_width = v;
-		return _instance;
-	};
-	_instance.height = function(v) {
-		if (!arguments.length) { return _height; }
-		_height = v;
-		return _instance;
-	};
-	_instance.margin = function(v) {
-		if (!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
-	_instance.curve = function(v) {
-		if (!arguments.length) { return _line.curve(); }
-		_line.curve(v);
-		_area.curve(v);
-		return _instance;
-	};
-	_instance.xAxis = function(v) {
-		if (!arguments.length) { return _axis.x; }
-		_axis.x = v;
-		return _instance;
-	};
-	_instance.yAxis = function(v) {
-		if (!arguments.length) { return _axis.y; }
-		_axis.y = v;
-		return _instance;
-	};
-	_instance.xScale = function(v) {
-		if (!arguments.length) { return _scale.x; }
-		_scale.x = v;
-		if (null != _axis.x) {
-			_axis.x.scale(v);
-		}
-		return _instance;
-	};
-	_instance.yScale = function(v) {
-		if (!arguments.length) { return _scale.y; }
-		_scale.y = v;
-		if (null != _axis.y) {
-			_axis.y.scale(v);
-		}
-		return _instance;
-	};
-	_instance.xValue = function(v) {
-		if (!arguments.length) { return _value.x; }
-		_value.x = v;
-		return _instance;
-	};
-	_instance.yValue = function(v) {
-		if (!arguments.length) { return _value.y; }
-		_value.y = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v) {
-		if (!arguments.length) { return _extent.y; }
-		_extent.y = v;
-		return _instance;
-	};
-	_instance.xExtent = function(v) {
-		if (!arguments.length) { return _extent.x; }
-		_extent.x = v;
-		return _instance;
-	};
-	_instance.markerXValue = function(v) {
-		if (!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
-		return _instance;
-	};
-	_instance.markerLabelValue = function(v) {
-		if (!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
-		return _instance;
-	};
-	_instance.dispatch = function(v) {
-		if (!arguments.length) { return _dispatch; }
-		return _instance;
-	};
-	_instance.filter = function(v) {
-		if (!arguments.length) { return _brush.enabled(); }
-		_brush.enabled(v);
-		return _instance;
-	};
-	_instance.setFilter = function(v) {
-		setBrush(v);
-		return _instance;
-	};
-	_instance.getFilter = function() {
-		return getBrush();
-	};
-
-	return _instance;
-}
-
-function timeline() {
-
-	// Default data delay, this is the difference between now and the latest tick shown on the timeline
-	var _delay = 0;
-
-	// Interval of the timeline, this is the amount of time being displayed by the timeline
-	var _interval = 60000;
-
-	// Is the timeline running?
-	var _running = false;
-	var _timeout = null;
-
-	// What is the refresh rate?
-	var _fps = 32;
-
-	var _instance = line();
-	_instance.yExtent().filter(function(d) {
-		var x = _instance.xValue()(d);
-		var xExtent = _instance.xExtent().getExtent();
-		return (x < xExtent[1] && x > xExtent[0]);
-	});
-
-	/*
-	 * This is the main update loop function. It is called every time the
-	 * _instance is updating to proceed through time.
-	 */
-	function tick() {
-		// If not running, let the loop die
-		if(!_running) return;
-
-		_instance.redraw();
-
-		// Schedule the next update
-		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
-	}
-
-	/*
-	 * Redraw the graphic
-	 */
-	var parentRedraw = _instance.redraw;
-	_instance.redraw = function() {
-		// Update the x domain (to the latest time window)
-		var now = new Date();
-		_instance.xExtent().overrideValue([ now - _delay - _interval, now - _delay ]);
-
-		parentRedraw();
-		return _instance;
-	};
-
-	_instance.start = function() {
-		if(_running) { return; }
-		_running = true;
-
-		tick();
-		return _instance;
-	};
-
-	_instance.stop = function() {
-		_running = false;
-
-		if(_timeout != null) {
-			window.clearTimeout(_timeout);
-		}
-		return _instance;
-	};
-
-	_instance.restart = function() {
-		_instance.stop();
-		_instance.start();
-		return _instance;
-	};
-
-	_instance.interval = function(v) {
-		if(!arguments.length) { return _interval; }
-		_interval = v;
-		return _instance;
-	};
-
-	_instance.delay = function(v) {
-		if(!arguments.length) { return _delay; }
-		_delay = v;
-		return _instance;
-	};
-
-	_instance.fps = function(v) {
-		if(!arguments.length) { return _fps; }
-		_fps = v;
-		if(_running) {
-			_instance.restart();
-		}
-		return _instance;
-	};
-
-	return _instance;
-}
-
-var realtime = {
-	timeline: timeline
-};
-
-var timeline$1 = {
-	line: line
 };
 
 var util = {
@@ -2482,8 +2491,6 @@ var util = {
 exports.chart = chart;
 exports.controller = controller;
 exports.model = model;
-exports.realtime = realtime;
-exports.timeline = timeline$1;
 exports.util = util;
 
 Object.defineProperty(exports, '__esModule', { value: true });

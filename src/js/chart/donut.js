@@ -27,22 +27,21 @@ function donut() {
 
 	// Function handlers
 	var _fn = {
-		updateActiveElement: function(d) {
+		getEventElement: function(d, i) {
+			return (null != d && null != d.data)? d.data : d;
+		},
+		updateActiveElement: function(d, i) {
 			var legendEntries = _element.gLegend.selectAll('g.entry');
 			var arcs = _element.gChart.selectAll('path.arc');
 
-			if(null != d && null != d.data) {
-				d = d.data;
-			}
-
 			if(null != d) {
 				// Set the highlight on the row
-				var key = _fn.key(d);
-				legendEntries.classed('active', function(e) {
-					return _fn.key(e) == key;
+				var key = _fn.key(d, i);
+				legendEntries.classed('active', function(e, ii) {
+					return _fn.key(e, ii) == key;
 				});
-				arcs.classed('active', function(e) {
-					return _fn.key(e.data) == key;
+				arcs.classed('active', function(e, ii) {
+					return _fn.key(e.data, ii) == key;
 				});
 			}
 			else {
@@ -51,19 +50,22 @@ function donut() {
 			}
 		},
 		mouseover: function(d, i) {
-			_fn.updateActiveElement(d);
+			d = _fn.getEventElement(d, i);
+			_fn.updateActiveElement(d, i);
 			_dispatch.call('mouseover', this, d, i);
 		},
 		mouseout: function(d, i) {
+			d = _fn.getEventElement(d, i);
 			_fn.updateActiveElement();
 			_dispatch.call('mouseout', this, d, i);
 		},
 		click: function(d, i) {
+			d = _fn.getEventElement(d, i);
 			_dispatch.call('click', this, d, i);
 		},
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; },
+		label: function(d) { return d.key + ' (' + d.value + ')'; }
 	};
 
 
@@ -73,7 +75,7 @@ function donut() {
 
 	var _layout = {
 		arc: d3.arc().padAngle(0.01),
-		pie: d3.pie().value(_fn.value).sort(null)
+		pie: d3.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
 	};
 
 	// elements
@@ -233,8 +235,7 @@ function donut() {
 		/*
 		 * Join the data
 		 */
-		var gLegendGroup = _element.gLegend.selectAll('g.entry')
-			.data(_data, function(d, i) { return _fn.key(d, i); });
+		var gLegendGroup = _element.gLegend.selectAll('g.entry').data(_data, _fn.key);
 
 		/*
 		 * Enter Only
@@ -263,11 +264,10 @@ function donut() {
 		/*
 		 * Enter + Update
 		 */
-		text.merge(gLegendGroup.select('text'))
-			.text(function(d, i) { return _fn.label(d, i); });
+		text.merge(gLegendGroup.select('text')).text(_fn.label);
 
 		rect.merge(gLegendGroup.select('rect'))
-			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
+			.style('fill', function(d, i) { return _scale.color(_fn.key(d, i)); });
 
 		// Position each rect on both enter and update to fully account for changing widths and sizes
 		gLegendGroupEnter.merge(gLegendGroup)
@@ -323,7 +323,6 @@ function donut() {
 	_instance.value = function(v) {
 		if(!arguments.length) { return _fn.value; }
 		_fn.value = v;
-		_layout.pie.value(v);
 		return _instance;
 	};
 	_instance.label = function(v) {
@@ -331,15 +330,14 @@ function donut() {
 		_fn.label = v;
 		return _instance;
 	};
-	_instance.color = function(v) {
+	_instance.colorScale = function(v) {
 		if(!arguments.length) { return _scale.color; }
 		_scale.color = v;
 		return _instance;
 	};
 
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
+	_instance.dispatch = function() {
+		return _dispatch;
 	};
 
 	_instance.legend = function(v) {

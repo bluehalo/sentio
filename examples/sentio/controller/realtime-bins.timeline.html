@@ -14,12 +14,13 @@
 </head>
 <body>
 	<div id="chart"></div>
-	<button onClick="doPlay()">Play</button><br/>
-	<button onClick="doPause()">Pause</button><br/>
+	<button onClick="doPlay()">Play</button>
+	<button onClick="doPause()">Pause</button>
+	<br/>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.realtime.timeline()
+		var timeline = sentio.chart.realtimeTimeline()
 			.height(100)
 			.width(600)
 			.interval(60000)
@@ -27,10 +28,10 @@
 				overrideValue: [0, undefined],
 				getValue: function(d) { return d[1]; }
 			}))
-			.interpolation('basis')
+			.curve(d3.curveBasis)
 			.delay(0);
 
-		var controller = sentio.controller.rtBins({
+		var controller = sentio.controller.realtimeBins({
 			binCount: 60,
 			binSize: 1000
 		});
@@ -40,7 +41,7 @@
 			.updateBin(function(bin, d) { bin[1] += d; })
 			.createSeed(function() { return 0; });
 
-		timeline.init(timelineDiv).data([{ key: 'series1', data: controller.bins() }]).redraw();
+		timeline.init(timelineDiv).data([{ key: 'series1', values: controller.bins() }]).redraw();
 		timeline.start();
 
 		function doSetCount() {

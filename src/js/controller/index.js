@@ -1,5 +1,5 @@
-import { rtBins } from './realtime_bins';
+import { realtimeBins } from './realtimeBins';
 
-var controller = { rtBins: rtBins };
+var controller = { realtimeBins: realtimeBins };
 
 export { controller };

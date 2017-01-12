@@ -127,6 +127,7 @@ function timelineBrush(config) {
 	}
 
 	function _instance(config) {
+
 		if (null != config) {
 			if (null != config.brush) {
 				_brush = config.brush;
@@ -147,6 +148,9 @@ function timelineBrush(config) {
 			}
 
 			if (null != config.enabled) { setEnabled(config.enabled); }
+		}
+		else {
+			throw new Error('Must provide a brush and a scale');
 		}
 	}
 
