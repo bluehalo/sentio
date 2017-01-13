@@ -10,14 +10,14 @@ describe('Multi Extent', function() {
 		context('when complete', function() {
 			it('should not throw an error when there is no configured extent', function() {
 				(function() {
-					sentio.util.multiExtent();
+					sentio.model.multiExtent();
 				}).should.not.throw();
 			});
 
 			it('should not throw an error when configuring', function() {
 				(function() {
-					sentio.util.multiExtent({
-						extent: sentio.util.extent()
+					sentio.model.multiExtent({
+						extent: sentio.model.extent()
 					});
 				}).should.not.throw();
 			});
@@ -28,8 +28,8 @@ describe('Multi Extent', function() {
 
 	describe('Usage', function() {
 		context('when configured correctly', function() {
-			var extentController = sentio.util.multiExtent({
-				extent: sentio.util.extent({
+			var extentController = sentio.model.multiExtent({
+				extent: sentio.model.extent({
 					defaultValue: [ 0, 1 ]
 				})
 			});
@@ -60,8 +60,8 @@ describe('Multi Extent', function() {
 		});
 
 		context('when configured with a custom values accessor', function() {
-			var extentController = sentio.util.multiExtent({
-				extent: sentio.util.extent({
+			var extentController = sentio.model.multiExtent({
+				extent: sentio.model.extent({
 					defaultValue: [ 0, 1 ]
 				})
 			}).values(function(d) { return d; } );

@@ -60,8 +60,8 @@ function multiExtent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e) {
-			var tExtent = _extent.getExtent(_fn.values(e));
+		data.forEach(function(e, i) {
+			var tExtent = _extent.getExtent(_fn.values(e, i));
 			if(null == toReturn) {
 				toReturn = tExtent;
 			}

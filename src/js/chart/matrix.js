@@ -1,5 +1,5 @@
-import { extent } from '../util/extent';
-import { multiExtent } from '../util/multi_extent';
+import { extent } from '../model/extent';
+import { multiExtent } from '../model/multi-extent';
 
 function matrix() {
 
@@ -16,13 +16,13 @@ function matrix() {
 
 	// Function handlers
 	var _fn = {
-		updateActiveSeries: function(d) {
+		updateActiveSeries: function(d, i) {
 			var seriesLabels = _element.g.chart.selectAll('.row text');
 
 			if(null != d) {
 				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d);
-				seriesLabels.classed('active', function(series, i) { return _fn.seriesKey(series) == seriesKey; });
+				var seriesKey = _fn.seriesKey(d, i);
+				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
 			}
 			else {
 				// Now update the style
@@ -30,7 +30,7 @@ function matrix() {
 			}
 		},
 		rowMouseover: function(d, i) {
-			_fn.updateActiveSeries(d);
+			_fn.updateActiveSeries(d, i);
 			_dispatch.call('rowMouseover', this, d, i);
 		},
 		rowMouseout: function(d, i) {
@@ -58,8 +58,8 @@ function matrix() {
 
 	// Extents
 	var _extent = {
-		x: extent().getValue(_fn.key),
-		value: extent().getValue(_fn.value),
+		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
+		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
 		multi: multiExtent()
 	};
 
@@ -138,7 +138,11 @@ function matrix() {
 
 		// Configure the scales
 		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
-		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
+		_scale.color.domain(
+			_extent.multi
+				.values(_fn.seriesValues)
+				.extent(_extent.value)
+				.getExtent(_data));
 
 		// Draw the x axis
 		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
@@ -213,7 +217,8 @@ function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = rowEnterUpdate.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate.selectAll('rect.cell')
+			.data(_fn.seriesValues, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -295,14 +300,12 @@ function matrix() {
 	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
-		_extent.x.getValue(v);
 		_fn.key = v;
 		return _instance;
 	};
 	_instance.value = function(v) {
 		if(!arguments.length) { return _fn.value; }
 		_fn.value = v;
-		_extent.value.getValue(v);
 		return _instance;
 	};
 
@@ -326,22 +329,18 @@ function matrix() {
 	_instance.xExtent = function(v) {
 		if(!arguments.length) { return _extent.x; }
 		_extent.x = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v) {
-		if(!arguments.length) { return _extent.y; }
-		_extent.y = v;
+		_extent.x.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 	_instance.valueExtent = function(v) {
 		if(!arguments.length) { return _extent.value; }
 		_extent.value = v;
+		_extent.value.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
+	_instance.dispatch = function() {
+		return _dispatch;
 	};
 
 	return _instance;

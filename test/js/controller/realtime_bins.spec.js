@@ -12,7 +12,7 @@ describe('Realtime Bins Controller', function() {
 
 			it('should not throw an error', function() {
 				(function() {
-					controller = sentio.controller.rtBins({
+					controller = sentio.controller.realtimeBins({
 						binCount: 10,
 						binSize: 1
 					});
@@ -31,11 +31,11 @@ describe('Realtime Bins Controller', function() {
 		context('when incomplete', function() {
 			it('should throw an error', function() {
 				(function() {
-					sentio.controller.bins();
+					sentio.controller.realtimeBins();
 				}).should.throw();
 
 				(function() {
-					sentio.controller.bins({});
+					sentio.controller.realtimeBins({});
 				}).should.throw();
 			});
 		});

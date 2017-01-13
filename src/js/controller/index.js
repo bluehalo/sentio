@@ -1,5 +1,9 @@
-import { rtBins } from './realtime_bins';
+import { realtimeBins } from './realtime-bins';
+import { timelineBrush } from './timeline-brush'
 
-var controller = { rtBins: rtBins };
+var controller = {
+	realtimeBins: realtimeBins,
+	timelineBrush: timelineBrush
+};
 
 export { controller };

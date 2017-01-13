@@ -1,24 +1,4 @@
-/*! @asymmetrik/sentio-2.0.15 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/.sentio.bars-vertical {
-  position: relative; }
-
-.sentio.bars-vertical .bar {
-  background-color: #ddd;
-  color: #000;
-  font: 12px sans-serif;
-  overflow: visible;
-  position: absolute;
-  white-space: nowrap; }
-
-.sentio.bars-vertical .bar:hover {
-  background-color: #bbb; }
-
-.sentio.bars-vertical .bar-label {
-  display: inline-block;
-  margin: 5px;
-  overflow: hidden;
-  text-overflow: ellipsis; }
-
-.sentio.donut .legend {
+/*! @asymmetrik/sentio-3.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/.sentio.donut .legend {
   font: 12px sans-serif; }
 
 .sentio.donut .arc {
@@ -73,5 +53,25 @@ svg {
   fill-opacity: .125;
   shape-rendering: crispEdges;
   stroke: #fff; }
+
+.sentio.bars-vertical {
+  position: relative; }
+
+.sentio.bars-vertical .bar {
+  background-color: #ddd;
+  color: #000;
+  font: 12px sans-serif;
+  overflow: visible;
+  position: absolute;
+  white-space: nowrap; }
+
+.sentio.bars-vertical .bar:hover {
+  background-color: #bbb; }
+
+.sentio.bars-vertical .bar-label {
+  display: inline-block;
+  margin: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis; }
 
 /*# sourceMappingURL=sentio.css.map */

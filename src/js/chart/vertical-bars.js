@@ -1,9 +1,8 @@
-import { extent } from '../util/extent';
+import { extent } from '../model/extent';
 
 function verticalBars() {
 
 	// Layout properties
-	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
 	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
@@ -20,15 +19,12 @@ function verticalBars() {
 		},
 		click: function(d, i) {
 			_dispatch.call('click', this, d, i);
-		}
-	};
-
-	// Default accessors for the dimensions of the data
-	var _value = {
+		},
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; },
 		label: function(d) { return d.key + ' (' + d.value + ')'; }
 	};
+
 
 	// Default scales for x and y dimensions
 	var _scale = {
@@ -40,7 +36,7 @@ function verticalBars() {
 	var _extent = {
 		width: extent({
 			defaultValue: [ 0, 10 ],
-			getValue: _value.value
+			getValue: function(d, i) { return _fn.value(d, i); }
 		})
 	};
 
@@ -81,7 +77,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([ 0, _width - _margin.right - _margin.left ]);
+		_scale.x.range([ 0, _width ]);
 
 		return _instance;
 	};
@@ -100,14 +96,14 @@ function verticalBars() {
 
 		// Data Join
 		var bar = _element.div.selectAll('div.bar')
-			.data(_data, _value.key);
+			.data(_data, _fn.key);
 
 		// Update Only
 
 		// Enter
 		var barEnter = bar.enter().append('div')
 			.attr('class', 'bar')
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
 			.on('mouseover', _fn.mouseover)
 			.on('mouseout', _fn.mouseout)
@@ -120,24 +116,24 @@ function verticalBars() {
 		// Enter + Update
 		barEnter.merge(bar).transition().duration(_duration)
 			.style('opacity', '1')
-			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
-			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
-			.style('left', _margin.left + 'px');
+			.style('width', function(d, i) { return _scale.x(_fn.value(d, i)) + 'px'; })
+			.style('top', function(d, i) { return (_scale.y(i)) + 'px'; })
+			.style('left', '0px');
 
 		barLabel.merge(bar.select('div.bar-label'))
-			.html(_value.label)
+			.html(_fn.label)
 			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
 
 		// Exit
 		bar.exit()
 			.transition().duration(_duration)
 			.style('opacity', '0.01')
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px' )
 			.remove();
 
 		// Update the size of the parent div
 		_element.div
-			.style('height', (_margin.bottom + _margin.top + _scale.y.range()[1]) + 'px');
+			.style('height', (_scale.y.range()[1]) + 'px');
 
 		return _instance;
 	};
@@ -159,30 +155,25 @@ function verticalBars() {
 		_barPadding = v;
 		return _instance;
 	};
-	_instance.margin = function(v) {
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
 	_instance.key = function(v) {
-		if(!arguments.length) { return _value.key; }
-		_value.key = v;
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
 		return _instance;
 	};
 	_instance.value = function(v) {
-		if(!arguments.length) { return _value.value; }
-		_value.value = v;
-		_extent.width.getValue(v);
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
 		return _instance;
 	};
 	_instance.label = function(v) {
-		if(!arguments.length) { return _value.label; }
-		_value.label = v;
+		if(!arguments.length) { return _fn.label; }
+		_fn.label = v;
 		return _instance;
 	};
 	_instance.widthExtent = function(v) {
 		if(!arguments.length) { return _extent.width; }
 		_extent.width = v;
+		_extent.width.getValue(function(d, i) { return _fn.value(d, i); });
 		return _instance;
 	};
 	_instance.dispatch = function(v) {

@@ -4,7 +4,7 @@ import { bins } from '../model/bins';
  * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
  * Every time binSize elapses, updates the lwm to keep the bins shifting.
  */
-function rtBins(config) {
+function realtimeBins(config) {
 
 	/**
 	 * Private variables
@@ -157,4 +157,4 @@ function rtBins(config) {
 	return controller;
 }
 
-export { rtBins };
+export { realtimeBins };

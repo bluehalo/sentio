@@ -49,7 +49,7 @@
 		updateData();
 
 		function updateColors() {
-			chart.color(colorOptions[++csi % colorOptions.length]).redraw();
+			chart.colorScale(colorOptions[++csi % colorOptions.length]).redraw();
 		}
 
 		function updateData() {
