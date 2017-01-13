@@ -2,18 +2,24 @@
 
 declare namespace sentio {
 
-	/*
-	 * Charts
-	 */
-	namespace chart {
+	namespace internal {
 
-		import Extent = sentio.util.Extent;
 		interface Margin {
 			top: number,
 			right: number,
 			bottom: number,
 			left: number
 		}
+
+		type SimpleFn<T> = () => T;
+		type ObjectFn<T> = (d: any) => T;
+		type ObjectIndexFn<T> = (d: any, i: number) => T;
+		type UnionFn<T> = SimpleFn<T> | ObjectFn<T> | ObjectIndexFn<T>;
+
+		type BinSimpleFn<T> = (bin: any) => T;
+		type BinObjectFn<T> = (bin: any, d: any) => T;
+		type BinObjectIndexFn<T> = (bin: any, d: any, i: number) => T;
+		type BinUnionFn<T> = BinSimpleFn<T> | BinObjectFn<T> | BinObjectIndexFn<T>;
 
 		interface BaseChart {
 			margin(): Margin;
@@ -33,26 +39,26 @@ declare namespace sentio {
 		}
 
 		interface MultiSeriesChart {
-			seriesKey(): (d: any) => string;
-			seriesKey(v: (d: any) => string): this;
+			seriesKey(): UnionFn<string | number>;
+			seriesKey(v: UnionFn<string | number>): this;
 
-			seriesValues(): (d: any) => any[];
-			seriesValues(v: (d: any) => any[]): this;
+			seriesValues(): UnionFn<any[]>;
+			seriesValues(v: UnionFn<any[]>): this;
 
-			seriesLabel(): (d: any) => string;
-			seriesLabel(v: (d: any) => string): this;
+			seriesLabel(): UnionFn<string>;
+			seriesLabel(v: UnionFn<string>): this;
 		}
 
 		interface KeyValueChart {
-			key(): (v: any) => string;
-			key(v: (v: any) => string): this;
+			key(): UnionFn<string | number>;
+			key(v: UnionFn<string | number>): this;
 
-			value(): (v: any) => number;
-			value(v: (v: any) => number): this;
+			value(): UnionFn<any>;
+			value(v: UnionFn<any>): this;
 		}
 		interface LabelChart {
-			label(): (v: any) => string;
-			label(v: (v: any) => string): this;
+			label(): UnionFn<string>;
+			label(v: UnionFn<string>): this;
 		}
 
 		interface WidthChart {
@@ -64,9 +70,16 @@ declare namespace sentio {
 			height(v: number): this;
 		}
 
+	}
+
+	/*
+	 * Charts
+	 */
+	namespace chart {
 
 		export interface DonutChart
-			extends BaseChart, DurationChart, HeightChart, LabelChart, KeyValueChart, WidthChart {
+			extends internal.BaseChart, internal.DurationChart, internal.HeightChart,
+				internal.LabelChart, internal.KeyValueChart, internal.WidthChart {
 
 			innerRadiusRatio(): number;
 			innerRadiusRatio(v: number): this;
@@ -90,7 +103,8 @@ declare namespace sentio {
 
 
 		export interface MatrixChart
-			extends BaseChart, DurationChart, KeyValueChart, MultiSeriesChart {
+			extends internal.BaseChart, internal.DurationChart, internal.KeyValueChart,
+				internal.MultiSeriesChart {
 
 			cellSize(): number;
 			cellSize(v: number): this;
@@ -119,7 +133,8 @@ declare namespace sentio {
 
 
 		export interface VerticalBarsChart
-			extends BaseChart, DurationChart, WidthChart, KeyValueChart, LabelChart, DurationChart {
+			extends internal.BaseChart, internal.DurationChart, internal.WidthChart,
+				internal.KeyValueChart, internal.LabelChart, internal.DurationChart {
 
 			barHeight(): number;
 			barHeight(v: number): this;
@@ -136,7 +151,8 @@ declare namespace sentio {
 
 
 		export interface TimelineChart
-			extends BaseChart, HeightChart, MultiSeriesChart, WidthChart {
+			extends internal.BaseChart, internal.HeightChart, internal.MultiSeriesChart,
+				internal.WidthChart {
 
 			curve(): any;
 			curve(v: any): this;
@@ -168,16 +184,16 @@ declare namespace sentio {
 			markers(): any[];
 			markers(v: any[]): this;
 
-			markerXValue(): (d: any, i?: number) => number;
-			markerXValue(v: (d: any, i?: number) => number): this;
+			markerXValue(): internal.UnionFn<number>;
+			markerXValue(v: internal.UnionFn<number>): this;
 
-			markerLabel(): (d: any, i?: number) => string;
-			markerLabel(v: (d: any, i?: number) => string): this;
+			markerLabel(): internal.UnionFn<string | number>;
+			markerLabel(v: internal.UnionFn<string | number>): this;
 
 			filter(): boolean;
 			filter(v: boolean): this;
 
-			setFilter(v?: [number, number]): this;
+			setFilter(v?: [number, number] | null): this;
 			getFilter(): [number, number] | null;
 
 			dispatch(): any;
@@ -244,14 +260,14 @@ declare namespace sentio {
 			lwm(v: number): this;
 			hwm(v: number): this;
 
-			getKey(): (d: any, i?: number) => string;
-			getKey(v: (d: any, i?: number) => string): this;
+			getKey(): internal.UnionFn<string | number>;
+			getKey(v: internal.UnionFn<string | number>): this;
 
-			getValue(): (d: any, i?: number) => any;
-			getValue(v: (d: any, i?: number) => any): this;
+			getValue(): internal.UnionFn<any>;
+			getValue(v: internal.UnionFn<any>): this;
 
-			updateBin(): (bin: any, d?: any, i?: number) => void;
-			updateBin(v: (bin: any, d?: any, i?: number) => void): this;
+			updateBin(): internal.BinUnionFn<void>;
+			updateBin(v: internal.BinUnionFn<void>): this;
 
 			createSeed(): () => any;
 			createSeed(v: () => any): this;
@@ -283,10 +299,10 @@ declare namespace sentio {
 			lwm: number,
 
 			createSeed?: () => any,
-			getKey?: (d: any, i?: number) => any,
-			getValue?: (d: any, i?: number) => any,
-			updateBin?: (bin: any, d: any, i?: number) => any,
-			countBin?: (bin: any) => any,
+			getKey?: internal.UnionFn<string | number>,
+			getValue?: internal.UnionFn<any>,
+			updateBin?: internal.BinUnionFn<void>,
+			countBin?: (bin: any) => number,
 			afterAdd?: (bins: any[], currentcount: number, previousCount: number) => void,
 			afterUpdate?: (bins: any[], currentcount: number, previousCount: number) => void
 		}
@@ -334,25 +350,25 @@ declare namespace sentio {
 			/**
 			 * Get the 'getValue' accessor function
 			 */
-			getValue(): (d: any, i?: number) => number;
+			getValue(): internal.UnionFn<number>;
 
 			/**
 			 * Set the 'setValue' accessor function, which is used to teach the extent utility how to
 			 * get the value from the data array.
 			 * @param v
 			 */
-			getValue(v: (d: any, i?: number) => number): this;
+			getValue(v: internal.UnionFn<number>): this;
 
 			/**
 			 * Get the 'filter' function
 			 */
-			filter(): (d: any, i?: number) => boolean;
+			filter(): internal.UnionFn<boolean>;
 
 			/**
 			 * Set the 'filter' function, which is used to omit elements from the data array when calculating
 			 * the extent
 			 */
-			filter(v: (d: any, i?: number) => boolean): this;
+			filter(v: internal.UnionFn<boolean>): this;
 
 			/**
 			 * Get the extent given the data array and the current configuration of the extent utility
@@ -368,8 +384,8 @@ declare namespace sentio {
 		export class ExtentConfig {
 			defaultValue?: [ number, number ];
 			overrideValue?: [ number, number ];
-			getValue?: (d: any, i?: number) => number;
-			filter?: (d: any, i?: number) => boolean;
+			getValue?: internal.UnionFn<number>;
+			filter?: internal.UnionFn<boolean>;
 		}
 
 		/**
