@@ -1523,10 +1523,10 @@ function timeline() {
 
 		lineEnter.merge(lineUpdate)
 			.attr('x1', function(d, i) { return _scale.x(_markerValue.x(d, i)); })
-			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
+			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d)); });
 
 		textEnter.merge(textUpdate)
-			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d, i)); });
+			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d)); });
 
 		// Exit
 		markerJoin.exit().remove();
