@@ -1,4 +1,4 @@
-import { extent } from '../util/extent';
+import { extent } from '../model/extent';
 
 function verticalBars() {
 

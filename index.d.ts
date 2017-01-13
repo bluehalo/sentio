@@ -121,11 +121,11 @@ declare namespace sentio {
 			yScale(): any;
 			yScale(v: any): this;
 
-			xExtent(): util.Extent;
-			xExtent(v: util.Extent): this;
+			xExtent(): model.Extent;
+			xExtent(v: model.Extent): this;
 
-			valueExtent(): util.Extent;
-			valueExtent(v: util.Extent): this;
+			valueExtent(): model.Extent;
+			valueExtent(v: model.Extent): this;
 
 			dispatch(): any;
 		}
@@ -142,8 +142,8 @@ declare namespace sentio {
 			barPadding(): number;
 			barPadding(v: number): this;
 
-			widthExtent(): util.Extent;
-			widthExtent(v: util.Extent): this;
+			widthExtent(): model.Extent;
+			widthExtent(v: model.Extent): this;
 
 			dispatch(): any;
 		}
@@ -175,11 +175,11 @@ declare namespace sentio {
 			yValue(): any;
 			yValue(v: any): this;
 
-			xExtent(): util.Extent;
-			xExtent(v: util.Extent): this;
+			xExtent(): model.Extent;
+			xExtent(v: model.Extent): this;
 
-			yExtent(): util.Extent;
-			yExtent(v: util.Extent): this;
+			yExtent(): model.Extent;
+			yExtent(v: model.Extent): this;
 
 			markers(): any[];
 			markers(v: any[]): this;
@@ -246,6 +246,24 @@ declare namespace sentio {
 		}
 		export function realtimeBins(config?: RealtimeBinsControllerConfig): RealtimeBinsController;
 
+		export interface TimelineBrush {
+			scale(): any;
+			scale(v: any): this;
+
+			brush(): any;
+
+			enabled(): boolean;
+			enabled(v: boolean): this;
+
+			getSelection(node: any): any;
+			setSelection(group: any, v: any): void;
+		}
+		export interface TimelineBrushConfig {
+			scale: any;
+			brush: any;
+		}
+		export function timelineBrush(config: TimelineBrushConfig): TimelineBrush;
+
 	}
 
 	/*
@@ -307,13 +325,6 @@ declare namespace sentio {
 			afterUpdate?: (bins: any[], currentcount: number, previousCount: number) => void
 		}
 		export function bins(config?: BinsModelConfig): BinsModel;
-
-	}
-
-	/*
-	 * Util package
-	 */
-	namespace util {
 
 		/**
 		 * Extent utility. Adds convenience for things like default values, clamping,
@@ -413,27 +424,8 @@ declare namespace sentio {
 		}
 		export function multiExtent(config?: MultiExtentConfig): MultiExtent;
 
-
-
-		export interface TimelineBrush {
-			scale(): any;
-			scale(v: any): this;
-
-			brush(): any;
-
-			enabled(): boolean;
-			enabled(v: boolean): this;
-
-			getSelection(node: any): any;
-			setSelection(group: any, v: any): void;
-		}
-		export interface TimelineBrushConfig {
-			scale: any;
-			brush: any;
-		}
-		export function timelineBrush(config: TimelineBrushConfig): TimelineBrush;
-
 	}
+
 }
 
 export = sentio;

@@ -1,6 +1,6 @@
-import { extent } from '../../util/extent';
-import { multiExtent } from '../../util/multi-extent';
-import { timelineBrush } from '../../util/timeline-brush';
+import { extent } from '../../model/extent';
+import { multiExtent } from '../../model/multi-extent';
+import { timelineBrush } from '../../controller/timeline-brush';
 
 function timeline() {
 

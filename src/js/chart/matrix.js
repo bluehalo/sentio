@@ -1,5 +1,5 @@
-import { extent } from '../util/extent';
-import { multiExtent } from '../util/multi-extent';
+import { extent } from '../model/extent';
+import { multiExtent } from '../model/multi-extent';
 
 function matrix() {
 

@@ -679,13 +679,13 @@ describe('Extent', function() {
 		context('when complete', function() {
 			it('should not throw an error when using defaults', function() {
 				(function() {
-					sentio.util.extent({});
+					sentio.model.extent({});
 				}).should.not.throw();
 			});
 
 			it('should not throw an error when configuring', function() {
 				(function() {
-					sentio.util.extent({
+					sentio.model.extent({
 						defaultValue: [ 0, 1 ],
 						overrideValue: [ 0, 10 ],
 						getValue: function(d) { return 0; },
@@ -699,7 +699,7 @@ describe('Extent', function() {
 		context('when incorrectly configured', function() {
 			it('should throw an error', function() {
 				(function() {
-					sentio.util.extent({
+					sentio.model.extent({
 						defaultValue: []
 					});
 				}).should.throw();
@@ -710,7 +710,7 @@ describe('Extent', function() {
 
 	describe('Usage', function() {
 		context('when configured with a default value', function() {
-			var extentController = sentio.util.extent({
+			var extentController = sentio.model.extent({
 				defaultValue: [ 0, 1 ]
 			});
 
@@ -740,7 +740,7 @@ describe('Extent', function() {
 		});
 
 		context('when configured with a override value', function() {
-			var extentController = sentio.util.extent({
+			var extentController = sentio.model.extent({
 				overrideValue: [ 0, 1 ]
 			});
 
@@ -783,7 +783,7 @@ describe('Extent', function() {
 		});
 
 		context('when configured with a partial override value', function() {
-			var extentController = sentio.util.extent({
+			var extentController = sentio.model.extent({
 				overrideValue: [ 0, undefined ]
 			});
 
@@ -826,6 +826,7 @@ describe('Extent', function() {
 		});
 	});
 });
+
 describe('Multi Extent', function() {
 	'use strict';
 
@@ -838,14 +839,14 @@ describe('Multi Extent', function() {
 		context('when complete', function() {
 			it('should not throw an error when there is no configured extent', function() {
 				(function() {
-					sentio.util.multiExtent();
+					sentio.model.multiExtent();
 				}).should.not.throw();
 			});
 
 			it('should not throw an error when configuring', function() {
 				(function() {
-					sentio.util.multiExtent({
-						extent: sentio.util.extent()
+					sentio.model.multiExtent({
+						extent: sentio.model.extent()
 					});
 				}).should.not.throw();
 			});
@@ -856,8 +857,8 @@ describe('Multi Extent', function() {
 
 	describe('Usage', function() {
 		context('when configured correctly', function() {
-			var extentController = sentio.util.multiExtent({
-				extent: sentio.util.extent({
+			var extentController = sentio.model.multiExtent({
+				extent: sentio.model.extent({
 					defaultValue: [ 0, 1 ]
 				})
 			});
@@ -888,8 +889,8 @@ describe('Multi Extent', function() {
 		});
 
 		context('when configured with a custom values accessor', function() {
-			var extentController = sentio.util.multiExtent({
-				extent: sentio.util.extent({
+			var extentController = sentio.model.multiExtent({
+				extent: sentio.model.extent({
 					defaultValue: [ 0, 1 ]
 				})
 			}).values(function(d) { return d; } );

@@ -2476,22 +2476,20 @@ function realtimeBins(config) {
 	return controller;
 }
 
-var controller = { realtimeBins: realtimeBins };
-
-var model = {
-	bins: bins
+var controller = {
+	realtimeBins: realtimeBins,
+	timelineBrush: timelineBrush
 };
 
-var util = {
+var model = {
+	bins: bins,
 	extent: extent,
-	multiExtent: multiExtent,
-	timelineBrush: timelineBrush
+	multiExtent: multiExtent
 };
 
 exports.chart = chart;
 exports.controller = controller;
 exports.model = model;
-exports.util = util;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
