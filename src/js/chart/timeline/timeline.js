@@ -422,6 +422,9 @@ function timeline() {
 		if (null != _axis.x) {
 			_axis.x.scale(v);
 		}
+		if (null != _brush) {
+			_brush.scale(v);
+		}
 		return _instance;
 	};
 	_instance.yScale = function(v) {
