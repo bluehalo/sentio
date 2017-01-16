@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio-3.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
+/*! @asymmetrik/sentio-3.0.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -1571,6 +1571,9 @@ function timeline() {
 		_scale.x = v;
 		if (null != _axis.x) {
 			_axis.x.scale(v);
+		}
+		if (null != _brush) {
+			_brush.scale(v);
 		}
 		return _instance;
 	};
