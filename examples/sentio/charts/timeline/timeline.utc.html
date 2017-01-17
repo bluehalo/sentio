@@ -72,6 +72,12 @@
 		timeline.redraw();
 	}
 
+	function resize() {
+		var newWidth = document.getElementById('chart').clientWidth;
+		timeline.width(newWidth).resize().redraw();
+	}
+	window.addEventListener('resize', resize, true);
+	resize();
 
 </script>
 
