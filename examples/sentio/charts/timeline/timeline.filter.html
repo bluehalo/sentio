@@ -20,6 +20,7 @@
 	<button onclick="toggleEnable()">Disable/Enable Filter</button>
 
 	<script type="text/javascript">
+
 		var timelineDiv = d3.select('#chart');
 		var timeline = sentio.chart.timeline()
 			.height(100)
@@ -33,7 +34,7 @@
 
 		var interval = 60000;
 		var binSize = 1000;
-		var hwm = Date.now();
+		var hwm = Math.round(Date.now()/1000)*1000;
 
 		var model1 = sentio.model.bins({
 			count: interval/binSize,
@@ -76,8 +77,8 @@
 
 		function updateData() {
 			// set the new lwm
-			var oldHwm = hwm;
-			hwm = Date.now();
+			var oldHwm = Math.round(hwm/1000)*1000;
+			hwm = Math.round(Date.now()/1000)*1000;
 
 			model1.clear().lwm(hwm - interval);
 			data1 = data1.concat(generateData(oldHwm, hwm));
@@ -87,6 +88,7 @@
 			data2 = data2.concat(generateData(oldHwm, hwm));
 			model2.add(data2);
 
+			timeline.xExtent().overrideValue([Date.now() - interval, Date.now()]);
 			timeline.redraw();
 		}
 
@@ -107,6 +109,13 @@
 		function toggleEnable() {
 			timeline.filter(!timeline.filter()).redraw();
 		}
+
+		function resize() {
+			var newWidth = document.getElementById('chart').clientWidth;
+			timeline.width(newWidth).resize().redraw();
+		}
+		window.addEventListener('resize', resize, true);
+		resize();
 
 	</script>
 
