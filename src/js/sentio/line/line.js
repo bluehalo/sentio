@@ -1,1 +1,0 @@
-var sentio_line = sentio.line = {};

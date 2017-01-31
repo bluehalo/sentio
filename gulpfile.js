@@ -1,159 +1,139 @@
 'use strict';
 
-var glob = require('glob'),
-	runSequence = require('run-sequence'),
+let
+	glob = require('glob'),
 	gulp = require('gulp'),
 	gulpLoadPlugins = require('gulp-load-plugins'),
+	path = require('path'),
+	rollup = require('rollup'),
+	runSequence = require('run-sequence'),
+
 	plugins = gulpLoadPlugins(),
-	p = require('./package.json');
+	assets = require('./config/assets'),
+	pkg = require('./package.json');
 
-var banner = '/*! ' + p.name + ' Version: ' + p.version + ' */\n';
 
-var src = {
-	js: [
-		'src/js/sentio/sentio.js',
+// Banner to append to generated files
+let bannerString = '/*! ' + pkg.name + '-' + pkg.version + ' - ' + pkg.copyright + '*/'
 
-		'src/js/sentio/util/util.js',
-		'src/js/sentio/util/**/*.js',
 
-		'src/js/sentio/model/model.js',
-		'src/js/sentio/model/**/*.js',
+/**
+ * Validation Tasks
+ */
 
-		'src/js/sentio/controller/controller.js',
-		'src/js/sentio/controller/**/*.js',
+gulp.task('validate-js', () => {
 
-		'src/js/sentio/chart/chart.js',
-		'src/js/sentio/chart/**/*.js',
+	return gulp.src(assets.src.js)
 
-		'src/js/sentio/timeline/timeline.js',
-		'src/js/sentio/timeline/**/*.js',
+		// ESLint
+		.pipe(plugins.eslint())
+		.pipe(plugins.eslint.format())
+		.pipe(plugins.eslint.failAfterError());
 
-		'src/js/sentio/realtime/realtime.js',
-		'src/js/sentio/realtime/**/*.js',
-
-		'src/js/sentio/**/*.js'
-	],
-	angular: [
-		'src/js/support/angular/sentio.js',
-		'src/js/support/angular/realtime.js',
-		'src/js/support/angular/**/*.js'
-	],
-	css: 'src/css/**/*.css',
-	tests: [
-		'test/**/*.js',
-	]
-};
-
-gulp.task('default', ['build']);
-
-gulp.task('watch', ['build'], function() {
-	gulp.watch(['test/**/*', 'src/**/*', '!/src/lib/**/*'], ['build']);
 });
 
-gulp.task('build', function(done) {
-	runSequence(['js', 'js-angular', 'css', 'js-test'], 'test', done);
+
+/**
+ * Build
+ */
+
+gulp.task('build-js', ['rollup-js'], () => {
+
+	// Uglify
+	return gulp.src(path.join(assets.dist.dir, (pkg.artifactName + '.js')))
+		.pipe(plugins.uglify({ preserveComments: 'license' }))
+		.pipe(plugins.rename(pkg.artifactName + '.min.js'))
+		.pipe(gulp.dest(assets.dist.dir));
+
 });
 
-gulp.task('js', function() {
-	var jsFiles = [];
-	src.js.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
+gulp.task('rollup-js', () => {
+	return rollup.rollup({
+			entry: assets.src.entry
+		})
+		.then((bundle) => {
+			return bundle.write({
+				dest: path.join(assets.dist.dir, (pkg.artifactName + '.js')),
+				format: 'umd',
+				moduleName: 'sentio',
+				sourceMap: true,
+				banner: bannerString
+			});
+		});
+
+});
+
+gulp.task('build-css', () => {
+
+	// Generate a list of the sources in a deterministic manner
+	let sourceArr = [];
+	assets.src.sass.forEach((f) => {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
-	return gulp.src(jsFiles)
+	return gulp.src(sourceArr)
 
-		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-
-		// Concatenate
-		.pipe(plugins.concat(p.name + '.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-
-		// Uglify
-		.pipe(plugins.uglify())
-		.pipe(plugins.rename(p.name + '.min.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
-});
-
-gulp.task('js-angular', function(){
-	var jsFiles = [];
-	src.angular.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
-	});
-
-	return gulp.src(jsFiles)
-
-		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
-
-		// Concatenate
-		.pipe(plugins.concat(p.name + '-angular.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-
-		// Uglify
-		.pipe(plugins.uglify({
-			mangle: false
+		// Lint the Sass
+		.pipe(plugins.sassLint({
+			formatter: 'stylish',
+			rules: require('./config/sasslint.conf.js')
 		}))
-		.pipe(plugins.rename(p.name + '-angular.min.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
+		.pipe(plugins.sassLint.format())
+		.pipe(plugins.sassLint.failOnError())
+
+		// Compile and concat the sass (w/sourcemaps)
+		.pipe(plugins.sourcemaps.init())
+			.pipe(plugins.sass())
+			.pipe(plugins.concat(pkg.artifactName + '.css'))
+			.pipe(plugins.insert.prepend(bannerString))
+		.pipe(plugins.sourcemaps.write('.'))
+		.pipe(gulp.dest(assets.dist.dir))
+
+		// Clean the CSS
+		.pipe(plugins.filter(path.join(assets.dist.dir, (pkg.artifactName + '.css'))))
+		.pipe(plugins.cleanCss())
+		.pipe(plugins.rename(pkg.artifactName + '.min.css'))
+		.pipe(gulp.dest(assets.dist.dir));
+
 });
 
-gulp.task('js-test', function(){
-	var jsFiles = [];
-	src.tests.forEach(function(f) {
-		jsFiles = jsFiles.concat(glob.sync(f).sort());
+// Tests
+gulp.task('build-tests', () => {
+
+	// Generate a list of the test sources in a deterministic manner
+	let sourceArr = [ ];
+	assets.tests.js.forEach((f) => {
+		sourceArr = sourceArr.concat(glob.sync(f).sort());
 	});
 
-	return gulp.src(jsFiles)
+	return gulp.src(sourceArr)
 
-		// JS Hint
-		.pipe(plugins.jshint('.jshintrc'))
-		.pipe(plugins.jshint.reporter('jshint-stylish'))
+		// ESLint
+		.pipe(plugins.eslint())
+		.pipe(plugins.eslint.format())
+		.pipe(plugins.eslint.failAfterError())
 
-		// Concatenate
-		.pipe(plugins.concat(p.name + '-tests.js'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
+		// Concat
+		.pipe(plugins.concat(pkg.artifactName + '-tests.js'))
+		.pipe(gulp.dest(assets.dist.dir));
+
 });
 
-gulp.task('css', function(){
-	return gulp.src(src.css)
-
-		// CSS
-		.pipe(plugins.csslint('.csslintrc'))
-		.pipe(plugins.csslint.reporter('text'))
-
-		// Concatenate
-		.pipe(plugins.sort())
-		.pipe(plugins.concat(p.name + '.css'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-
-		// Uglify
-		.pipe(plugins.cssnano())
-		.pipe(plugins.rename(p.name + '.min.css'))
-		.pipe(plugins.insert.prepend(banner))
-		.pipe(gulp.dest('dist'))
-		.pipe(plugins.filesize())
-		.on('error', plugins.util.log);
-});
-
-gulp.task('test', function () {
+// Run Tests
+gulp.task('run-tests', () => {
 	return gulp.src('test/runner.html')
 		.pipe(plugins.mochaPhantomjs());
 });
+
+
+/**
+ * --------------------------
+ * Main Tasks
+ * --------------------------
+ */
+
+gulp.task('build', (done) => { runSequence('validate-js', [ 'build-css', 'build-tests', 'build-js' ], done); } );
+gulp.task('test', (done) => { runSequence('build', 'run-tests', done); } );
+
+// Default task builds and tests
+gulp.task('default', [ 'test' ]);

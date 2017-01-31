@@ -1,23 +1,375 @@
-/*! sentio Version: 0.7.7 */
-if(null == sentio) { var sentio = {}; }
-var sentio_util = sentio.util = {};
-sentio.util.extent = sentio_util_extent;
+/*! @asymmetrik/sentio-3.0.2 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.*/
+(function (global, factory) {
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+	typeof define === 'function' && define.amd ? define(['exports'], factory) :
+	(factory((global.sentio = global.sentio || {})));
+}(this, (function (exports) { 'use strict';
 
-function sentio_util_extent(config) {
-	'use strict';
+function donut() {
+
+	// Chart height/width
+	var _width = 400;
+	var _height = 400;
+	var _margin = { top: 2, bottom: 2, right: 2, left: 2 };
+
+	// Inner and outer radius settings
+	var _radius;
+	var _innerRadiusRatio = 0.7;
+
+	// Transition duration
+	var _duration = 500;
+
+	// Legend configuration
+	var _legend = {
+		enabled: true,
+		markSize: 16,
+		markMargin: 8,
+		labelOffset: 2,
+		position: 'center', // only option right now
+		layout: 'vertical'
+	};
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+
+	// Function handlers
+	var _fn = {
+		getEventElement: function(d, i) {
+			return (null != d && null != d.data)? d.data : d;
+		},
+		updateActiveElement: function(d, i) {
+			var legendEntries = _element.gLegend.selectAll('g.entry');
+			var arcs = _element.gChart.selectAll('path.arc');
+
+			if(null != d) {
+				// Set the highlight on the row
+				var key = _fn.key(d, i);
+				legendEntries.classed('active', function(e, ii) {
+					return _fn.key(e, ii) == key;
+				});
+				arcs.classed('active', function(e, ii) {
+					return _fn.key(e.data, ii) == key;
+				});
+			}
+			else {
+				legendEntries.classed('active', false);
+				arcs.classed('active', false);
+			}
+		},
+		mouseover: function(d, i) {
+			d = _fn.getEventElement(d, i);
+			_fn.updateActiveElement(d, i);
+			_dispatch.call('mouseover', this, d, i);
+		},
+		mouseout: function(d, i) {
+			d = _fn.getEventElement(d, i);
+			_fn.updateActiveElement();
+			_dispatch.call('mouseout', this, d, i);
+		},
+		click: function(d, i) {
+			d = _fn.getEventElement(d, i);
+			_dispatch.call('click', this, d, i);
+		},
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; },
+		label: function(d) { return d.key + ' (' + d.value + ')'; }
+	};
+
+
+	var _scale = {
+		color: d3.scaleOrdinal(d3.schemeCategory10)
+	};
+
+	var _layout = {
+		arc: d3.arc().padAngle(0.01),
+		pie: d3.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
+	};
+
+	// elements
+	var _element = {
+		div: undefined,
+		svg: undefined,
+		gChart: undefined,
+		legend: undefined
+	};
+
+	var _data = [];
+
+	// Chart create/init method
+	function _instance(selection) { }
+
+	/*
+	 * Initialize the chart (should only call this once). Performs all initial chart
+	 * creation and setup
+	 */
+	_instance.init = function(container) {
+		// Create the DIV element
+		_element.div = container.append('div').attr('class', 'sentio donut');
+
+		// Create the svg element
+		_element.svg = _element.div.append('svg');
+
+		// Create the main chart group
+		_element.gChart = _element.svg.append('g').attr('class', 'chart');
+
+		// Create a group for the legend
+		_element.gLegend = _element.svg.append('g').attr('class', 'legend');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	/*
+	 * Set the _instance data
+	 */
+	_instance.data = function(v) {
+		if(!arguments.length) { return _data; }
+		_data = (null != v)? v : [];
+		return _instance;
+	};
+
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	_instance.resize = function() {
+		var chartWidth = _width - _margin.right - _margin.left;
+		var chartHeight = _height - _margin.top - _margin.bottom;
+		_radius = (Math.min(chartHeight, chartWidth))/2;
+
+		_element.svg
+			.attr('width', _width)
+			.attr('height', _height);
+
+		_element.gChart
+			.attr('transform', 'translate(' + (_margin.left + _radius) + ',' + (_margin.top + _radius) + ')');
+
+		// The outer radius is half of the lesser of the two (chartWidth/chartHeight)
+		_layout.arc.innerRadius(_radius * _innerRadiusRatio).outerRadius(_radius);
+
+		// Update legend positioning
+		_element.gLegend.attr('transform', legendTransform());
+
+		return _instance;
+	};
+
+	/*
+	 * Redraw the graphic
+	 */
+	_instance.redraw = function() {
+
+		redrawChart();
+
+		if (_legend.enabled) {
+			redrawLegend();
+		}
+
+		return _instance;
+	};
+
+	/**
+	 * Private functions
+	 */
+	function redrawChart() {
+		/*
+		 * Join the data
+		 */
+		var g = _element.gChart.selectAll('path.arc')
+			.data(_layout.pie(_data), function(d, i) { return _fn.key(d.data, i); });
+
+		/*
+		 * Update Only
+		 */
+
+		/*
+		 * Enter Only
+		 * Create the path, add the arc class, register the callbacks
+		 * Grow from 0 for both start and end angles
+		 */
+		var gEnter = g.enter().append('path')
+			.attr('class', 'arc')
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
+			.each(function(d) { this._current = { startAngle: 0, endAngle: 0 }; });
+
+		/*
+		 * Enter + Update
+		 * Apply the update from current angle to next angle
+		 */
+		var gEnterUpdate = gEnter.merge(g);
+		gEnterUpdate.transition().duration(_duration)
+			.attrTween('d', function(d) {
+				var interpolate = d3.interpolate(this._current, d);
+				this._current = interpolate(0);
+				return function(t) {
+					return _layout.arc(interpolate(t));
+				};
+			});
+
+		gEnterUpdate
+			.attr('key', function(d, i) { return _fn.key(d.data, i); })
+			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data, i)); });
+
+		/*
+		 * Exit
+		 */
+		g.exit().remove();
+	}
+
+	function legendTransform() {
+		var entrySpan = _legend.markSize + _legend.markMargin;
+
+		// Only option is 'center' for now
+		if (_legend.position === 'center') {
+			// The center position of the chart
+			var centerX = _margin.left + _radius;
+			var centerY = _margin.top + _radius;
+			var legendWidth = (null == _element.gLegend._maxWidth)? 0 : _element.gLegend._maxWidth;
+			var legendHeight = entrySpan*_data.length + _legend.markMargin;
+
+			var offsetX = legendWidth/2;
+			var offsetY = legendHeight/2;
+
+			return 'translate(' + (centerX - offsetX) + ',' + (centerY - offsetY) + ')';
+		}
+		else {
+			// TODO
+		}
+	}
+
+	function redrawLegend() {
+		/*
+		 * Join the data
+		 */
+		var gLegendGroup = _element.gLegend.selectAll('g.entry').data(_data, _fn.key);
+
+		/*
+		 * Enter Only
+		 * Create a g (gLegendGroup) to add the rect & text label,
+		 * register the callbacks, apply the transform to position each gLegendGroup
+		 */
+		var gLegendGroupEnter = gLegendGroup.enter().append('g')
+			.attr('class', 'entry')
+			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } )
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click);
+
+		// Add the legend's rect
+		var rect = gLegendGroupEnter
+			.append('rect')
+			.attr('width', _legend.markSize)
+			.attr('height', _legend.markSize);
+
+		// Add the legend text
+		var text = gLegendGroupEnter
+			.append('text')
+			.attr('x', _legend.markSize + _legend.markMargin)
+			.attr('y', _legend.markSize - _legend.labelOffset);
+
+		/*
+		 * Enter + Update
+		 */
+		text.merge(gLegendGroup.select('text')).text(_fn.label);
+
+		rect.merge(gLegendGroup.select('rect'))
+			.style('fill', function(d, i) { return _scale.color(_fn.key(d, i)); });
+
+		// Position each rect on both enter and update to fully account for changing widths and sizes
+		gLegendGroupEnter.merge(gLegendGroup)
+			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
+			.each(function(d, i) {
+				if (i === 0) {
+					// Reset
+					_element.gLegend._maxWidth = this.getBBox().width;
+				}
+				else {
+					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
+				}
+			});
+
+		// Reassert the legend position
+		_element.gLegend.attr('transform', legendTransform());
+
+		/*
+		 * Exit
+		 */
+		gLegendGroup.exit().remove();
+	}
+
+	// Basic Getters/Setters
+	_instance.width = function(v) {
+		if(!arguments.length) { return _width; }
+		_width = v;
+		return _instance;
+	};
+	_instance.height = function(v) {
+		if(!arguments.length) { return _height; }
+		_height = v;
+		return _instance;
+	};
+
+	_instance.innerRadiusRatio = function(v) {
+		if(!arguments.length) { return _innerRadiusRatio; }
+		_innerRadiusRatio = v;
+		return _instance;
+	};
+
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return _instance;
+	};
+
+	_instance.key = function(v) {
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
+		return _instance;
+	};
+	_instance.value = function(v) {
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
+		return _instance;
+	};
+	_instance.label = function(v) {
+		if(!arguments.length) { return _fn.label; }
+		_fn.label = v;
+		return _instance;
+	};
+	_instance.colorScale = function(v) {
+		if(!arguments.length) { return _scale.color; }
+		_scale.color = v;
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.legend = function(v) {
+		if(!arguments.length) { return _legend; }
+		_legend = v;
+		return _instance;
+	};
+
+	return _instance;
+}
+
+function extent(config) {
 
 	/**
 	 * Private variables
 	 */
 	// Configuration
 	var _config = {
-		defaultValue: [0, 10],
+		defaultValue: [ 0, 10 ],
 		overrideValue: undefined
 	};
 
 	var _fn = {
-		getValue: function(d, i) { return d; },
-		filter: function(d, i) { return true; }
+		getValue: function(d) { return d; },
+		filter: function() { return true; }
 	};
 
 
@@ -120,7 +472,7 @@ function sentio_util_extent(config) {
 		// Check to see if we need to calculate the extent
 		if(null == ov || null == ov[0] || null == ov[1]) {
 			// Since the override isn't complete, we need to calculate the extent
-			toReturn = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+			toReturn = [ Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY ];
 			var foundData = false;
 
 			if(null != data) {
@@ -151,14 +503,15 @@ function sentio_util_extent(config) {
 						toReturn[1] = toReturn[0];
 					}
 				}
-				if(null != ov[1]) { 
+				if(null != ov[1]) {
 					toReturn[1] = ov[1];
 					if(toReturn[1] < toReturn[0]) {
 						toReturn[0] = toReturn[1];
 					}
 				}
 			}
-		} else {
+		}
+		else {
 			// Since the override is fully specified, use it
 			toReturn = ov;
 		}
@@ -172,10 +525,8 @@ function sentio_util_extent(config) {
 
 	return _instance;
 }
-sentio.util.multiExtent = sentio_util_multi_extent;
 
-function sentio_util_multi_extent(config) {
-	'use strict';
+function multiExtent(config) {
 
 	/**
 	 * Private variables
@@ -185,7 +536,7 @@ function sentio_util_multi_extent(config) {
 		values: function(d) { return d.values; }
 	};
 
-	var _extent = sentio.util.extent();
+	var _extent = extent();
 
 	/**
 	 * Private Functions
@@ -210,7 +561,7 @@ function sentio_util_multi_extent(config) {
 	 */
 
 	/*
-	 * Get/Set the extent to use 
+	 * Get/Set the extent to use
 	 */
 	_instance.extent = function(v) {
 		if(!arguments.length) { return _extent; }
@@ -235,8 +586,8 @@ function sentio_util_multi_extent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e) {
-			var tExtent = _extent.getExtent(_fn.values(e));
+		data.forEach(function(e, i) {
+			var tExtent = _extent.getExtent(_fn.values(e, i));
 			if(null == toReturn) {
 				toReturn = tExtent;
 			}
@@ -259,11 +610,1345 @@ function sentio_util_multi_extent(config) {
 
 	return _instance;
 }
-var sentio_model = sentio.model = {};
-sentio.model.bins = sentio_model_bins;
 
-function sentio_model_bins(config) {
-	'use strict';
+function matrix() {
+
+	// Chart dimensions
+	var _cellSize = 16;
+	var _cellMargin = 1;
+	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
+
+	// Transition duration
+	var _duration = 500;
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
+
+	// Function handlers
+	var _fn = {
+		updateActiveSeries: function(d, i) {
+			var seriesLabels = _element.g.chart.selectAll('.row text');
+
+			if(null != d) {
+				// Set the highlight on the row
+				var seriesKey = _fn.seriesKey(d, i);
+				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
+			}
+			else {
+				// Now update the style
+				seriesLabels.classed('active', false);
+			}
+		},
+		rowMouseover: function(d, i) {
+			_fn.updateActiveSeries(d, i);
+			_dispatch.call('rowMouseover', this, d, i);
+		},
+		rowMouseout: function(d, i) {
+			_fn.updateActiveSeries();
+			_dispatch.call('rowMouseout', this, d, i);
+		},
+		rowClick: function(d, i) {
+			_dispatch.call('rowClick', this, d, i);
+		},
+		cellMouseover: function(d, i) {
+			_dispatch.call('cellMouseover', this, d, i);
+		},
+		cellMouseout: function(d, i) {
+			_dispatch.call('cellMouseout', this, d, i);
+		},
+		cellClick: function(d, i) {
+			_dispatch.call('cellClick', this, d, i);
+		},
+		seriesKey: function(d) { return d.key; },
+		seriesLabel: function(d) { return d.label; },
+		seriesValues: function(d) { return d.values; },
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; }
+	};
+
+	// Extents
+	var _extent = {
+		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
+		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
+		multi: multiExtent()
+	};
+
+	// Scales for x, y, and color
+	var _scale = {
+		x: d3.scaleLinear(),
+		y: d3.scaleOrdinal(),
+		color: d3.scaleLinear().range([ '#e7e7e7', '#008500' ])
+	};
+
+	var _axis = {
+		x: d3.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
+	};
+
+	var _element = {
+		div: undefined,
+		svg: undefined,
+		g: {
+			chart: undefined,
+			xAxis: undefined
+		}
+	};
+
+	var _data = [];
+
+	var _instance = function () {};
+
+	_instance.init = function(d3Container) {
+		// Add the svg element
+		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
+		_element.svg = _element.div.append('svg');
+
+		// Add the axis
+		_element.g.xAxis = _element.svg.append('g').attr('class', 'x axis');
+
+		// Add a group for the chart itself
+		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	_instance.data = function(v) {
+		if(!arguments.length) {
+			return _data;
+		}
+		_data = (null != v)? v : [];
+		return _instance;
+	};
+
+	_instance.resize = function() { };
+
+	_instance.redraw = function() {
+		// Determine the number of rows to render
+		var rowCount = _data.length;
+
+		// Determine the number of boxes to render (assume complete data)
+		var boxes = [];
+		if(rowCount > 0) {
+			boxes = _fn.seriesValues(_data[0]);
+		}
+		var boxCount = boxes.length;
+
+		// Dimensions of the visualization
+		var cellSpan = _cellMargin + _cellSize;
+
+		// calculate the width/height of the svg
+		var width = boxCount*cellSpan + _cellMargin,
+			height = rowCount*cellSpan + _cellMargin;
+
+		// scale the svg to the right size
+		_element.svg
+			.attr('width', width + _margin.left + _margin.right)
+			.attr('height', height + _margin.top + _margin.bottom);
+
+		// Configure the scales
+		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
+		_scale.color.domain(
+			_extent.multi
+				.values(_fn.seriesValues)
+				.extent(_extent.value)
+				.getExtent(_data));
+
+		// Draw the x axis
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.call(_axis.x);
+
+		/**
+		 * Chart Manipulation
+		 */
+
+		/*
+		 * Row Join
+		 */
+		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+
+		/*
+		 * Row Update Only
+		 */
+
+		/*
+		 * Row Enter Only
+		 * Build the row structure
+		 */
+		var rowEnter = row.enter().append('g');
+		rowEnter
+			.style('opacity', '0.1')
+			.attr('class', 'row')
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
+			.on('mouseover', _fn.rowMouseover)
+			.on('mouseout', _fn.rowMouseout)
+			.on('click', _fn.rowClick);
+
+		// Also must append the label of the row
+		rowEnter.append('text')
+			.attr('class', 'series label')
+			.style('text-anchor', 'end')
+			.attr('x', -6)
+			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('dy', '.32em');
+
+		// Also must append a line
+		rowEnter.append('line')
+			.attr('class', 'series tick')
+			.attr('x1', -3)
+			.attr('x2', 0)
+			.attr('y1', _cellMargin + (_cellSize/2))
+			.attr('y2', _cellMargin + (_cellSize/2));
+
+		/*
+		 * Row Enter + Update
+		 */
+		// Transition rows to their new positions
+		var rowEnterUpdate = rowEnter.merge(row);
+		rowEnterUpdate.transition().duration(_duration)
+			.style('opacity', '1')
+			.attr('transform', function(d, i) {
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+			});
+
+		// Update the series labels in case they changed
+		rowEnterUpdate.select('text.series.label')
+			.text(_fn.seriesLabel);
+
+		/*
+		 * Row Exit
+		 */
+		row.exit()
+			.transition().duration(_duration)
+			.style('opacity', '0.1')
+			.remove();
+
+
+		/*
+		 * Cell Join - Will be done on row enter + exit
+		 */
+		var rowCell = rowEnterUpdate.selectAll('rect.cell')
+			.data(_fn.seriesValues, _fn.key);
+
+		/*
+		 * Cell Update Only
+		 */
+
+		/*
+		 * Cell Enter Only
+		 */
+		var rowCellEnter = rowCell.enter().append('rect')
+			.attr('class', 'cell')
+			.style('opacity', '0.1')
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.attr('y', _cellMargin)
+			.attr('height', _cellSize)
+			.attr('width', _cellSize)
+			.on('mouseover', _fn.cellMouseover)
+			.on('mouseout', _fn.cellMouseout)
+			.on('click', _fn.cellClick);
+
+		/*
+		 * Cell Enter + Update
+		 * Update fill, move to proper x coordinate
+		 */
+		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
+		rowCellEnterUpdate.transition().duration(_duration)
+			.style('opacity', '1')
+			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+
+		/*
+		 * Cell Remove
+		 */
+		rowCell.exit().transition().duration(_duration)
+			.attr('width', 0)
+			.style('opacity', '0.1')
+			.remove();
+
+		return _instance;
+	};
+
+
+	_instance.cellSize = function(v) {
+		if(!arguments.length) { return _cellSize; }
+		_cellSize = v;
+		return _instance;
+	};
+	_instance.cellMargin = function(v) {
+		if(!arguments.length) { return _cellMargin; }
+		_cellMargin = v;
+		return _instance;
+	};
+	_instance.margin = function(v) {
+		if(!arguments.length) { return _margin; }
+		_margin = v;
+		return _instance;
+	};
+
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return _instance;
+	};
+
+	_instance.seriesKey = function(v) {
+		if(!arguments.length) { return _fn.seriesKey; }
+		_fn.seriesKey = v;
+		return _instance;
+	};
+	_instance.seriesLabel = function(v) {
+		if(!arguments.length) { return _fn.seriesLabel; }
+		_fn.seriesLabel = v;
+		return _instance;
+	};
+	_instance.seriesValues = function(v) {
+		if(!arguments.length) { return _fn.seriesValues; }
+		_fn.seriesValues = v;
+		return _instance;
+	};
+	_instance.key = function(v) {
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
+		return _instance;
+	};
+	_instance.value = function(v) {
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
+		return _instance;
+	};
+
+	_instance.colorScale = function(v) {
+		if(!arguments.length) { return _scale.color; }
+		_scale.color = v;
+		return _instance;
+	};
+	_instance.xScale = function(v) {
+		if(!arguments.length) { return _scale.xScale; }
+		_scale.xScale = v;
+		_axis.x.scale(v);
+		return _instance;
+	};
+	_instance.yScale = function(v) {
+		if(!arguments.length) { return _scale.yScale; }
+		_scale.yScale = v;
+		return _instance;
+	};
+
+	_instance.xExtent = function(v) {
+		if(!arguments.length) { return _extent.x; }
+		_extent.x = v;
+		_extent.x.getValue(function(d, i) { return v(d, i); });
+		return _instance;
+	};
+	_instance.valueExtent = function(v) {
+		if(!arguments.length) { return _extent.value; }
+		_extent.value = v;
+		_extent.value.getValue(function(d, i) { return v(d, i); });
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	return _instance;
+}
+
+function timelineBrush(config) {
+
+	/**
+	 * Private variables
+	 */
+
+	// The brush object
+	var _brush;
+
+	// The scale object to use for mapping between the domain and range
+	var _scale;
+
+	// Event dispatcher
+	var _dispatch = d3.dispatch('brush', 'start', 'end');
+
+	// The current state of the brush selection
+	var _selection = undefined;
+
+	// Enable or disable the brush
+	var _enabled = false;
+
+	// Flag to track programmatic changes
+	var _programmaticChange = false;
+
+
+	/**
+	 * Private Functions
+	 */
+
+	function setEnabled(v) {
+		// Should probably fire event for new brush state
+		_enabled = v;
+	}
+
+	function getEnabled() {
+		return _enabled && null != _brush;
+	}
+
+	/**
+	 * Convert a brushSelection to ms epoch time
+	 * @param brushSelection Null, or an array brushSelection that may be in either Date or ms epoch
+	 *        time representation
+	 * @returns {*} Brush selection in ms epoch time form
+	 */
+	function convertSelection(selection) {
+		if(null != selection && Array.isArray(selection)) {
+			selection = selection.map(function(d) { return +d; });
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Clean selection to make sure it's valid or set it to undefined if it's invalid
+	 * @param selection
+	 * @returns {*}
+	 */
+	function cleanSelection(selection) {
+		if(!Array.isArray(selection) || selection.length != 2 || isNaN(selection[0]) || isNaN(selection[1])) {
+			selection = undefined;
+		}
+
+		return selection;
+	}
+
+	/**
+	 * Wrapper for event handler to filter out duplicate events
+	 * @param eventType
+	 * @returns {Function}
+	 */
+	function eventFilter(eventType) {
+		return function(args) {
+
+			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
+			var o = _selection;
+
+			// Fire the event if the extents are different
+			var duplicateEvent = n === o || (null != n && null != o && n[0] === o[0] && n[1] === o[1]);
+			var fireEvent = !(duplicateEvent && _programmaticChange);
+
+			// Store the new selection only on the 'end' event
+			if(eventType === 'end') {
+				// Reset the selection
+				_selection = n;
+
+				// Reset the flag
+				_programmaticChange = false;
+			}
+
+			// Suppress event if it's duplicate and programmatic
+			if(fireEvent) {
+				_dispatch.apply(eventType, this, args);
+			}
+		}
+	}
+
+	function getSelection(node) {
+		var selection = undefined;
+
+		if(_enabled && null != node && null != _scale) {
+			selection = d3.brushSelection(node);
+
+			if (null != selection && Array.isArray(selection)) {
+				selection = convertSelection(selection.map(_scale.invert));
+			}
+			else {
+				selection = undefined;
+			}
+		}
+
+		return selection;
+	}
+
+	function setSelection(group, v) {
+		v = cleanSelection(v);
+
+		var clearFilter = (null == v || v[0] >= v[1]);
+
+		// either clear the filter or move it
+		_programmaticChange = true;
+		if(clearFilter) {
+			_brush.move(group, undefined);
+		}
+		else {
+			_brush.move(group, v.map(_scale));
+		}
+	}
+
+	function _instance(config) {
+
+		if (null != config) {
+			if (null != config.brush) {
+				_brush = config.brush;
+				_brush
+					.on('brush', eventFilter('brush'))
+					.on('start', eventFilter('start'))
+					.on('end', eventFilter('end'));
+			}
+			else {
+				throw new Error('Must provide a brush');
+			}
+
+			if (null != config.scale) {
+				_scale = config.scale;
+			}
+			else {
+				throw new Error('Must provide a scale');
+			}
+
+			if (null != config.enabled) { setEnabled(config.enabled); }
+		}
+		else {
+			throw new Error('Must provide a brush and a scale');
+		}
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	_instance.scale = function(v) {
+		if(!arguments.length) { return _scale; }
+		_scale = v;
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.brush = function() {
+		return _brush;
+	};
+
+	// Get/Set enabled state
+	_instance.enabled = function(v) {
+		if(!arguments.length) { return getEnabled(); }
+		setEnabled(v);
+		return _instance;
+	};
+
+	_instance.getSelection = function(node) {
+		return getSelection(node);
+	};
+
+	_instance.setSelection = function(group, v) {
+		return setSelection(group, v);
+	};
+
+	// Initialize the model
+	_instance(config);
+
+	return _instance;
+}
+
+function timeline() {
+
+	var _id = 'timeline_line_' + Date.now();
+
+	// Margin between the main plot group and the svg border
+	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
+
+	// Height and width of the SVG element
+	var _height = 100, _width = 600;
+
+	var _fn = {
+		valueX: function(d) { return d[0]; },
+		valueY: function(d) { return d[1]; },
+
+		markerValueX: function(d) { return d[0]; },
+		markerLabel: function(d) { return d[1]; },
+
+		seriesKey: function(d) { return d.key; },
+		seriesValues: function(d) { return d.values; },
+		seriesLabel: function(d) { return d.label; }
+	};
+
+	// Default accessors for the dimensions of the data
+	var _value = {
+		x: function(d) { return d[0]; },
+		y: function(d) { return d[1]; }
+	};
+
+	// Accessors for the positions of the markers
+	var _markerValue = {
+		x: function(d, i) { return d[0]; },
+		label: function(d, i) { return d[1]; }
+	};
+
+	// Extent configuration for x and y dimensions of plot
+	var now = Date.now();
+	var _extent = {
+		x: extent({
+			defaultValue: [ now - 60000*5, now ],
+			getValue: function(d, i) { return _fn.valueX(d, i); }
+		}),
+		y: extent({
+			getValue: function(d, i) { return _fn.valueY(d, i); }
+		})
+	};
+	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
+
+	// Default scales for x and y dimensions
+	var _scale = {
+		x: d3.scaleTime(),
+		y: d3.scaleLinear()
+	};
+
+	// Default Axis definitions
+	var _axis = {
+		x: d3.axisBottom().scale(_scale.x),
+		y: d3.axisLeft().scale(_scale.y).ticks(3)
+	};
+
+	// Storage for commonly used DOM elements
+	var _element = {
+		svg: undefined,
+		g: {
+			container: undefined,
+			plots: undefined,
+			xAxis: undefined,
+			yAxis: undefined,
+			markers: undefined,
+			brush: undefined
+		},
+		plotClipPath: undefined,
+		markerClipPath: undefined
+	};
+
+	// Line generator for the plot
+	var _line = d3.line();
+	_line.x(function(d, i) {
+		return _scale.x(_fn.valueX(d, i));
+	});
+	_line.y(function(d, i) {
+		return _scale.y(_fn.valueY(d, i));
+	});
+
+	// Area generator for the plot
+	var _area = d3.area();
+	_area.x(function(d, i) {
+		return _scale.x(_fn.valueX(d, i));
+	});
+	_area.y1(function(d, i) {
+		return _scale.y(_fn.valueY(d, i));
+	});
+
+
+	// Brush Management
+	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
+	_brush.dispatch()
+		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
+		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
+		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
+
+
+
+	/**
+	 * Get the current brush state in terms of the x data domain, in ms epoch time
+	 */
+	function getBrush() {
+
+		// Try to get the node from the brush group selection
+		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
+
+		// Get the current brush selection
+		return _brush.getSelection(node);
+
+	}
+
+	/**
+	 * Set the current brush state in terms of the x data domain
+	 * @param v The new value of the brush
+	 *
+	 */
+	function setBrush(v) {
+		_brush.setSelection(_element.g.brush, v);
+	}
+
+	/**
+	 * Update the state of the brush (as part of redrawing everything)
+	 *
+	 * The purpose of this function is to update the state of the brush to reflect changes
+	 * to the rest of the chart as part of a normal update/redraw cycle. When the x extent
+	 * changes, the brush needs to move to stay correctly aligned with the x axis. Normally,
+	 * we are only updating the drawn position of the brush, so the brushSelection doesn't
+	 * actually change. However, if the change results in the brush extending partially or
+	 * wholly outside of the x extent, we might have to clip or clear the brush, which will
+	 * result in filter change events being propagated.
+	 *
+	 * @param previousExtent The previous state of the brush extent. Must be provided to
+	 *        accurately determine the extent of the brush in terms of the x data domain
+	 */
+	function updateBrush(previousExtent) {
+
+		// If there was no previous extent, then there is no brush to update
+		if (null != previousExtent) {
+
+			// Derive the overall plot extent from the collection of series
+			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+
+			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
+
+				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
+				var newExtent = [ Math.max(plotExtent[0], previousExtent[0]), Math.min(plotExtent[1], previousExtent[1]) ];
+				setBrush(newExtent);
+
+			}
+			else {
+				// There is no plot/data so just clear the filter
+				setBrush(undefined);
+			}
+		}
+
+		_element.g.brush
+			.style('display', (_brush.enabled())? 'unset' : 'none')
+			.call(_brush.brush());
+	}
+
+
+	// The dispatch object and all events
+	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
+
+	// The main data array
+	var _data = [];
+
+	// Markers data
+	var _markers = {
+		values: []
+	};
+
+	// Chart create/init method
+	function _instance() {}
+
+
+	/**
+	 * Initialize the chart (only called once). Performs all initial chart creation/setup
+	 *
+	 * @param container The container element to which to apply the chart
+	 * @returns {_instance} Instance of the chart
+	 */
+	_instance.init = function(container) {
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
+		// Create the SVG element
+		_element.svg = _element.div.append('svg');
+
+		// Add the defs and add the clip path definition
+		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
+
+		// Append a container for everything
+		_element.g.container = _element.svg.append('g');
+
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
+
+		// Add the filter brush element
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Append groups for the axes
+		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
+		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	/*
+	 * Set the _instance data
+	 */
+	_instance.data = function(v) {
+		if (!arguments.length) { return _data; }
+		_data = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
+	 * Set the markers data
+	 */
+	_instance.markers = function(v) {
+		if (!arguments.length) { return _markers.values; }
+		_markers.values = (null != v)? v : [];
+		return _instance;
+	};
+
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	_instance.resize = function() {
+
+		// Need to grab the brush extent before we change anything
+		var brushSelection = getBrush();
+
+		// Set up the scales
+		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
+		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
+
+		// Append the clip path
+		_element.plotClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+		_element.markerClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		// Now update the size of the svg pane
+		_element.svg.attr('width', _width).attr('height', _height);
+
+		// Update the positions of the axes
+		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
+		_element.g.yAxis.attr('class', 'y axis');
+
+		// update the margins on the main draw group
+		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
+
+		// Update the size of the brush
+		_element.g.brush
+			.selectAll('rect')
+			.attr('y', 0).attr('x', 0)
+			.attr('height', _width - _margin.left - _margin.right)
+			.attr('height', _height - _margin.top - _margin.bottom + 4);
+
+		_brush.brush()
+			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
+
+		updateBrush(brushSelection);
+
+		return _instance;
+	};
+
+	/*
+	 * Redraw the graphic
+	 */
+	_instance.redraw = function() {
+
+		// Need to grab the brush extent before we change anything
+		var brushSelection = getBrush();
+
+		// Update the x domain (to the latest time window)
+		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
+
+		// Update the y domain (based on configuration and data)
+		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
+
+		// Update the plot elements
+		updateAxes();
+		updateLine();
+		updateMarkers();
+		updateBrush(brushSelection);
+
+		return _instance;
+	};
+
+	function updateAxes() {
+		if (null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
+		}
+		if (null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
+		}
+	}
+
+	function updateLine() {
+
+		// Join
+		var plotJoin = _element.g.plots
+			.selectAll('.plot')
+			.data(_data, _fn.seriesKey);
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g')
+			.attr('class', 'plot');
+
+		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
+		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
+	}
+
+	function updateMarkers() {
+
+		// Join
+		var markerJoin = _element.g.markers
+			.selectAll('.marker')
+			.data(_markers.values, _markerValue.x);
+
+		// Enter
+		var markerEnter = markerJoin.enter().append('g')
+			.attr('class', 'marker')
+			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
+			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
+			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
+
+		var lineEnter = markerEnter.append('line');
+		var textEnter = markerEnter.append('text');
+
+		lineEnter
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
+
+		textEnter
+			.attr('dy', '0em')
+			.attr('y', -3)
+			.attr('text-anchor', 'middle')
+			.text(_markerValue.label);
+
+		// Enter + Update
+		var lineUpdate = markerJoin.select('line');
+		var textUpdate = markerJoin.select('text');
+
+		lineEnter.merge(lineUpdate)
+			.attr('x1', function(d, i) { return _scale.x(_markerValue.x(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d)); });
+
+		textEnter.merge(textUpdate)
+			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d)); });
+
+		// Exit
+		markerJoin.exit().remove();
+
+	}
+
+
+	// Basic Getters/Setters
+	_instance.width = function(v) {
+		if (!arguments.length) { return _width; }
+		_width = v;
+		return _instance;
+	};
+	_instance.height = function(v) {
+		if (!arguments.length) { return _height; }
+		_height = v;
+		return _instance;
+	};
+	_instance.margin = function(v) {
+		if (!arguments.length) { return _margin; }
+		_margin = v;
+		return _instance;
+	};
+	_instance.curve = function(v) {
+		if (!arguments.length) { return _line.curve(); }
+		_line.curve(v);
+		_area.curve(v);
+		return _instance;
+	};
+	_instance.xAxis = function(v) {
+		if (!arguments.length) { return _axis.x; }
+		_axis.x = v;
+		return _instance;
+	};
+	_instance.yAxis = function(v) {
+		if (!arguments.length) { return _axis.y; }
+		_axis.y = v;
+		return _instance;
+	};
+	_instance.xScale = function(v) {
+		if (!arguments.length) { return _scale.x; }
+		_scale.x = v;
+		if (null != _axis.x) {
+			_axis.x.scale(v);
+		}
+		if (null != _brush) {
+			_brush.scale(v);
+		}
+		return _instance;
+	};
+	_instance.yScale = function(v) {
+		if (!arguments.length) { return _scale.y; }
+		_scale.y = v;
+		if (null != _axis.y) {
+			_axis.y.scale(v);
+		}
+		return _instance;
+	};
+	_instance.xValue = function(v) {
+		if (!arguments.length) { return _value.x; }
+		_value.x = v;
+		return _instance;
+	};
+	_instance.yValue = function(v) {
+		if (!arguments.length) { return _value.y; }
+		_value.y = v;
+		return _instance;
+	};
+	_instance.yExtent = function(v) {
+		if (!arguments.length) { return _extent.y; }
+		_extent.y = v;
+		return _instance;
+	};
+	_instance.xExtent = function(v) {
+		if (!arguments.length) { return _extent.x; }
+		_extent.x = v;
+		return _instance;
+	};
+	_instance.seriesKey = function(v) {
+		if(!arguments.length) { return _fn.seriesKey; }
+		_fn.seriesKey = v;
+		return _instance;
+	};
+	_instance.seriesLabel = function(v) {
+		if(!arguments.length) { return _fn.seriesLabel; }
+		_fn.seriesLabel = v;
+		return _instance;
+	};
+	_instance.seriesValues = function(v) {
+		if(!arguments.length) { return _fn.seriesValues; }
+		_fn.seriesValues = v;
+		return _instance;
+	};
+	_instance.markerXValue = function(v) {
+		if (!arguments.length) { return _markerValue.x; }
+		_markerValue.x = v;
+		return _instance;
+	};
+	_instance.markerLabel = function(v) {
+		if (!arguments.length) { return _markerValue.label; }
+		_markerValue.label = v;
+		return _instance;
+	};
+	_instance.dispatch = function(v) {
+		if (!arguments.length) { return _dispatch; }
+		return _instance;
+	};
+	_instance.filter = function(v) {
+		if (!arguments.length) { return _brush.enabled(); }
+		_brush.enabled(v);
+		return _instance;
+	};
+	_instance.setFilter = function(v) {
+		setBrush(v);
+		return _instance;
+	};
+	_instance.getFilter = function() {
+		return getBrush();
+	};
+
+	return _instance;
+}
+
+function realtimeTimeline() {
+
+	// Default data delay, this is the difference between now and the latest tick shown on the timeline
+	var _delay = 0;
+
+	// Interval of the timeline, this is the amount of time being displayed by the timeline
+	var _interval = 60000;
+
+	// Is the timeline running?
+	var _running = false;
+	var _timeout = null;
+
+	// What is the refresh rate?
+	var _fps = 32;
+
+	var _instance = timeline();
+	_instance.yExtent().filter(function(d) {
+		var x = _instance.xValue()(d);
+		var xExtent = _instance.xExtent().getExtent();
+		return (x < xExtent[1] && x > xExtent[0]);
+	});
+
+	/*
+	 * This is the main update loop function. It is called every time the
+	 * _instance is updating to proceed through time.
+	 */
+	function tick() {
+		// If not running, let the loop die
+		if(!_running) return;
+
+		_instance.redraw();
+
+		// Schedule the next update
+		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
+	}
+
+	/*
+	 * Redraw the graphic
+	 */
+	var parentRedraw = _instance.redraw;
+	_instance.redraw = function() {
+		// Update the x domain (to the latest time window)
+		var now = new Date();
+		_instance.xExtent().overrideValue([ now - _delay - _interval, now - _delay ]);
+
+		parentRedraw();
+		return _instance;
+	};
+
+	_instance.start = function() {
+		if(_running) { return; }
+		_running = true;
+
+		tick();
+		return _instance;
+	};
+
+	_instance.stop = function() {
+		_running = false;
+
+		if(_timeout != null) {
+			window.clearTimeout(_timeout);
+		}
+		return _instance;
+	};
+
+	_instance.restart = function() {
+		_instance.stop();
+		_instance.start();
+		return _instance;
+	};
+
+	_instance.interval = function(v) {
+		if(!arguments.length) { return _interval; }
+		_interval = v;
+		return _instance;
+	};
+
+	_instance.delay = function(v) {
+		if(!arguments.length) { return _delay; }
+		_delay = v;
+		return _instance;
+	};
+
+	_instance.fps = function(v) {
+		if(!arguments.length) { return _fps; }
+		_fps = v;
+		if(_running) {
+			_instance.restart();
+		}
+		return _instance;
+	};
+
+	return _instance;
+}
+
+function verticalBars() {
+
+	// Layout properties
+	var _width = 100;
+	var _barHeight = 24;
+	var _barPadding = 2;
+	var _duration = 500;
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+	var _fn = {
+		mouseover: function(d, i) {
+			_dispatch.call('mouseover', this, d, i);
+		},
+		mouseout: function(d, i) {
+			_dispatch.call('mouseout', this, d, i);
+		},
+		click: function(d, i) {
+			_dispatch.call('click', this, d, i);
+		},
+		key: function(d) { return d.key; },
+		value: function(d) { return d.value; },
+		label: function(d) { return d.key + ' (' + d.value + ')'; }
+	};
+
+
+	// Default scales for x and y dimensions
+	var _scale = {
+		x: d3.scaleLinear(),
+		y: d3.scaleLinear()
+	};
+
+	// Extents
+	var _extent = {
+		width: extent({
+			defaultValue: [ 0, 10 ],
+			getValue: function(d, i) { return _fn.value(d, i); }
+		})
+	};
+
+	// elements
+	var _element = {
+		div: undefined
+	};
+
+	var _data = [];
+
+	// Chart create/init method
+	function _instance(selection) { }
+
+	/*
+	 * Initialize the chart (should only call this once). Performs all initial chart
+	 * creation and setup
+	 */
+	_instance.init = function(container) {
+		// Create the DIV element
+		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
+		_instance.resize();
+
+		return _instance;
+	};
+
+	/*
+	 * Set the _instance data
+	 */
+	_instance.data = function(v) {
+		if(!arguments.length) { return _data; }
+		_data = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	_instance.resize = function() {
+		// Set up the x scale (y is fixed)
+		_scale.x.range([ 0, _width ]);
+
+		return _instance;
+	};
+
+	/*
+	 * Redraw the graphic
+	 */
+	_instance.redraw = function() {
+
+		// Update the x domain
+		_scale.x.domain(_extent.width.getExtent(_data));
+
+		// Update the y domain (based on configuration and data)
+		_scale.y.domain([ 0, _data.length ]);
+		_scale.y.range([ 0, (_barHeight + _barPadding) * _data.length ]);
+
+		// Data Join
+		var bar = _element.div.selectAll('div.bar')
+			.data(_data, _fn.key);
+
+		// Update Only
+
+		// Enter
+		var barEnter = bar.enter().append('div')
+			.attr('class', 'bar')
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
+			.style('height', _barHeight + 'px')
+			.on('mouseover', _fn.mouseover)
+			.on('mouseout', _fn.mouseout)
+			.on('click', _fn.click)
+			.style('opacity', '0.01');
+
+		var barLabel = barEnter.append('div')
+			.attr('class', 'bar-label');
+
+		// Enter + Update
+		barEnter.merge(bar).transition().duration(_duration)
+			.style('opacity', '1')
+			.style('width', function(d, i) { return _scale.x(_fn.value(d, i)) + 'px'; })
+			.style('top', function(d, i) { return (_scale.y(i)) + 'px'; })
+			.style('left', '0px');
+
+		barLabel.merge(bar.select('div.bar-label'))
+			.html(_fn.label)
+			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
+
+		// Exit
+		bar.exit()
+			.transition().duration(_duration)
+			.style('opacity', '0.01')
+			.style('top', (_scale.y.range()[1] - _barHeight) + 'px' )
+			.remove();
+
+		// Update the size of the parent div
+		_element.div
+			.style('height', (_scale.y.range()[1]) + 'px');
+
+		return _instance;
+	};
+
+
+	// Basic Getters/Setters
+	_instance.width = function(v) {
+		if(!arguments.length) { return _width; }
+		_width = v;
+		return _instance;
+	};
+	_instance.barHeight = function(v) {
+		if(!arguments.length) { return _barHeight; }
+		_barHeight = v;
+		return _instance;
+	};
+	_instance.barPadding = function(v) {
+		if(!arguments.length) { return _barPadding; }
+		_barPadding = v;
+		return _instance;
+	};
+	_instance.key = function(v) {
+		if(!arguments.length) { return _fn.key; }
+		_fn.key = v;
+		return _instance;
+	};
+	_instance.value = function(v) {
+		if(!arguments.length) { return _fn.value; }
+		_fn.value = v;
+		return _instance;
+	};
+	_instance.label = function(v) {
+		if(!arguments.length) { return _fn.label; }
+		_fn.label = v;
+		return _instance;
+	};
+	_instance.widthExtent = function(v) {
+		if(!arguments.length) { return _extent.width; }
+		_extent.width = v;
+		_extent.width.getValue(function(d, i) { return _fn.value(d, i); });
+		return _instance;
+	};
+	_instance.dispatch = function(v) {
+		if(!arguments.length) { return _dispatch; }
+		return _instance;
+	};
+	_instance.duration = function(v) {
+		if(!arguments.length) { return _duration; }
+		_duration = v;
+		return _instance;
+	};
+
+	return _instance;
+}
+
+var chart = {
+	donut: donut,
+	matrix: matrix,
+	realtimeTimeline: realtimeTimeline,
+	timeline: timeline,
+	verticalBars: verticalBars
+};
+
+function bins(config) {
 
 	/**
 	 * Private variables
@@ -356,17 +2041,17 @@ function sentio_model_bins(config) {
 
 		// if we emptied the array, add an element for the lwm
 		if(_data.length === 0) {
-			_data.push([_config.lwm, _fn.createSeed()]);
+			_data.push([ _config.lwm, _fn.createSeed() ]);
 		}
 
 		// fill in any missing values from the lowest bin to the lwm
 		for(var i=_data[0][0] - _config.size; i >= _config.lwm; i -= _config.size) {
-			_data.unshift([i, _fn.createSeed()]);
+			_data.unshift([ i, _fn.createSeed() ]);
 		}
 
 		// pad above the hwm
 		while(_data[_data.length - 1][0] < _config.hwm - _config.size) {
-			_data.push([_data[_data.length-1][0] + _config.size, _fn.createSeed()]);
+			_data.push([ _data[_data.length-1][0] + _config.size, _fn.createSeed() ]);
 		}
 		if (_fn.afterUpdate) {
 			_fn.afterUpdate.call(model, _data, _dataCount, prevCount);
@@ -376,12 +2061,12 @@ function sentio_model_bins(config) {
 	function addData(dataToAdd) {
 		var prevCount = _dataCount;
 
-		dataToAdd.forEach(function(element) {
-			var i = getIndex(_fn.getKey(element));
+		dataToAdd.forEach(function(element, index) {
+			var i = getIndex(_fn.getKey(element, index));
 			if(i >= 0 && i < _data.length) {
-				var value = _fn.getValue(element);
+				var value = _fn.getValue(element, index);
 				var prevBinCount = _fn.countBin(_data[i]);
-				_fn.updateBin.call(model, _data[i], value);
+				_fn.updateBin.call(model, _data[i], value, index);
 				_dataCount += _fn.countBin(_data[i]) - prevBinCount;
 			}
 		});
@@ -403,9 +2088,9 @@ function sentio_model_bins(config) {
 		if(null == binConfig || null == binConfig.size || null == binConfig.count || null == binConfig.lwm) {
 			throw new Error('You must provide an initial size, count, and lwm');
 		}
-		_config.size = binConfig.size;
-		_config.count = binConfig.count;
-		_config.lwm = binConfig.lwm;
+		_config.size = Number(binConfig.size);
+		_config.count = Number(binConfig.count);
+		_config.lwm = Number(binConfig.lwm);
 
 		if(null != binConfig.createSeed) { _fn.createSeed = binConfig.createSeed; }
 		if(null != binConfig.getKey) { _fn.getKey = binConfig.getKey; }
@@ -554,7 +2239,7 @@ function sentio_model_bins(config) {
 	};
 
 	/**
-	 * Get/Set the afterAdd callback function
+	 * Get/Set the afterUpdate callback function
 	 */
 	model.afterUpdate = function(v) {
 		if(!arguments.length) { return _fn.afterUpdate; }
@@ -568,13 +2253,14 @@ function sentio_model_bins(config) {
 	model.size = function(v) {
 		if(!arguments.length) { return _config.size; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
 		// Only change stuff if the size actually changes
-		if(Number(v) !== _config.size) {
-			_config.size = Number(v);
+		if(v !== _config.size) {
+			_config.size = v;
 			calculateHwm();
 			clearData();
 			updateState();
@@ -589,13 +2275,14 @@ function sentio_model_bins(config) {
 	model.count = function(v) {
 		if(!arguments.length) { return _config.count; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
 		// Only change stuff if the count actually changes
-		if(Number(v) !== _config.count) {
-			_config.count = Math.floor(Number(v));
+		if(v !== _config.count) {
+			_config.count = Math.floor(v);
 			calculateHwm();
 			updateState();
 		}
@@ -639,15 +2326,12 @@ function sentio_model_bins(config) {
 
 	return model;
 }
-var sentio_controller = sentio.controller = {};
-sentio.controller.rtBins = sentio_controller_rtBins;
 
 /*
  * Controller wrapper for the bin model. Assumes binSize is in milliseconds.
  * Every time binSize elapses, updates the lwm to keep the bins shifting.
  */
-function sentio_controller_rtBins(config) {
-	'use strict';
+function realtimeBins(config) {
 
 	/**
 	 * Private variables
@@ -706,14 +2390,14 @@ function sentio_controller_rtBins(config) {
 			throw new Error('You must provide an initial binSize and binCount');
 		}
 
-		_config.binSize = rtConfig.binSize;
-		_config.binCount = rtConfig.binCount;
+		_config.binSize = Number(rtConfig.binSize);
+		_config.binCount = Number(rtConfig.binCount);
 
 		if(null != rtConfig.delay) {
-			_config.delay = rtConfig.delay;
+			_config.delay = Number(rtConfig.delay);
 		}
 
-		_model = sentio.model.bins({
+		_model = bins({
 			size: _config.binSize,
 			count: _config.binCount + 2,
 			lwm: 0
@@ -767,7 +2451,8 @@ function sentio_controller_rtBins(config) {
 	controller.binSize = function(v) {
 		if(!arguments.length) { return _config.binSize; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin size must be a positive integer');
 		}
 
@@ -781,7 +2466,8 @@ function sentio_controller_rtBins(config) {
 	controller.binCount = function(v) {
 		if(!arguments.length) { return _config.binCount; }
 
-		if(Number(v) < 1) {
+		v = Number(v);
+		if(v < 1) {
 			throw new Error('Bin count must be a positive integer');
 		}
 
@@ -797,2608 +2483,23 @@ function sentio_controller_rtBins(config) {
 
 	return controller;
 }
-var sentio_chart = sentio.chart = {};
-sentio.chart.donut = sentio_chart_donut;
 
-function sentio_chart_donut() {
-	'use strict';
+var controller = {
+	realtimeBins: realtimeBins,
+	timelineBrush: timelineBrush
+};
 
-	// Chart height/width
-	var _width = 400;
-	var _height = 400;
-	var _margin = { top: 2, bottom: 2, right: 2, left: 2 };
+var model = {
+	bins: bins,
+	extent: extent,
+	multiExtent: multiExtent
+};
 
-	// Inner and outer radius settings
-	var _radius;
-	var _innerRadiusRatio = 0.7;
+exports.chart = chart;
+exports.controller = controller;
+exports.model = model;
 
-	// Transition duration
-	var _duration = 500;
+Object.defineProperty(exports, '__esModule', { value: true });
 
-	// Legend configuration
-	var _legend = {
-		enabled: true,
-		markSize: 16,
-		markMargin: 8,
-		labelOffset: 2,
-		position: 'center', // only option right now
-		layout: 'vertical'
-	};
-
-	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOver', 'onMouseOut', 'onClick');
-
-	// Function handlers
-	var _fn = {
-		updateActiveElement: function(d) {
-			var legendEntries = _element.gLegend.selectAll('g.entry');
-			var arcs = _element.gChart.selectAll('path.arc');
-
-			if(null != d && null != d.data) {
-				d = d.data;
-			}
-
-			if(null != d) {
-				// Set the highlight on the row
-				var key = _fn.key(d);
-				legendEntries.classed('active', function(e){
-					return _fn.key(e) == key;
-				});
-				arcs.classed('active', function(e){
-					return _fn.key(e.data) == key;
-				});
-			}
-			else {
-				legendEntries.classed('active', false);
-				arcs.classed('active', false);
-			}
-		},
-		onMouseOver: function(d, i) {
-			_fn.updateActiveElement(d);
-			_dispatch.onMouseOver(d, this);
-		},
-		onMouseOut: function(d, i) {
-			_fn.updateActiveElement();
-			_dispatch.onMouseOut(d, this);
-		},
-		onClick: function(d, i) {
-			_dispatch.onClick(d, this);
-		},
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
-	};
-
-
-	// Extents
-	var _extent = {
-	};
-
-	var _scale = {
-		color: d3.scale.category10()
-	};
-
-	var _layout = {
-		arc: d3.svg.arc(),
-		pie: d3.layout.pie().value(_fn.value).sort(null)
-	};
-
-	// elements
-	var _element = {
-		div: undefined,
-		svg: undefined,
-		gChart: undefined,
-		legend: undefined
-	};
-
-	var _data = [];
-
-	// Chart create/init method
-	function _instance(selection){}
-
-	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
-	 * creation and setup
-	 */
-	_instance.init = function(container){
-		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'sentio donut');
-
-		// Create the svg element
-		_element.svg = _element.div.append('svg');
-
-		// Create the main chart group
-		_element.gChart = _element.svg.append('g').attr('class', 'chart');
-
-		// Create a group for the legend
-		_element.gLegend = _element.svg.append('g').attr('class', 'legend');
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
-		_data = v || [];
-		return _instance;
-	};
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-		var chartWidth = _width - _margin.right - _margin.left;
-		var chartHeight = _height - _margin.top - _margin.bottom;
-		_radius = (Math.min(chartHeight, chartWidth))/2;
-
-		_element.svg
-			.attr('width', _width)
-			.attr('height', _height);
-
-		_element.gChart
-			.attr('transform', 'translate(' + (_margin.left + _radius) + ',' + (_margin.top + _radius) + ')');
-
-		// The outer radius is half of the lesser of the two (chartWidth/chartHeight)
-		_layout.arc.innerRadius(_radius * _innerRadiusRatio).outerRadius(_radius);
-
-		// Update legend positioning
-		_element.gLegend.attr('transform', legendTransform());
-
-		return _instance;
-	};
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-
-		redrawChart();
-
-		if (_legend.enabled) {
-			redrawLegend();
-		}
-
-		return _instance;
-	};
-
-	/**
-	 * Private functions
-	 */
-	function redrawChart() {
-		/*
-		 * Join the data
-		 */
-		var g = _element.gChart.selectAll('path.arc')
-			.data(_layout.pie(_data), function(d, i) { return _fn.key(d.data, i); });
-
-		/*
-		 * Update Only
-		 */
-
-		/*
-		 * Enter Only
-		 * Create the path, add the arc class, register the callbacks
-		 * Grow from 0 for both start and end angles
-		 */
-		var gEnter = g.enter().append('path')
-			.attr('class', 'arc')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
-			.each(function(d) { this._current = { startAngle: 0, endAngle: 0 }; });
-
-		/*
-		 * Enter + Update
-		 * Apply the update from current angle to next angle
-		 */
-		g.transition().duration(_duration)
-			.attrTween('d', function(d) {
-				var interpolate = d3.interpolate(this._current, d);
-				this._current = interpolate(0);
-				return function(t) {
-					return _layout.arc(interpolate(t));
-				};
-			});
-
-		g.attr('key', function(d, i) { return _fn.key(d.data, i); })
-			.attr('fill', function(d, i) { return _scale.color(_fn.key(d.data, i)); });
-
-		g.exit().remove();
-	}
-
-	function legendTransform() {
-		var entrySpan = _legend.markSize + _legend.markMargin;
-
-		// Only option is 'center' for now
-		if (_legend.position === 'center') {
-			// The center position of the chart
-			var centerX = _margin.left + _radius;
-			var centerY = _margin.top + _radius;
-			var legendWidth = (null == _element.gLegend._maxWidth)? 0 : _element.gLegend._maxWidth;
-			var legendHeight = entrySpan*_data.length + _legend.markMargin;
-
-			var offsetX = legendWidth/2;
-			var offsetY = legendHeight/2;
-
-			return 'translate(' + (centerX - offsetX) + ',' + (centerY - offsetY) + ')';
-		} else {
-			// TODO
-		}
-	}
-
-	function redrawLegend() {
-		/*
-		 * Join the data
-		 */
-		var gLegendGroup = _element.gLegend.selectAll('g.entry')
-			.data(_data, function(d, i) { return _fn.key(d, i); });
-
-		/*
-		 * Enter Only
-		 * Create a g (gLegendGroup) to add the rect & text label,
-		 * register the callbacks, apply the transform to position each gLegendGroup
-		 */
-		var gLegendGroupEnter = gLegendGroup.enter().append('g')
-			.attr('class', 'entry')
-			.attr('transform', function(d, i) { return 'translate(0, ' + (i*(_legend.markSize + _legend.markMargin)) + ')'; } )
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick);
-
-		// Add the legend's rect
-		var rect = gLegendGroupEnter
-			.append('rect')
-			.attr('width', _legend.markSize)
-			.attr('height', _legend.markSize);
-
-		// Add the legend text
-		gLegendGroupEnter
-			.append('text')
-			.attr('x', _legend.markSize + _legend.markMargin)
-			.attr('y', _legend.markSize - _legend.labelOffset);
-
-		/*
-		 * Enter + Update
-		 */
-		gLegendGroup.select('text')
-			.text(function(d, i) { return _fn.label(d, i); });
-
-		gLegendGroup.select('rect')
-			.style('fill', function(d) { return _scale.color(_fn.key(d)); });
-
-		// Position each rect on both enter and update to fully account for changing widths and sizes
-		gLegendGroup
-			// Iterate over all the legend keys to get the max width and store it in gLegendGroup._maxWidth
-			.each(function(d, i) {
-				if (i === 0) {
-					// Reset
-					_element.gLegend._maxWidth = this.getBBox().width;
-				} else {
-					_element.gLegend._maxWidth = Math.max(this.getBBox().width, _element.gLegend._maxWidth);
-				}
-			});
-
-		// Reassert the legend position
-		_element.gLegend.attr('transform', legendTransform());
-
-		gLegendGroup.exit().remove();
-	}
-
-	// Basic Getters/Setters
-	_instance.width = function(v) {
-		if(!arguments.length) { return _width; }
-		_width = v;
-		return _instance;
-	};
-	_instance.height = function(v) {
-		if(!arguments.length) { return _height; }
-		_height = v;
-		return _instance;
-	};
-
-	_instance.innerRadiusRatio = function(v) {
-		if(!arguments.length) { return _innerRadiusRatio; }
-		_innerRadiusRatio = v;
-		return _instance;
-	};
-
-	_instance.duration = function(v) {
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		return _instance;
-	};
-
-	_instance.key = function(v) {
-		if(!arguments.length) { return _fn.key; }
-		_fn.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _fn.value; }
-		_fn.value = v;
-		_layout.pie.value(v);
-		return _instance;
-	};
-	_instance.label = function(v) {
-		if(!arguments.length) { return _fn.label; }
-		_fn.label = v;
-		return _instance;
-	};
-	_instance.color = function(v) {
-		if(!arguments.length) { return _scale.color; }
-		_scale.color = v;
-		return _instance;
-	};
-
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
-	};
-
-	_instance.legend = function(v) {
-		if(!arguments.length) { return _legend; }
-		_legend = v;
-		return _instance;
-	};
-
-	return _instance;
-}
-sentio.chart.matrix = sentio_chart_matrix;
-
-function sentio_chart_matrix() {
-	'use strict';
-
-	// Chart dimensions
-	var _cellSize = 16;
-	var _cellMargin = 1;
-	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
-
-	// Transition duration
-	var _duration = 500;
-
-	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onMouseOverCell', 'onMouseOutCell', 'onClickCell', 'onMouseOverRow', 'onMouseOutRow', 'onClickRow');
-
-	// Function handlers
-	var _fn = {
-		updateActiveSeries: function(d) {
-			var seriesLabels = _element.g.chart.selectAll('.row text');
-
-			if(null != d) {
-				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d);
-				seriesLabels.classed('active', function(series, i){ return _fn.seriesKey(series) == seriesKey; });
-			}
-			else {
-				// Now update the style
-				seriesLabels.classed('active', false);
-			}
-		},
-		onMouseOverRow: function(d, i) {
-			_fn.updateActiveSeries(d);
-			_dispatch.onMouseOverRow(d, this);
-		},
-		onMouseOutRow: function(d, i) {
-			_fn.updateActiveSeries();
-			_dispatch.onMouseOutRow(d, this);
-		},
-		onClickRow: function(d, i) {
-			_dispatch.onClickRow(d, this);
-		},
-		onMouseOverCell: function(d, i) {
-			_dispatch.onMouseOverCell(d, this);
-		},
-		onMouseOutCell: function(d, i) {
-			_dispatch.onMouseOutCell(d, this);
-		},
-		onClickCell: function(d, i) {
-			_dispatch.onClickCell(d, this);
-		},
-		seriesKey: function(d, i) { return d.key; },
-		seriesLabel: function(d, i) { return d.label; },
-		seriesValues: function(d, i) { return d.values; },
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; }
-	};
-
-	// Extents
-	var _extent = {
-		x: sentio.util.extent().getValue(_fn.key),
-		value: sentio.util.extent().getValue(_fn.value),
-		multi: sentio.util.multiExtent()
-	};
-
-	// Scales for x, y, and color
-	var _scale = {
-		x: d3.scale.linear(),
-		y: d3.scale.ordinal(),
-		color: d3.scale.linear().range(['#e7e7e7', '#008500'])
-	};
-
-	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('top').outerTickSize(0).innerTickSize(2)
-	};
-
-	var _element = {
-		div: undefined,
-		svg: undefined,
-		g: {
-			chart: undefined,
-			xAxis: undefined
-		}
-	};
-
-	var _data = [];
-
-	var _instance = function () {};
-
-	_instance.init = function(d3Container) {
-		// Add the svg element
-		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
-		_element.svg = _element.div.append('svg');
-
-		// Add the axis
-		_element.g.xAxis = _element.svg.append('g').attr('class', 'x axis');
-
-		// Add a group for the chart itself
-		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	_instance.data = function(d) {
-		if(!arguments.length) {
-			return _data;
-		}
-		_data = d || [];
-		return _instance;
-	};
-
-	_instance.resize = function() { };
-
-	_instance.redraw = function() {
-		// Determine the number of rows to render
-		var rowCount = _data.length;
-
-		// Determine the number of boxes to render (assume complete data)
-		var boxes = [];
-		if(rowCount > 0) {
-			boxes = _fn.seriesValues(_data[0]);
-		}
-		var boxCount = boxes.length;
-
-		// Dimensions of the visualization
-		var cellSpan = _cellMargin + _cellSize;
-
-		// calculate the width/height of the svg
-		var width = boxCount*cellSpan + _cellMargin,
-			height = rowCount*cellSpan + _cellMargin;
-
-		// scale the svg to the right size
-		_element.svg
-			.attr('width', width + _margin.left + _margin.right)
-			.attr('height', height + _margin.top + _margin.bottom);
-
-		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([0, width - _cellMargin - cellSpan]);
-		_scale.color.domain(_extent.multi.values(_fn.seriesValues).extent(_extent.value).getExtent(_data));
-
-		// Draw the x axis
-		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
-		_element.g.xAxis.call(_axis.x);
-
-		/**
-		 * Chart Manipulation
-		 */
-
-		/*
-		 * Row Join
-		 */
-		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
-
-		/*
-		 * Row Update Only
-		 */
-
-		/*
-		 * Row Enter Only
-		 * Build the row structure
-		 */
-		var rowEnter = row.enter().append('g');
-		rowEnter
-			.style('opacity', 0.1)
-			.attr('class', 'row')
-			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.onMouseOverRow)
-			.on('mouseout', _fn.onMouseOutRow)
-			.on('click', _fn.onClickRow);
-
-		// Also must append the label of the row
-		rowEnter.append('text')
-			.attr('class', 'series label')
-			.style('text-anchor', 'end')
-			.attr('x', -6)
-			.attr('y', _cellMargin + (_cellSize/2))
-			.attr('dy', '.32em');
-
-		// Also must append a line
-		rowEnter.append('line')
-			.attr('class', 'series tick')
-			.attr('x1', -3)
-			.attr('x2', 0)
-			.attr('y1', _cellMargin + (_cellSize/2))
-			.attr('y2', _cellMargin + (_cellSize/2));
-
-		/*
-		 * Row Enter + Update
-		 */
-		// Transition rows to their new positions
-		row.transition().duration(_duration)
-			.style('opacity', 1)
-			.attr('transform', function(d, i){
-				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
-			});
-
-		// Update the series labels in case they changed
-		row.select('text.series.label')
-			.text(_fn.seriesLabel);
-
-		/*
-		 * Row Exit
-		 */
-		row.exit()
-			.transition().duration(_duration)
-			.style('opacity', 0.1)
-			.remove();
-
-
-		/*
-		 * Cell Join - Will be done on row enter + exit
-		 */
-		var rowCell = row.selectAll('rect.cell').data(_fn.seriesValues, _fn.key);
-
-		/*
-		 * Cell Update Only
-		 */
-
-		/*
-		 * Cell Enter Only
-		 */
-		rowCell.enter().append('rect')
-			.attr('class', 'cell')
-			.style('opacity', 0.1)
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
-			.attr('y', _cellMargin)
-			.attr('height', _cellSize)
-			.attr('width', _cellSize)
-			.on('mouseover', _fn.onMouseOverCell)
-			.on('mouseout', _fn.onMouseOutCell)
-			.on('click', _fn.onClickCell);
-
-		/*
-		 * Cell Enter + Update
-		 * Update fill, move to proper x coordinate
-		 */
-		rowCell.transition().duration(_duration)
-			.style('opacity', 1)
-			.attr('x', function(d, i){ return _scale.x(_fn.key(d, i)) + _cellMargin; })
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
-
-		/*
-		 * Cell Remove
-		 */
-		rowCell.exit().transition().duration(_duration)
-			.attr('width', 0)
-			.style('opacity', 0.1)
-			.remove();
-
-		return _instance;
-	};
-
-
-	_instance.cellSize = function(v) {
-		if(!arguments.length) { return _cellSize; }
-		_cellSize = v;
-		return _instance;
-	};
-	_instance.cellMargin = function(v) {
-		if(!arguments.length) { return _cellMargin; }
-		_cellMargin = v;
-		return _instance;
-	};
-	_instance.margin = function(v) {
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
-
-	_instance.duration = function(v) {
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		return _instance;
-	};
-
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
-	_instance.key = function(v) {
-		if(!arguments.length) { return _fn.key; }
-		_extent.x.getValue(v);
-		_fn.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _fn.value; }
-		_fn.value = v;
-		_extent.value.getValue(v);
-		return _instance;
-	};
-
-	_instance.colorScale = function(v) {
-		if(!arguments.length) { return _scale.color; }
-		_scale.color = v;
-		return _instance;
-	};
-	_instance.xScale = function(v) {
-		if(!arguments.length) { return _scale.xScale; }
-		_scale.xScale = v;
-		_axis.x.scale(v);
-		return _instance;
-	};
-	_instance.yScale = function(v) {
-		if(!arguments.length) { return _scale.yScale; }
-		_scale.yScale = v;
-		return _instance;
-	};
-
-	_instance.xExtent = function(v) {
-		if(!arguments.length) { return _extent.x; }
-		_extent.x = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v) {
-		if(!arguments.length) { return _extent.y; }
-		_extent.y = v;
-		return _instance;
-	};
-	_instance.valueExtent = function(v) {
-		if(!arguments.length) { return _extent.value; }
-		_extent.value = v;
-		return _instance;
-	};
-
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
-	};
-
-	return _instance;
-}
-sentio.chart.verticalBars = sentio_chart_vertical_bars;
-
-function sentio_chart_vertical_bars() {
-	'use strict';
-
-	// Layout properties
-	var _id = 'vertical_bars_' + Date.now();
-	var _margin = { top: 0, right: 0, bottom: 0, left: 0 };
-	var _width = 100;
-	var _barHeight = 24;
-	var _barPadding = 2;
-	var _duration = 500;
-
-	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('onmouseover', 'onmouseout', 'onclick');
-	var _fn = {
-		onMouseOver: function(d, i) {
-			_dispatch.onmouseover(d, this);
-		},
-		onMouseOut: function(d, i) {
-			_dispatch.onmouseout(d, this);
-		},
-		onClick: function(d, i) {
-			_dispatch.onclick(d, this);
-		}
-	};
-
-	// Default accessors for the dimensions of the data
-	var _value = {
-		key: function(d, i) { return d.key; },
-		value: function(d, i) { return d.value; },
-		label: function(d, i) { return d.key + ' (' + d.value + ')'; }
-	};
-
-	// Default scales for x and y dimensions
-	var _scale = {
-		x: d3.scale.linear(),
-		y: d3.scale.linear()
-	};
-
-	// Extents
-	var _extent = {
-		width: sentio.util.extent({
-			defaultValue: [0, 10],
-			getValue: _value.value
-		})
-	};
-
-	// elements
-	var _element = {
-		div: undefined
-	};
-
-	var _data = [];
-
-	// Chart create/init method
-	function _instance(selection){}
-
-	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
-	 * creation and setup
-	 */
-	_instance.init = function(container){
-		// Create the DIV element
-		_element.div = container.append('div').attr('class', 'sentio bars-vertical');
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
-		_data = v || [];
-
-		return _instance;
-	};
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-		// Set up the x scale (y is fixed)
-		_scale.x.range([0, _width - _margin.right - _margin.left]);
-
-		return _instance;
-	};
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-
-		// Update the x domain
-		_scale.x.domain(_extent.width.getExtent(_data));
-
-		// Update the y domain (based on configuration and data)
-		_scale.y.domain([0, _data.length]);
-		_scale.y.range([0, (_barHeight + _barPadding) * _data.length]);
-
-		// Data Join
-		var div = _element.div.selectAll('div.bar')
-			.data(_data, _value.key);
-
-		// Update Only
-
-		// Enter
-		var bar = div.enter().append('div')
-			.attr('class', 'bar')
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px')
-			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.onMouseOver)
-			.on('mouseout', _fn.onMouseOut)
-			.on('click', _fn.onClick)
-			.style('opacity', 0.01);
-
-		bar.append('div')
-			.attr('class', 'bar-label');
-
-		// Enter + Update
-		div.transition().duration(_duration)
-			.style('opacity', 1)
-			.style('width', function(d, i) { return _scale.x(_value.value(d, i)) + 'px'; })
-			.style('top', function(d, i) { return (_scale.y(i) + _margin.top) + 'px'; })
-			.style('left', _margin.left + 'px');
-
-		div.select('div.bar-label')
-			.html(_value.label)
-			.style('max-width', (_scale.x.range()[1] - 10) + 'px');
-
-		// Exit
-		div.exit()
-			.transition().duration(_duration)
-			.style('opacity', 0.01)
-			.style('top', (_scale.y.range()[1] + _margin.top + _margin.bottom - _barHeight) + 'px' )
-			.remove();
-
-		// Update the size of the parent div
-		_element.div
-			.style('height', (_margin.bottom + _margin.top + _scale.y.range()[1]) + 'px');
-
-		return _instance;
-	};
-
-
-	// Basic Getters/Setters
-	_instance.width = function(v) {
-		if(!arguments.length) { return _width; }
-		_width = v;
-		return _instance;
-	};
-	_instance.barHeight = function(v) {
-		if(!arguments.length) { return _barHeight; }
-		_barHeight = v;
-		return _instance;
-	};
-	_instance.barPadding = function(v) {
-		if(!arguments.length) { return _barPadding; }
-		_barPadding = v;
-		return _instance;
-	};
-	_instance.margin = function(v) {
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
-	_instance.key = function(v) {
-		if(!arguments.length) { return _value.key; }
-		_value.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _value.value; }
-		_value.value = v;
-		_extent.width.getValue(v);
-		return _instance;
-	};
-	_instance.label = function(v) {
-		if(!arguments.length) { return _value.label; }
-		_value.label = v;
-		return _instance;
-	};
-	_instance.widthExtent = function(v) {
-		if(!arguments.length) { return _extent.width; }
-		_extent.width = v;
-		return _instance;
-	};
-	_instance.dispatch = function(v) {
-		if(!arguments.length) { return _dispatch; }
-		return _instance;
-	};
-	_instance.duration = function(v) {
-		if(!arguments.length) { return _duration; }
-		_duration = v;
-		return _instance;
-	};
-
-	return _instance;
-}
-var sentio_timeline = sentio.timeline = {};
-sentio.timeline.line = sentio_timeline_line;
-
-function sentio_timeline_line() {
-	'use strict';
-
-	// Layout properties
-	var _id = 'timeline_line_' + Date.now();
-	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
-	var _height = 100, _width = 600;
-
-	/*
-	 * Callback function for hovers over the markers. Invokes this function
-	 * with the data from the marker payload
-	 */
-	var _markerHoverCallback = null;
-
-	// Default accessors for the dimensions of the data
-	var _value = {
-		x: function(d, i) { return d[0]; },
-		y: function(d, i) { return d[1]; }
-	};
-
-	// Accessors for the positions of the markers
-	var _markerValue = {
-		x: function(d, i) { return d[0]; },
-		label: function(d, i) { return d[1]; }
-	};
-
-	var now = Date.now();
-	var _extent = {
-		x: sentio.util.extent({
-			defaultValue: [now - 60000*5, now],
-			getValue: function(d) { return d[0]; }
-		}),
-		y: sentio.util.extent({
-			getValue: function(d) { return d[1]; }
-		})
-	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { return d.data; });
-
-	// Default scales for x and y dimensions
-	var _scale = {
-		x: d3.time.scale(),
-		y: d3.scale.linear()
-	};
-
-	// Default Axis definitions
-	var _axis = {
-		x: d3.svg.axis().scale(_scale.x).orient('bottom'),
-		y: d3.svg.axis().scale(_scale.y).orient('left').ticks(3)
-	};
-
-	// g elements
-	var _element = {
-		svg: undefined,
-		g: {
-			container: undefined,
-			plots: undefined,
-			xAxis: undefined,
-			yAxis: undefined,
-			markers: undefined,
-			brush: undefined
-		},
-		plotClipPath: undefined,
-		markerClipPath: undefined
-	};
-
-	// Line generator for the plot
-	var _line = d3.svg.line().interpolate('linear');
-	_line.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
-	});
-	_line.y(function(d, i) {
-		return _scale.y(_value.y(d, i));
-	});
-
-	// Area generator for the plot
-	var _area = d3.svg.area().interpolate('linear');
-	_area.x(function(d, i) {
-		return _scale.x(_value.x(d, i));
-	});
-	_area.y1(function(d, i) {
-		return _scale.y(_value.y(d, i));
-	});
-
-	// Brush filter
-	var _filter = {
-		enabled: false,
-		brush: d3.svg.brush(),
-		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
-	};
-
-	var _data = [];
-
-	var _markers = {
-		values: [],
-		dispatch: d3.dispatch('onclick')
-	};
-
-	function brushstart() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filterstart([isEmpty, min, max]);
-	}
-	function brush() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filter([isEmpty, min, max]);
-	}
-	function brushend() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filterend([isEmpty, min, max]);
-	}
-
-	// Chart create/init method
-	function _instance(selection){}
-
-	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
-	 * creation and setup
-	 */
-	_instance.init = function(container){
-		// Create a container div
-		_element.div = container.append('div').attr('class', 'sentio timeline');
-
-		// Create the SVG element
-		_element.svg = _element.div.append('svg');
-
-		// Add the defs and add the clip path definition
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
-
-		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
-
-		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// If the filter is enabled, add it
-		if(_filter.enabled) {
-			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-			_element.g.brush.call(_filter.brush)
-				.selectAll('rect').attr('y', -6);
-			_filter.brush
-				.on('brushend', brushend)
-				.on('brushstart', brushstart)
-				.on('brush', brush);
-		}
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
-		_data = v;
-
-		return _instance;
-	};
-
-	/*
-	 * Set the markers data
-	 */
-	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers.dispatch; }
-		_markers.values = v;
-		return _instance;
-	};
-
-	/*
-	 * Accepts the hovered element and conditionally invokes
-	 * the marker hover callback if both the function and data
-	 * are non-null
-	 */
-	function invokeMarkerCallback(d) {
-		// fire an event with the payload
-		if(null != _markerHoverCallback) {
-			_markerHoverCallback(d);
-		}
-	}
-
-	function markerClicked(d) {
-		_markers.dispatch.onclick(d);
-	}
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-		var now = Date.now();
-
-		// Set up the scales
-		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom), 0]);
-
-		// Append the clip path
-		_element.plotClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
-
-		// Update the positions of the axes
-		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
-
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
-
-		return _instance;
-	};
-
-	// Multi Extent Combiner
-	function multiExtent(data, extent) {
-		return _multiExtent.extent(extent).getExtent(data);
-	}
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-		// Need to grab the filter extent before we change anything
-		var filterExtent = getFilter();
-
-		// Update the x domain (to the latest time window)
-		_scale.x.domain(multiExtent(_data, _extent.x));
-
-		// Update the y domain (based on configuration and data)
-		_scale.y.domain(multiExtent(_data, _extent.y));
-
-		// Update the plot elements
-		updateAxes();
-		updateLine();
-		updateMarkers();
-		updateFilter(filterExtent);
-
-		return _instance;
-	};
-
-	function updateAxes() {
-		if(null != _axis.x) {
-			_element.g.xAxis.call(_axis.x);
-		}
-		if(null != _axis.y) {
-			_element.g.yAxis.call(_axis.y);
-		}
-	}
-
-	function updateLine() {
-		// Join
-		var plotJoin = _element.g.plots
-			.selectAll('.plot')
-			.data(_data, function(d) { 
-				return d.key; 
-			});
-
-		// Enter
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
-
-		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
-
-		var lineUpdate = plotJoin.select('.line');
-		var areaUpdate = plotJoin.select('.area');
-
-		// Update
-		lineUpdate.datum(function(d) { return d.data; }).attr('d', _line);
-		areaUpdate.datum(function(d) { return d.data; }).attr('d', _area.y0(_scale.y.range()[0]));
-
-		// Exit
-		var plotExit = plotJoin.exit();
-		plotExit.remove();
-
-	}
-
-	function updateMarkers() {
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers.values, function(d) {
-				return _markerValue.x(d); 
-			});
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', invokeMarkerCallback)
-			.on('click', markerClicked);
-
-		var lineEnter = markerEnter.append('line');
-		var textEnter = markerEnter.append('text');
-
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
-
-		lineEnter
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		textEnter
-			.attr('dy', '0em')
-			.attr('y', -3)
-			.attr('text-anchor', 'middle')
-			.text(function(d) { return _markerValue.label(d); });
-
-		// Update
-		lineUpdate
-			.attr('x1', function(d) { return _scale.x(_markerValue.x(d)); })
-			.attr('x2', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		textUpdate
-			.attr('x', function(d) { return _scale.x(_markerValue.x(d)); });
-
-		// Exit
-		var markerExit = markerJoin.exit().remove();
-
-	}
-
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
-	 */
-	function getFilter() {
-		var extent;
-		if(_filter.enabled && !_filter.brush.empty()) {
-			extent = _filter.brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
-		}
-
-		return extent;
-	}
-
-	/*
-	 * Set the state of the filter, firing events if necessary
-	 */
-	function setFilter(newExtent, oldExtent) {
-		// Fire the event if the extents are different
-		var suppressEvent = newExtent == oldExtent || newExtent == null || oldExtent == null || (newExtent[0] == oldExtent[0] && newExtent[1] == oldExtent[1]);
-		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
-
-		// either clear the filter or assert it
-		if(clearFilter) {
-			_filter.brush.clear();
-		} else {
-			_filter.brush.extent([ new Date(newExtent[0]), new Date(newExtent[1]) ]);
-		}
-
-		// fire the event if anything changed
-		if(!suppressEvent) {
-			_filter.brush.event(_element.g.brush);
-		}
-	}
-
-	/*
-	 * Update the state of the existing filter (if any) on the plot.
-	 * 
-	 * This method accepts the extent of the brush before any plot changes were applied
-	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
-	 * There is also logic to clip the brush if the extent has moved such that the brush
-	 * has moved partially out of the plot boundaries, as well as to clear the brush if it
-	 * has moved completely outside of the boundaries of the plot.
-	 */
-	function updateFilter(extent) {
-		// Don't need to do anything if filtering is not enabled
-		if(_filter.enabled) {
-			// Reassert the x scale of the brush (in case the scale has changed)
-			_filter.brush.x(_scale.x);
-
-			// Derive the overall plot extent from the collection of series
-			var plotExtent = multiExtent(_data, _extent.x);
-
-			// If there was no previous extent, then there is no brush to update
-			if(null != extent) {
-				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
-				setFilter(nExtent, extent);
-			}
-
-			_element.g.brush
-				.call(_filter.brush)
-				.selectAll('rect')
-					.attr('height', _height - _margin.top - _margin.bottom + 7);
-		}
-	}
-
-	// Basic Getters/Setters
-	_instance.width = function(v){
-		if(!arguments.length) { return _width; }
-		_width = v;
-		return _instance;
-	};
-	_instance.height = function(v){
-		if(!arguments.length) { return _height; }
-		_height = v;
-		return _instance;
-	};
-	_instance.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
-	_instance.interpolation = function(v){
-		if(!arguments.length) { return _line.interpolate(); }
-		_line.interpolate(v);
-		_area.interpolate(v);
-		return _instance;
-	};
-	_instance.xAxis = function(v){
-		if(!arguments.length) { return _axis.x; }
-		_axis.x = v;
-		return _instance;
-	};
-	_instance.yAxis = function(v){
-		if(!arguments.length) { return _axis.y; }
-		_axis.y = v;
-		return _instance;
-	};
-	_instance.xScale = function(v){
-		if(!arguments.length) { return _scale.x; }
-		_scale.x = v;
-		if(null != _axis.x) {
-			_axis.x.scale(v);
-		}
-		return _instance;
-	};
-	_instance.yScale = function(v){
-		if(!arguments.length) { return _scale.y; }
-		_scale.y = v;
-		if(null != _axis.y) {
-			_axis.y.scale(v);
-		}
-		return _instance;
-	};
-	_instance.xValue = function(v){
-		if(!arguments.length) { return _value.x; }
-		_value.x = v;
-		return _instance;
-	};
-	_instance.yValue = function(v){
-		if(!arguments.length) { return _value.y; }
-		_value.y = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v){
-		if(!arguments.length) { return _extent.y; }
-		_extent.y = v;
-		return _instance;
-	};
-	_instance.xExtent = function(v){
-		if(!arguments.length) { return _extent.x; }
-		_extent.x = v;
-		return _instance;
-	};
-	_instance.markerXValue = function(v){
-		if(!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
-		return _instance;
-	};
-	_instance.markerLabelValue = function(v){
-		if(!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
-		return _instance;
-	};
-	_instance.markerHover = function(v) {
-		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = v;
-		return _instance;
-	};
-	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.dispatch; }
-		_filter.enabled = v;
-		return _instance;
-	};
-
-	// Expects milliseconds time
-	_instance.setFilter = function(extent) {
-		var oldExtent = getFilter();
-		if(null != extent && extent.length === 2) {
-			// Convert to Dates and assert filter
-			if(extent[0] instanceof Date) {
-				extent[0] = extent[0].getTime();
-			}
-			if(extent[1] instanceof Date) {
-				extent[1] = extent[1].getTime();
-			}
-		}
-
-		setFilter(extent, oldExtent);
-		_instance.redraw();
-		return _instance;
-	};
-
-	return _instance;
-}
-var sentio_realtime = sentio.realtime = {};
-sentio.realtime.timeline = sentio_realtime_timeline;
-
-function sentio_realtime_timeline() {
-	'use strict';
-
-	// Default data delay, this is the difference between now and the latest tick shown on the timeline
-	var _delay = 0;
-
-	// Interval of the timeline, this is the amount of time being displayed by the timeline
-	var _interval = 60000;
-
-	// Is the timeline running?
-	var _running = false;
-	var _timeout = null;
-
-	// What is the refresh rate?
-	var _fps = 32;
-
-	var _instance = sentio.timeline.line();
-	_instance.yExtent().filter(function(d) {
-		var x = _instance.xValue()(d);
-		var xExtent = _instance.xExtent().getExtent();
-		return (x < xExtent[1] && x > xExtent[0]);
-	});
-
-	/*
-	 * This is the main update loop function. It is called every time the
-	 * _instance is updating to proceed through time.
-	 */ 
-	function tick() {
-		// If not running, let the loop die
-		if(!_running) return;
-
-		_instance.redraw();
-
-		// Schedule the next update
-		_timeout = window.setTimeout(tick, (_fps > 0)? 1000/_fps : 0);
-	}
-
-	/*
-	 * Redraw the graphic
-	 */
-	var parentRedraw = _instance.redraw;
-	_instance.redraw = function() {
-		// Update the x domain (to the latest time window)
-		var now = new Date();
-		_instance.xExtent().overrideValue([now - _delay - _interval, now - _delay]);
-
-		parentRedraw();
-		return _instance;
-	};
-
-	_instance.start = function() {
-		if(_running){ return; }
-		_running = true;
-
-		tick();
-		return _instance;
-	};
-
-	_instance.stop = function() {
-		_running = false;
-
-		if(_timeout != null) {
-			window.clearTimeout(_timeout);
-		}
-		return _instance;
-	};
-
-	_instance.restart = function() {
-		_instance.stop();
-		_instance.start();
-		return _instance;
-	};
-
-	_instance.interval = function(v) {
-		if(!arguments.length) { return _interval; }
-		_interval = v;
-		return _instance;
-	};
-
-	_instance.delay = function(v) {
-		if(!arguments.length) { return _delay; }
-		_delay = v;
-		return _instance;
-	};
-
-	_instance.fps = function(v){
-		if(!arguments.length) { return _fps; }
-		_fps = v;
-		if(_running) {
-			_instance.restart();
-		}
-		return _instance;
-	};
-
-	return _instance;
-}
-var sentio_line = sentio.line = {};
-sentio.line.line = sentio_line_line;
-function sentio_line_line() {
-	'use strict';
-
-	// Layout properties
-	var _id = 'line_line_' + Date.now();
-	// var _margin = { top: 20, right: 200, bottom: 50, left: 40 };
-
-	var _margin = { top: 20, right: 60, bottom: 50, left: 60 };
-	var _height = 500, _width = 800;
-
-	var lockYAxis = true;	// Set whether the Y axis will automatically change as data changes.
-	var lockedY = 1;		// Set default max Y axis value.
-	var stacked = false;	// Set whether different series will stack on top of eachother rather than overlay.
-	var showMarkers = true;	// Set default boolean for showing markers
-
-	// Values for tracking mouse movements on graph and selected elements.
-	var targetX;
-	var selected = {
-		time: 0,
-		points: [],
-		markers: []
-	};
-
-	// Container for legend information to be passed out of sentio.
-	var legend_content = {
-		series: undefined,
-		markers: undefined,
-	};
-
-	/*
-	 * Array of series slugs that are hidden from the user.
-	 */
-	var hidden_series = [];
-
-	/*
-	 * Callback function for hovers over the markers. Invokes this function
-	 * with the data from the marker payload
-	 */
-	var _markerHoverCallback = null;
-
-	/*
-	 * Callback function for hovers over plot points.
-	 */
-	var _hoverCallback = null;
-
-	/*
-	 * Callback function to pass legend information
-	 */
-	var _legendCallback = null;
-
-	// Default accessors for the dimensions of the data
-	var _value = {
-		x: function(d) { return d[0]; },
-		y: function(d) { return d[1]; },
-		y_stacked: function(d) { return d[2]; }
-	};
-
-	// Default accessors for point information.
-	var _pointValue = {
-		x: function(d) { return d[0]; },
-		y: function(d) { return stacked ? d[2] : d[1]; },
-		series: function(d) { return d[3]; },
-		slug: function(d) { return d[4]; }
-	};
-
-	// Accessors for the positions of the markers
-	var _markerValue = {
-		label: function(d, i) { return d[0]; },
-		slug: function(d, i) { return d[1]; },
-		start: function(d, i) { return d[2]; },
-		end: function(d, i) { return d[3]; }
-	};
-
-	var now = Date.now();
-	var _extent = {
-		x: sentio.util.extent({
-			defaultValue: [now - 60000*5, now],
-			getValue: function(d) { return d[1][0]; }
-		}),
-		y: sentio.util.extent({
-			getValue: function(d) { 
-				var ret = 0;
-				if (hidden_series.indexOf(d[0]) === -1) {
-					ret = stacked ? d[1][2] : d[1][1]; 
-				}
-				return ret;
-			}
-		})
-	};
-	var _multiExtent = sentio.util.multiExtent().values(function(d) { 
-		var extentData = d.data.map(function(e) {
-			return [d.key, e];
-		});
-		return extentData; 
-	});
-
-	// Default scales for x and y dimensions
-	var _scale = {
-		x: d3.time.scale(),
-		y: d3.scale.linear(),
-		color: d3.scale.category10(),
-		marker_color: ['#2CA02C', '#98DF8A', '#9467BD', '#C5B0D5']
-	};
-
-	// Bisector for hover line
-	var bisectDate = d3.bisector(function(d) { return d[0]; }).left;
-
-	// Default Axis definitions
-	var _axis = {
-		x: d3.svg.axis()
-			.scale(_scale.x)
-			.orient('bottom')
-			.innerTickSize(-_height)
-			.ticks(7)
-			.tickFormat(d3.time.format("%m/%d")),
-		y: d3.svg.axis()
-			.scale(_scale.y)
-			.orient('left')
-			.innerTickSize(-_width)
-			.ticks(10)
-	};
-
-	// g elements
-	var _element = {
-		svg: undefined,
-		g: {
-			xAxis: undefined,
-			yAxis: undefined,
-			mouseContainer: undefined,
-			hoverLine: undefined,
-			container: undefined,
-			markers: undefined,
-			plots: undefined,
-			points: undefined,
-			brush: undefined
-		},
-		tooltip: undefined,
-		plotClipPath: undefined,
-		markerClipPath: undefined,
-		pointClipPath: undefined
-	};
-
-	// Line generator for the plot
-	var _line = d3.svg.line().interpolate('basis');
-	_line.x(function(d) {
-		return _scale.x(_value.x(d));
-	});
-	_line.y(function(d) {
-		return stacked ? _scale.y(_value.y_stacked(d)) : _scale.y(_value.y(d));
-	});
-
-	// Area generator for the plot
-	var _area = d3.svg.area().interpolate('basis');
-	_area.x(function(d) {
-		return _scale.x(_value.x(d));
-	});
-	_area.y1(function(d) {
-		return stacked ? _scale.y(_value.y_stacked(d)) : _scale.y(_value.y(d));
-	});
-
-	// Brush filter
-	var _filter = {
-		enabled: false,
-		brush: d3.svg.brush(),
-		dispatch: d3.dispatch('filter', 'filterstart', 'filterend')
-	};
-
-	// Array for various plot data
-	var _data = [];
-
-	var _points = [];
-
-	var _markers = {
-		values: [],
-		dispatch: d3.dispatch('onclick')
-	};
-
-	function brushstart() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filterstart([isEmpty, min, max]);
-	}
-	function brush() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filter([isEmpty, min, max]);
-	}
-	function brushend() {
-		var extent = getFilter();
-		var isEmpty = (null == extent);
-
-		var min = (isEmpty)? undefined : extent[0];
-		var max = (isEmpty)? undefined : extent[1];
-
-		_filter.dispatch.filterend([isEmpty, min, max]);
-	}
-
-	// Chart create/init method
-	function _instance(selection){}
-
-	/*
-	 * Initialize the chart (should only call this once). Performs all initial chart
-	 * creation and setup
-	 */
-	_instance.init = function(container) {
-		// Create a container div
-		_element.div = container.append('div').attr('class', 'sentio line');
-
-		// Create the SVG element
-		_element.svg = _element.div.append('svg');
-
-		_element.tooltip = _element.div.append('div').attr('class', 'line_tooltip');
-
-		// Add the defs and add the clip path definition
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.pointClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'point_' + _id).append('rect');
-
-		// Append a container for everything
-		_element.g.container = _element.svg.append('g')
-			.attr('class', 'g-main');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		_element.g.points = _element.g.container.append('g').attr('class', 'points').attr('clip-path', 'url(#point_' + _id + ')');
-
-		// Append elements for capturing mouse events.
-		_element.g.mouseContainer = _element.g.container.append('rect')
-			.attr('class', 'mouse-container')
-			.on("mousemove", handleMouseMove)
-			.on("mouseover", function () {
-				_element.g.hoverLine.style('display', 'block');
-			})
-			.on("mouseout", function () {
-				_element.g.markers.selectAll('.marker-line').transition().duration(100)
-					.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-				_element.g.hoverLine.style('display', 'none');
-				_element.tooltip.style("visibility", "hidden");
-			});
-		_element.g.hoverLine = _element.g.container.append('line')
-			.attr('class', 'hover-line')
-			.attr('x1', '10')
-			.attr('y1', '0')
-			.attr('x2', '10')
-			.attr('stroke-dasharray', ('5,5'))
-			.style('display', 'none');
-
-		// If the filter is enabled, add it
-		if(_filter.enabled) {
-			_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-			_element.g.brush.call(_filter.brush)
-				.selectAll('rect').attr('y', -6);
-			_filter.brush
-				.on('brushend', brushend)
-				.on('brushstart', brushstart)
-				.on('brush', brush);
-		}
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/* 
-	 * Generates stacked y values in the order that _data arrives in.
-	 */
-	function stack() {
-		for (var i = 0; i < _data.length; i++) {
-			for (var j = 0; j < _data[i].data.length; j++) {
-				_data[i].data[j].push(i === 0 ? _data[i].data[j][1] : (_data[i-1].data[j][2] + _data[i].data[j][1]));
-			}
-		}
-	}
-
-	/*
-	 * Generates point values from data.  Each point is a unique set of data with x, y, and series information.
-	 */
-	function generatePoints() {
-		_points = [];
-		for (var i = 0; i < _data.length; i++) {
-			for (var j = 0; j < _data[i].data.length; j++) {
-				_points.push([_data[i].data[j][0], _data[i].data[j][1], _data[i].data[j][2], _data[i].key, _data[i].name]);
-			}
-		}
-	}
-
-	/*
-	 * Hide all markers on the graph.
-	 */
-	function toggleMarkers() {
-		_element.g.markers
-			.selectAll('.marker')
-			.transition()
-			.attr('opacity', showMarkers ? '1' : '0');
-	}
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
-		_data = v;
-
-		// Update stacked and point data every time it is available.
-		stack();
-		generatePoints();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the markers data
-	 */
-	_instance.markers = function(v) {
-		if(!arguments.length) { return _markers.dispatch; }
-		_markers.values = v.map(function(arr) { return arr.slice(); });
-
-		// Sort and parse markers for y levels
-		_markers.values.sort(function(a, b) {
-			var aWidth = _markerValue.end(a) - _markerValue.start(a);
-			var bWidth = _markerValue.end(b) - _markerValue.start(b);
-
-			return a[4] != b[4] ? a[4] - b[4] : bWidth - aWidth;
-		});
-
-		for (var i = 0; i < _markers.values.length; i++) {
-			if (i === 0) { 
-				_markers.values[0].push(0); 
-			} else {
-				var start = _markerValue.start(_markers.values[i]);
-				var end = _markerValue.end(_markers.values[i]);
-				var idx_conflict = -1;
-				for (var j = 0; j < i; j++) {
-					if (_markerValue.start(_markers.values[j]) <= end && _markerValue.end(_markers.values[j]) >= start) {
-						idx_conflict = j;
-					}
-				}
-				if (idx_conflict === -1) {
-					_markers.values[i].push(0);
-				} else {
-					_markers.values[i].push(_markers.values[idx_conflict][5] + 1);
-				}
-			}
-		}
-
-		return _instance;
-	};
-
-	/*
-	 * Accepts the hovered element and conditionally invokes
-	 * the marker hover callback if both the function and data
-	 * are non-null
-	 */
-	function invokeMarkerCallback(d) {
-		// fire an event with the payload
-		if(null != _markerHoverCallback) {
-			_markerHoverCallback(d);
-		}
-	}
-
-	function markerClicked(d) {
-		_markers.dispatch.onclick(d);
-	}
-
-	/*
-	 * Accepts object of selected elements and attempts to call
-	 * the callback function. 
-	 */
-	function invokeHoverCallback(d) {
-		if(null != _hoverCallback) {
-			return _hoverCallback(d);
-		}
-	}
-
-	/*
-	 * Accepts series information and attempts to call
-	 * the callback function.
-	 */
-	function invokeLegendCallback(d) {
-		if (null != _legendCallback) {
-			return _legendCallback(d);
-		}
-	}
-
-
-	/*
-	 * Function to handle mouse movement on the graph and gather selected elements.
-	 *
-	 * Adapted from: http://bl.ocks.org/mikehadlow/93b471e569e31af07cd3
-	 */
-
-	function handleMouseMove() {
-		if (!_data[0]) {return;}
-
-		selected.points = [];
-		selected.markers = [];
-
-		// Calculate nearest point and 
-		/*jshint validthis: true */
-		var mouse = d3.mouse(this);
-		var mouseDate = _scale.x.invert(mouse[0]);
-		var index = bisectDate(_data[0].data, mouseDate); // Probably should store x axis info instead
-		var targetX = mouse[0];
-		var onPoint = false;
-
-		var d0 = _data[0].data[index - 1];
-		var d1 = _data[0].data[index];
-
-		if (!d1 || !d0) { return; }
-		var d = mouseDate - d0[0] > d1[0] - mouseDate ? d1 : d0;
-
-		// Callback function to check point time equality.
-		var pntEql = function(p) { return p[0] === d[0]; };
-		// Bind to a point when close enough to it.
-		if (Math.abs(mouse[0] - _scale.x(d[0])) < 5) { 
-			targetX = _scale.x(d[0]); 
-			onPoint = true;
-		}
-		// Detect markers using mouse coordinate instead of index.
-		var targetXDate = _scale.x.invert(targetX);
-		selected.time = targetXDate;
-
-		// End setup for mouse control
-
-		// Retrieve points when over the main graph.
-		if (onPoint && mouse[1] > 45) {
-			for (var i = 0; i < _data.length; i++) {
-				var pnt = _data[i].data.find(pntEql);
-				if (pnt) {
-					selected.points.push(pnt.concat([_data[i].key, _data[i].name]));
-				}
-			}
-		}
-
-		for (var j = _markers.values.length-1; j >= 0; j--) {
-			if (targetXDate >= _markers.values[j][2] && targetXDate <= _markers.values[j][3]) {
-				selected.markers.push(_markers.values[j]);	
-			}
-		}
-
-		var marker_default_fn = function(d) {
-			return _scale.marker_color[d[4]*2+1];
-		};
-
-		var marker_hover_fn = function(d) {
-			return _scale.marker_color[d[4]*2];
-		};
-
-		for (var k = 0; k < _markers.values.length; k++) {
-			var ret = selected.markers.find(markerFindFunction(_markerValue.slug(_markers.values[k])));
-			if (ret) {
-				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
-					.attr('fill', marker_default_fn );
-			} else {
-				_element.g.markers.select('.marker-line-'+_markerValue.slug(_markers.values[k])).transition().duration(100)
-					.attr('fill', marker_hover_fn );
-			}
-		}
-
-		if (selected.points.length > 0 || (mouse[1] < 45 && selected.markers.length > 0)) {
-			_element.tooltip.html(invokeHoverCallback({d: selected}));
-			var tooltip_width = _element.tooltip.node().getBoundingClientRect().width;
-			_element.tooltip.style("top", (mouse[1]+10)+"px").style("left",(mouse[0]+40-(tooltip_width/2))+"px");
-			_element.tooltip.style("visibility", "visible");
-		} else {
-			_element.tooltip.style("visibility", "hidden");
-		}
-
-		_element.g.hoverLine
-			.attr('x1', targetX)
-			.attr('x2', targetX);
-	}
-
-	var markerFindFunction = function(toFind) {
-		return function(selected) {
-			return toFind === _markerValue.slug(selected);
-		};
-	};
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-		var now = Date.now();
-
-		// Set up the scales
-		_scale.x.range([0, Math.max(0, _width - _margin.left - _margin.right)]);
-		_scale.y.range([Math.max(0, _height - _margin.top - _margin.bottom - 35), 0]); //Offset for marker space
-
-		// Update mouse capture elements
-		_element.g.mouseContainer
-			.attr('transform', 'translate(0, -' + (_margin.top+25) + ')')	// Offset for marker container
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-		_element.g.hoverLine
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		// Append the clip path
-		_element.plotClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + (_margin.top + 25) + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', 40);
-		_element.pointClipPath
-			.attr('transform', 'translate(-5, -' + (_margin.top - 5) + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right + 10))
-			.attr('height', Math.max(0, _height - _margin.bottom + 5));
-
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
-
-		// Update the positions of the axes
-		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
-
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + (_margin.top + 25) + ')');
-
-		return _instance;
-	};
-
-	// Multi Extent Combiner
-	function multiExtent(data, extent) {
-		return _multiExtent.extent(extent).getExtent(data);
-	}
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-
-		if (!_data || _data.length === 0) {
-			return _instance;
-		}
-
-		// Need to grab the filter extent before we change anything
-		var filterExtent = getFilter();
-
-		// Update the x domain (to the latest time window)
-		var x = multiExtent(_data, _extent.x);
-		_scale.x.domain(x);
-
-		// Update the y domain (based on configuration and data)
-		// When locked, the y axis will change if the extent is larger.
-		var y = multiExtent(_data, _extent.y)[1];
-		if (lockYAxis) { y = y > lockedY ? y : lockedY; }
-		lockedY = y;
-		_scale.y.domain([0,y]);
-
-		// Update the plot elements
-		updateAxes(x);
-		updateLine();
-		updateMarkers();
-		updatePoints();
-		updateLegend();
-		updateFilter(filterExtent);
-
-		return _instance;
-	};
-
-	var oneDay = 24*60*60*1000;
-
-	function updateAxes(x) {
-		var dayCount = Math.ceil(Math.abs((x[1] - x[0]) / oneDay)) + 1;
-
-		// Change tick type depending on concentration of ticks to prevent overlapping labels and compressed graphs
-		var concentration = _width / dayCount;
-		if (concentration > 35) { // One tick label is about 35 pixels wide.  Use day spans here.
-			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.day);
-		} else if (concentration > 5) { // Weeks are used when days would overlap
-			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.week);
-		} else {
-			_axis.x = _axis.x.innerTickSize(-(_height - _margin.top - _margin.bottom - 35)).ticks(d3.time.month);
-		}
-		// Limit y axis ticks if max value is less than 10 to prevent decimal ticks.
-		_axis.y = _axis.y.innerTickSize(-_width+60).ticks(_scale.y.domain()[1] < 10 ? _scale.y.domain()[1] : 10);
-
-		// Shift labels away from axis to clear up graph.
-		if(null != _axis.x) {
-			_element.g.xAxis
-				.transition().call(_axis.x)
-				.selectAll("text")
-				.attr('y', 10);
-		}
-		if(null != _axis.y) {
-			_element.g.yAxis
-				.transition().call(_axis.y)
-				.selectAll("text")
-				.attr('x', -10);
-		}
-	}
-
-	/*
-	 * Line data format:
-	 * 	_line = [
-	 *		{ key: 'series_1',
-	 		  data: [[x1,y1], [x2,y2], ...],
-	 		  name: 'series 1',
-	 		  total: 1000
-	 		},
-	 		{ key: 'series_2'
-	 		  data: [[x3,y3], ...],
-			  name: 'series 2',
-			  total: 3000
-	 		},
-	 		...	
-	 *	]
-	 */
-	
-	function updateLine() {
-
-		// Join
-		var plotJoin = _element.g.plots
-			.selectAll('.plot')
-			.data(_data, function(d) { return d.key; });
-
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
-
-		// Enter
-		plotEnter.append('g').append('path')
-			.attr('class', 'line')
-			.attr('id', function(d) { return 'path-'+d.key; })
-			.attr('stroke', function(d, i) { return _scale.color(i); })
-			.attr('stroke-width', '2px')
-			.attr('stroke-opacity', function(d) {
-				return hidden_series.indexOf(d.key) === -1 ? '0.9' : '0';
-			})
-			.attr('fill', 'none');
-		plotEnter.append('g').append('path')
-			.attr('class', 'area')
-			.attr('id', function(d) { return 'area-'+d.key; })
-			.attr('stroke', 'none')
-			.attr('fill', function(d, i) { return _scale.color(i); })
-			.attr('fill-opacity', function(d) {
-				return hidden_series.indexOf(d.key) === -1 ? '0.05' : '0';
-			});
-
-		var lineUpdate = plotJoin.select('.line');
-		var areaUpdate = plotJoin.select('.area');
-
-		// // Update
-		lineUpdate.transition()
-			.attr('stroke-opacity', function(d) {
-				return hidden_series.indexOf(d.key) === -1 ? '0.9' : '0';
-			})
-			.attr('d', function(d) { return _line(d.data); });
-		areaUpdate.transition()
-			.attr('fill-opacity', function(d) {
-				return hidden_series.indexOf(d.key) === -1 ? '0.05' : '0';
-			})
-			.attr('d', function(d) { return _area.y0(_scale.y.range()[0])(d.data); });
-
-		plotJoin.exit().select('.line')
-			.attr('d', _line);
-
-		plotJoin.exit().select('.area')
-			.attr('d', _area.y0(_scale.y.range()[0]));
-
-		// Exit
-		var plotExit = plotJoin.exit()
-			.transition().remove();
-	}
-
-	/*
-	 * Stores legend information from data series.
-	 */
-	function updateLegend() {
-		legend_content.series = _data.map(function(series, i) {
-			var color = _element.g.plots.select('#path-'+series.key).attr('stroke');
-			return {
-				key: series.key,
-				name: series.name,
-				total: series.total,
-				color: color
-			};
-		});
-
-		invokeLegendCallback({d: legend_content});
-	}
-
-	/*
-	 * _points format (After conversion from line data)
-	 * 	_points = [
-	 *				[x1, y1, 'series_1', 'series 1'],
-	 *				[x2, y2, 'series_2', 'series 2'],
-	 *				...
-	 *	]
-	 */
-	function updatePoints() {
-
-		var pointJoin = _element.g.points
-			.selectAll('.point')
-			.data(_points, function(d) {
-				return 'pt-'+_pointValue.series(d)+'-'+_pointValue.x(d);
-			});
-
-		var pointEnter = pointJoin.enter().append('g')
-			.attr('class', 'point');
-
-		var circleEnter = pointEnter.append('circle');
-		var circleUpdate = pointJoin.select('circle');
-
-		circleEnter
-			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
-			.attr('r', 3)
-			.attr('stroke', 'white')
-			.attr('stroke-opacity', function(d) {
-				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0'; // Hide points if related series is hidden.
-			})
-			.attr('stroke-width', 2)
-			.attr('fill', 'white')
-			.attr('fill-opacity', 0);
-
-		circleUpdate.transition()
-			.attr('class', function(d) { return 'pt-'+_pointValue.series(d); })
-			.attr('cx', function(d) {return _scale.x(_pointValue.x(d));})
-			.attr('cy', function(d) {return _scale.y(_pointValue.y(d));})
-			.attr('stroke-opacity', function(d) {
-				return hidden_series.indexOf(_pointValue.series(d)) === -1 ? '1' : '0'; // Hide points if related series is hidden.
-			});
-
-		//exit
-		pointJoin.exit()
-			.remove();
-	}
-
-	/* 
-	 * Marker update function
-	 *
-	 * There are five child elements to each marker element:
-	 * 	Start line, end line, start point, end point, and marker area.
-	 *
-	 * _marker format:
-	 * 	_marker = {
-	 *		values: 
-	 *			[
-	 *				['label1', 'slug_1', start_x1, end_x1, y_index],
-	 *				['label2', 'slug_2', start_x2, end_x2, y_index]
-	 *				...
-	 *			]
-	 *  }
-	 */
-	function updateMarkers() {
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers.values, function(d) {
-				return _markerValue.slug(d); 
-			});
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.attr('opacity', '1');
-
-		var lineEnter = markerEnter.append('rect');
-		var startEnter = markerEnter.append('rect');
-		var endEnter = markerEnter.append('rect');
-
-		var lineUpdate = markerJoin.select('.marker-line');
-		var startUpdate = markerJoin.select('.start');
-		var endUpdate = markerJoin.select('.end');
-
-		startEnter
-			.attr('class', 'start')
-			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
-			.attr('width', '4')
-			.attr('height', '4')
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-
-		endEnter
-			.attr('class', 'end')
-			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
-			.attr('width', '4')
-			.attr('height', '4')
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-
-		lineEnter
-			.attr('class', function(d) { return 'marker-line-'+_markerValue.slug(d) + ' marker-line'; })
-			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 1); })
-			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); })
-			.attr('height', '2')
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-
-		startUpdate.transition()
-			.attr('x', function(d) { return _scale.x(_markerValue.start(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-
-		endUpdate.transition()
-			.attr('x', function(d) { return _scale.x(_markerValue.end(d)) - 2; })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 2); })
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; });
-
-		lineUpdate.transition()
-			.attr('x', function(d) { return _scale.x(_markerValue.start(d)); })
-			.attr('y', function(d) { return (-10 - (5 * d[5]) - 1); })
-			.attr('fill', function(d) { return _scale.marker_color[d[4]*2]; })
-			.attr('width', function(d) { return _scale.x(_markerValue.end(d)) - _scale.x(_markerValue.start(d)); });
-
-		// Exit
-		var markerExit = markerJoin.exit().remove();
-
-	}
-
-	/*
-	 * Get the current state of the filter
-	 * Returns undefined if the filter is disabled or not set, millsecond time otherwise
-	 */
-	function getFilter() {
-		var extent;
-		if(_filter.enabled && !_filter.brush.empty()) {
-			extent = _filter.brush.extent();
-			if(null != extent) {
-				extent = [ extent[0].getTime(), extent[1].getTime() ];
-			}
-		}
-
-		return extent;
-	}
-
-	/*
-	 * Set the state of the filter, firing events if necessary
-	 */
-	function setFilter(newExtent, oldExtent) {
-		// Fire the event if the extents are different
-		var suppressEvent = newExtent == oldExtent || newExtent == null || oldExtent == null || (newExtent[0] == oldExtent[0] && newExtent[1] == oldExtent[1]);
-		var clearFilter = (null == newExtent || newExtent[0] >= newExtent[1]);
-
-		// either clear the filter or assert it
-		if(clearFilter) {
-			_filter.brush.clear();
-		} else {
-			_filter.brush.extent([ new Date(newExtent[0]), new Date(newExtent[1]) ]);
-		}
-
-		// fire the event if anything changed
-		if(!suppressEvent) {
-			_filter.brush.event(_element.g.brush);
-		}
-	}
-
-	/*
-	 * Update the state of the existing filter (if any) on the plot.
-	 * 
-	 * This method accepts the extent of the brush before any plot changes were applied
-	 * and updates the brush to be redrawn on the plot after the plot changes are applied.
-	 * There is also logic to clip the brush if the extent has moved such that the brush
-	 * has moved partially out of the plot boundaries, as well as to clear the brush if it
-	 * has moved completely outside of the boundaries of the plot.
-	 */
-	function updateFilter(extent) {
-		// Don't need to do anything if filtering is not enabled
-		if(_filter.enabled) {
-			// Reassert the x scale of the brush (in case the scale has changed)
-			_filter.brush.x(_scale.x);
-
-			// Derive the overall plot extent from the collection of series
-			var plotExtent = multiExtent(_data, _extent.x);
-
-			// If there was no previous extent, then there is no brush to update
-			if(null != extent) {
-				// Clip extent by the full extent of the plot (this is in case we've slipped off the visible plot)
-				var nExtent = [ Math.max(plotExtent[0], extent[0]), Math.min(plotExtent[1], extent[1]) ];
-				setFilter(nExtent, extent);
-			}
-
-			_element.g.brush
-				.call(_filter.brush)
-				.selectAll('rect')
-					.attr('height', _height - _margin.top - _margin.bottom + 7);
-		}
-	}
-
-	/*
-	 * Updates series and marker visuals when toggled to hide or show.
-	 *
-	 * Also updates stacked values for the data to show updated stack data when a series is hidden.
-	 */
-	_instance.toggleSeries = function(s) {
-		var index = -1;
-		var h_index = hidden_series.indexOf(s); // Determines if series is already hidden or not.
-
-		/*
-		 * Iterates through each data series to update values.  It first finds the index of the toggled series
-		 * based off of the input key.  Then every subsequent series has its stacked values added or subtracted by 
-		 * the toggled series to update values.
-		 * 
-		 * Probably a better way to do this.  There might be incorrect behavior depending on the order of toggled series.
-		 */
-		for (var i = 0; i < _data.length; i++) {
-			if (index !== -1) {
-				if (h_index == -1) {
-					for (var j = 0; j < _data[i].data.length; j++) {
-						_data[i].data[j][2] -= _data[index].data[j][1];
-					}
-				} else {
-					for (var k = 0; k < _data[i].data.length; k++) {
-						_data[i].data[k][2] += _data[index].data[k][1];
-					}
-				}
-			} else if (_data[i].key === s) {
-				index = i;
-			}
-		}
-
-		// Update hidden series array 
-		if (h_index == -1) {
-			hidden_series.push(s);
-		} else {
-			hidden_series.splice(h_index, 1);
-		}
-
-		// Regenerate values for points.
-		generatePoints();
-
-		_instance.redraw();
-	};
-
-	// Basic Getters/Setters
-	_instance.yLock = function(l) {
-		if(!arguments.length) { return lockYAxis; }
-		lockYAxis = l;
-		_instance.redraw();
-		return _instance;
-	};
-	_instance.stacked = function(s) {
-		if(!arguments.length) { return stacked; }
-		stacked = s;
-		_instance.redraw();
-		return _instance;
-	};
-	_instance.showMarkers = function(b) {
-		if (!arguments.length) { return showMarkers; }
-		showMarkers = b;
-		toggleMarkers();
-		return _instance;
-	};
-	_instance.width = function(v){
-		if(!arguments.length) { return _width; }
-		_width = v;
-		return _instance;
-	};
-	_instance.height = function(v){
-		if(!arguments.length) { return _height; }
-		_height = v;
-		return _instance;
-	};
-	_instance.margin = function(v){
-		if(!arguments.length) { return _margin; }
-		_margin = v;
-		return _instance;
-	};
-	_instance.interpolation = function(v){
-		if(!arguments.length) { return _line.interpolate(); }
-		_line.interpolate(v);
-		_area.interpolate(v);
-		return _instance;
-	};
-	_instance.xAxis = function(v){
-		if(!arguments.length) { return _axis.x; }
-		_axis.x = v;
-		return _instance;
-	};
-	_instance.yAxis = function(v){
-		if(!arguments.length) { return _axis.y; }
-		_axis.y = v;
-		return _instance;
-	};
-	_instance.xScale = function(v){
-		if(!arguments.length) { return _scale.x; }
-		_scale.x = v;
-		if(null != _axis.x) {
-			_axis.x.scale(v);
-		}
-		return _instance;
-	};
-	_instance.yScale = function(v){
-		if(!arguments.length) { return _scale.y; }
-		_scale.y = v;
-		if(null != _axis.y) {
-			_axis.y.scale(v);
-		}
-		return _instance;
-	};
-	_instance.xValue = function(v){
-		if(!arguments.length) { return _value.x; }
-		_value.x = v;
-		return _instance;
-	};
-	_instance.yValue = function(v){
-		if(!arguments.length) { return _value.y; }
-		_value.y = v;
-		return _instance;
-	};
-	_instance.yExtent = function(v){
-		if(!arguments.length) { return _extent.y; }
-		_extent.y = v;
-		return _instance;
-	};
-	_instance.xExtent = function(v){
-		if(!arguments.length) { return _extent.x; }
-		_extent.x = v;
-		return _instance;
-	};
-	_instance.markerXValue = function(v){
-		if(!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
-		return _instance;
-	};
-	_instance.markerLabelValue = function(v){
-		if(!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
-		return _instance;
-	};
-	_instance.markerHover = function(v) {
-		if(!arguments.length) { return _markerHoverCallback; }
-		_markerHoverCallback = v;
-		return _instance;
-	};
-	_instance.pointHover = function(v) {
-		if(!arguments.length) { return _hoverCallback; }
-		_hoverCallback = v;
-		return _instance;
-	};
-	_instance.legendFn = function(v) {
-		if (!arguments.length) { return _legendCallback; }
-		_legendCallback = v;
-		return _instance;
-	};
-	_instance.filter = function(v) {
-		if(!arguments.length) { return _filter.dispatch; }
-		_filter.enabled = v;
-		return _instance;
-	};
-
-	// Expects milliseconds time
-	_instance.setFilter = function(extent) {
-		var oldExtent = getFilter();
-		if(null != extent && extent.length === 2) {
-			// Convert to Dates and assert filter
-			if(extent[0] instanceof Date) {
-				extent[0] = extent[0].getTime();
-			}
-			if(extent[1] instanceof Date) {
-				extent[1] = extent[1].getTime();
-			}
-		}
-
-		setFilter(extent, oldExtent);
-		_instance.redraw();
-		return _instance;
-	};
-
-	return _instance;
-}
+})));
+//# sourceMappingURL=sentio.js.map
