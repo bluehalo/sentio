@@ -244,6 +244,9 @@ function timeline() {
 	 */
 	_instance.resize = function() {
 
+		// Need to grab the brush extent before we change anything
+		var brushSelection = getBrush();
+
 		// Set up the scales
 		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
 		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
@@ -277,6 +280,8 @@ function timeline() {
 
 		_brush.brush()
 			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
+
+		updateBrush(brushSelection);
 
 		return _instance;
 	};
@@ -421,6 +426,9 @@ function timeline() {
 		_scale.x = v;
 		if (null != _axis.x) {
 			_axis.x.scale(v);
+		}
+		if (null != _brush) {
+			_brush.scale(v);
 		}
 		return _instance;
 	};
