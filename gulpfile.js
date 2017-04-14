@@ -48,8 +48,12 @@ gulp.task('build-js', ['rollup-js'], () => {
 });
 
 gulp.task('rollup-js', () => {
+
 	return rollup.rollup({
-			entry: assets.src.entry
+			entry: assets.src.entry,
+			external: [
+				'd3'
+			]
 		})
 		.then((bundle) => {
 			return bundle.write({
@@ -57,7 +61,10 @@ gulp.task('rollup-js', () => {
 				format: 'umd',
 				moduleName: pkg.moduleName,
 				sourceMap: true,
-				banner: bannerString
+				banner: bannerString,
+				globals: {
+					'd3': 'd3'
+				}
 			});
 		});
 

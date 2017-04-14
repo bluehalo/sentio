@@ -1,9 +1,9 @@
-/*! @asymmetrik/sentio - 3.0.3 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 3.1.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
-	typeof define === 'function' && define.amd ? define(['exports'], factory) :
-	(factory((global.sentio = global.sentio || {})));
-}(this, (function (exports) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
+	(factory((global.sentio = global.sentio || {}),global.d3));
+}(this, (function (exports,d3) { 'use strict';
 
 function donut() {
 
@@ -200,10 +200,10 @@ function donut() {
 		var gEnterUpdate = gEnter.merge(g);
 		gEnterUpdate.transition().duration(_duration)
 			.attrTween('d', function(d) {
-				var interpolate = d3.interpolate(this._current, d);
-				this._current = interpolate(0);
+				var interpolate$$1 = d3.interpolate(this._current, d);
+				this._current = interpolate$$1(0);
 				return function(t) {
-					return _layout.arc(interpolate(t));
+					return _layout.arc(interpolate$$1(t));
 				};
 			});
 
@@ -1395,7 +1395,7 @@ function timeline() {
 	_instance.resize = function() {
 
 		// Need to grab the brush extent before we change anything
-		var brushSelection = getBrush();
+		var brushSelection$$1 = getBrush();
 
 		// Set up the scales
 		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
@@ -1431,7 +1431,7 @@ function timeline() {
 		_brush.brush()
 			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
 
-		updateBrush(brushSelection);
+		updateBrush(brushSelection$$1);
 
 		return _instance;
 	};
@@ -1442,7 +1442,7 @@ function timeline() {
 	_instance.redraw = function() {
 
 		// Need to grab the brush extent before we change anything
-		var brushSelection = getBrush();
+		var brushSelection$$1 = getBrush();
 
 		// Update the x domain (to the latest time window)
 		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
@@ -1454,7 +1454,7 @@ function timeline() {
 		updateAxes();
 		updateLine();
 		updateMarkers();
-		updateBrush(brushSelection);
+		updateBrush(brushSelection$$1);
 
 		return _instance;
 	};
