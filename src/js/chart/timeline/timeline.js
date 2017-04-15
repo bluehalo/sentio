@@ -1,3 +1,5 @@
+import * as d3 from 'd3';
+
 import { extent } from '../../model/extent';
 import { multiExtent } from '../../model/multi-extent';
 import { timelineBrush } from '../../controller/timeline-brush';
