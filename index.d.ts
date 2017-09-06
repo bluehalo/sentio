@@ -1,6 +1,4 @@
-/// <reference types="d3" />
-
-declare namespace sentio {
+declare module 'sentio' {
 
 	namespace internal {
 
