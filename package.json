@@ -3,7 +3,7 @@
 	"artifactName": "sentio",
 	"moduleName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "4.0.0",
+	"version": "4.0.1",
 	"author": "Asymmetrik, Ltd.",
 	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
 	"license": "UNLICENSED",
@@ -28,7 +28,7 @@
 		"rollup": "0.49",
 
 		"mocha": "3.5",
-		"should": "11.2",
+		"should": "13.0",
 
 		"gulp": "3.9",
 		"gulp-clean-css": "3.8",
