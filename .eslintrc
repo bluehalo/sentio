@@ -12,7 +12,7 @@
 
 	"rules": {
 		"no-unused-vars": [ "error", { "args": "none" } ],
-		
+
 		"no-mixed-spaces-and-tabs": [ "error", "smart-tabs" ],
 		"array-bracket-spacing": [ "error", "always" ],
 		"block-spacing": [ "error", "always" ],
@@ -23,11 +23,11 @@
 
 	"globals": {
 		"console": true,
+		"require": true,
 		"window": true,
 
 		"d3": true,
 		"sentio": true,
-
 
 		"after": true,
 		"afterEach": true,

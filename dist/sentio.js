@@ -1,8 +1,8 @@
-/*! @asymmetrik/sentio - 3.1.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 4.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-	(factory((global.sentio = global.sentio || {}),global.d3));
+	(factory((global.sentio = {}),global.d3));
 }(this, (function (exports,d3) { 'use strict';
 
 function donut() {
