@@ -26,18 +26,6 @@ function timeline() {
 		seriesLabel: function(d) { return d.label; }
 	};
 
-	// Default accessors for the dimensions of the data
-	var _value = {
-		x: function(d) { return d[0]; },
-		y: function(d) { return d[1]; }
-	};
-
-	// Accessors for the positions of the markers
-	var _markerValue = {
-		x: function(d, i) { return d[0]; },
-		label: function(d, i) { return d[1]; }
-	};
-
 	// Extent configuration for x and y dimensions of plot
 	var now = Date.now();
 	var _extent = {
@@ -352,7 +340,7 @@ function timeline() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
-			.data(_markers.values, _markerValue.x);
+			.data(_markers.values, _fn.markerValueX);
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
@@ -372,18 +360,18 @@ function timeline() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(_markerValue.label);
+			.text(_fn.markerValueLabel);
 
 		// Enter + Update
 		var lineUpdate = markerJoin.select('line');
 		var textUpdate = markerJoin.select('text');
 
 		lineEnter.merge(lineUpdate)
-			.attr('x1', function(d, i) { return _scale.x(_markerValue.x(d, i)); })
-			.attr('x2', function(d, i) { return _scale.x(_markerValue.x(d)); });
+			.attr('x1', function(d, i) { return _scale.x(_fn.markerValueX(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
 
 		textEnter.merge(textUpdate)
-			.attr('x', function(d, i) { return _scale.x(_markerValue.x(d)); });
+			.attr('x', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
 
 		// Exit
 		markerJoin.exit().remove();
@@ -443,13 +431,13 @@ function timeline() {
 		return _instance;
 	};
 	_instance.xValue = function(v) {
-		if (!arguments.length) { return _value.x; }
-		_value.x = v;
+		if (!arguments.length) { return _fn.valueX; }
+		_fn.valueX = v;
 		return _instance;
 	};
 	_instance.yValue = function(v) {
-		if (!arguments.length) { return _value.y; }
-		_value.y = v;
+		if (!arguments.length) { return _fn.valueY; }
+		_fn.valueY = v;
 		return _instance;
 	};
 	_instance.yExtent = function(v) {
@@ -478,13 +466,13 @@ function timeline() {
 		return _instance;
 	};
 	_instance.markerXValue = function(v) {
-		if (!arguments.length) { return _markerValue.x; }
-		_markerValue.x = v;
+		if (!arguments.length) { return _fn.markerValueX; }
+		_fn.markerValueX = v;
 		return _instance;
 	};
 	_instance.markerLabel = function(v) {
-		if (!arguments.length) { return _markerValue.label; }
-		_markerValue.label = v;
+		if (!arguments.length) { return _fn.markerValueLabel; }
+		_fn.markerValueLabel = v;
 		return _instance;
 	};
 	_instance.dispatch = function(v) {
