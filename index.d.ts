@@ -1,4 +1,4 @@
-declare module 'sentio' {
+declare namespace sentio {
 
 	namespace internal {
 
@@ -73,7 +73,7 @@ declare module 'sentio' {
 	/*
 	 * Charts
 	 */
-	namespace chart {
+	export namespace chart {
 
 		export interface DonutChart
 			extends internal.BaseChart, internal.DurationChart, internal.HeightChart,
@@ -218,7 +218,7 @@ declare module 'sentio' {
 	/*
 	 * Controller package
 	 */
-	namespace controller {
+	export namespace controller {
 
 		export interface RealtimeBinsController {
 
@@ -267,7 +267,7 @@ declare module 'sentio' {
 	/*
 	 * Model package
 	 */
-	namespace model {
+	export namespace model {
 
 		export interface BinsModel {
 			set(data: any[]): this;
