@@ -18,11 +18,11 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.chart.timeline()
+		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
 			.filter(true)
-			.yExtent(sentio.model.extent({
+			.yExtent(sentio.modelExtent({
 				overrideValue: [0, undefined],
 				getValue: function(d) { return d[1]; }
 			}));
@@ -32,7 +32,7 @@
 			.on('filterstart', function(val) { console.log(val); })
 			.on('filterend', function(val) { console.log(val); });
 
-		var layout = sentio.model.bins({
+		var layout = sentio.modelBins({
 				count: 300,
 				size: 1000,
 				lwm: Date.now() - 1000*301

@@ -18,21 +18,21 @@
 
 <script type="text/javascript">
 	var timelineDiv = d3.select('#chart');
-	var timeline = sentio.chart.timeline()
+	var timeline = sentio.chartTimeline()
 		.height(100)
 		.width(600)
-		.filter(true)
+		.brush(true)
 		.xScale(d3.scaleUtc());
 	timeline.yExtent().overrideValue([0, undefined])
 
 	timeline.dispatch()
-		.on('filterend', function(val) { console.log({ msg: 'filterend', val }); });
+		.on('brushend', function(val) { console.log({ msg: 'brushend', val }); });
 
 	var interval = 60000;
 	var binSize = 1000;
 	var hwm = Math.round(Date.now()/1000)*1000;
 
-	var model1 = sentio.model.bins({
+	var model1 = sentio.modelBins({
 		count: interval/binSize,
 		size: binSize,
 		lwm: hwm - interval,

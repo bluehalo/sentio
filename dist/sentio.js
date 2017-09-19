@@ -1,9 +1,9 @@
-/*! @asymmetrik/sentio - 4.1.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-	(factory((global.sentio = {}),global.d3));
-}(this, (function (exports,d3) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-selection')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-selection'], factory) :
+	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
+}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Selection) { 'use strict';
 
 function donut() {
 
@@ -30,7 +30,7 @@ function donut() {
 	};
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+	var _dispatch = d3Dispatch.dispatch('mouseover', 'mouseout', 'click');
 
 	// Function handlers
 	var _fn = {
@@ -77,12 +77,12 @@ function donut() {
 
 
 	var _scale = {
-		color: d3.scaleOrdinal(d3.schemeCategory10)
+		color: d3Scale.scaleOrdinal(d3Scale.schemeCategory10)
 	};
 
 	var _layout = {
-		arc: d3.arc().padAngle(0.01),
-		pie: d3.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
+		arc: d3Shape.arc().padAngle(0.01),
+		pie: d3Shape.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
 	};
 
 	// elements
@@ -124,7 +124,7 @@ function donut() {
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
+		if (!arguments.length) { return _data; }
 		_data = (null != v)? v : [];
 		return _instance;
 	};
@@ -200,7 +200,7 @@ function donut() {
 		var gEnterUpdate = gEnter.merge(g);
 		gEnterUpdate.transition().duration(_duration)
 			.attrTween('d', function(d) {
-				var interpolate$$1 = d3.interpolate(this._current, d);
+				var interpolate$$1 = d3Interpolate.interpolate(this._current, d);
 				this._current = interpolate$$1(0);
 				return function(t) {
 					return _layout.arc(interpolate$$1(t));
@@ -651,7 +651,7 @@ function matrix() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
+	var _dispatch = d3Dispatch.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
 	// Function handlers
 	var _fn = {
@@ -704,13 +704,13 @@ function matrix() {
 
 	// Scales for x, y, and color
 	var _scale = {
-		x: d3.scaleLinear(),
-		y: d3.scaleOrdinal(),
-		color: d3.scaleLinear().range([ '#e7e7e7', '#008500' ])
+		x: d3Scale.scaleLinear(),
+		y: d3Scale.scaleOrdinal(),
+		color: d3Scale.scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
 	var _axis = {
-		x: d3.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
+		x: d3Axis.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
 	};
 
 	var _element = {
@@ -998,7 +998,7 @@ function timelineBrush(config) {
 	var _scale;
 
 	// Event dispatcher
-	var _dispatch = d3.dispatch('brush', 'start', 'end');
+	var _dispatch = d3Dispatch.dispatch('brush', 'start', 'end');
 
 	// The current state of the brush selection
 	var _selection = undefined;
@@ -1058,7 +1058,7 @@ function timelineBrush(config) {
 	function eventFilter(eventType) {
 		return function(args) {
 
-			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
+			var n = (null != d3Selection.event.selection)? convertSelection(d3Selection.event.selection.map(_scale.invert)) : undefined;
 			var o = _selection;
 
 			// Fire the event if the extents are different
@@ -1085,7 +1085,7 @@ function timelineBrush(config) {
 		var selection = undefined;
 
 		if(_enabled && null != node && null != _scale) {
-			selection = d3.brushSelection(node);
+			selection = d3Brush.brushSelection(node);
 
 			if (null != selection && Array.isArray(selection)) {
 				selection = convertSelection(selection.map(_scale.invert));
@@ -1218,14 +1218,14 @@ function timeline() {
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.scaleTime(),
-		y: d3.scaleLinear()
+		x: d3Scale.scaleTime(),
+		y: d3Scale.scaleLinear()
 	};
 
 	// Default Axis definitions
 	var _axis = {
-		x: d3.axisBottom().scale(_scale.x),
-		y: d3.axisLeft().scale(_scale.y).ticks(3)
+		x: d3Axis.axisBottom().scale(_scale.x),
+		y: d3Axis.axisLeft().scale(_scale.y).ticks(3)
 	};
 
 	// Storage for commonly used DOM elements
@@ -1244,7 +1244,7 @@ function timeline() {
 	};
 
 	// Line generator for the plot
-	var _line = d3.line();
+	var _line = d3Shape.line();
 	_line.x(function(d, i) {
 		return _scale.x(_fn.valueX(d, i));
 	});
@@ -1253,7 +1253,7 @@ function timeline() {
 	});
 
 	// Area generator for the plot
-	var _area = d3.area();
+	var _area = d3Shape.area();
 	_area.x(function(d, i) {
 		return _scale.x(_fn.valueX(d, i));
 	});
@@ -1263,11 +1263,11 @@ function timeline() {
 
 
 	// Brush Management
-	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
+	var _brush = timelineBrush({ brush: d3Brush.brushX(), scale: _scale.x });
 	_brush.dispatch()
-		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
-		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
+		.on('end', function() { _dispatch.call('brushend', this, getBrush()); })
+		.on('start', function() { _dispatch.call('brushstart', this, getBrush()); })
+		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
 
 
 
@@ -1302,7 +1302,7 @@ function timeline() {
 	 * we are only updating the drawn position of the brush, so the brushSelection doesn't
 	 * actually change. However, if the change results in the brush extending partially or
 	 * wholly outside of the x extent, we might have to clip or clear the brush, which will
-	 * result in filter change events being propagated.
+	 * result in brush change events being propagated.
 	 *
 	 * @param previousExtent The previous state of the brush extent. Must be provided to
 	 *        accurately determine the extent of the brush in terms of the x data domain
@@ -1323,7 +1323,7 @@ function timeline() {
 
 			}
 			else {
-				// There is no plot/data so just clear the filter
+				// There is no plot/data so just clear the brush
 				setBrush(undefined);
 			}
 		}
@@ -1335,7 +1335,7 @@ function timeline() {
 
 
 	// The dispatch object and all events
-	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
+	var _dispatch = d3Dispatch.dispatch('brush', 'brushstart', 'brushend', 'markerClick', 'markerMouseover', 'markerMouseout');
 
 	// The main data array
 	var _data = [];
@@ -1372,7 +1372,7 @@ function timeline() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
 
-		// Add the filter brush element
+		// Add the brush element
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append a group for the markers
@@ -1656,18 +1656,328 @@ function timeline() {
 		if (!arguments.length) { return _dispatch; }
 		return _instance;
 	};
-	_instance.filter = function(v) {
+	_instance.brush = function(v) {
 		if (!arguments.length) { return _brush.enabled(); }
 		_brush.enabled(v);
 		return _instance;
 	};
-	_instance.setFilter = function(v) {
+	_instance.setBrush = function(v) {
 		setBrush(v);
 		return _instance;
 	};
-	_instance.getFilter = function() {
+	_instance.getBrush = function() {
 		return getBrush();
 	};
+
+	return _instance;
+}
+
+function autoBrushTimeline() {
+
+	/**
+	 * Auto brush configuration
+	 */
+	var _now = Date.now();
+
+	var _config = {
+		edgeTrigger: 0.01,
+		zoomInTrigger: 0.05,
+		zoomOutTrigger: 0.8,
+		zoomTarget: 0.2
+	};
+
+	var _maxZoom = 24 * 60 * 60 * 1000;
+	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
+	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
+
+	var _brush;
+	var _dispatch = d3Dispatch.dispatch('extentChange', 'brushChange');
+
+
+	/**
+	 * Set up the timeline instance
+	 */
+
+	var _instance = timeline();
+
+	var _timeline = {
+		brush: _instance.brush,
+		dispatch: _instance.dispatch,
+		element: {},
+		init: _instance.init,
+		resize: _instance.resize,
+		redraw: _instance.redraw,
+		setBrush: _instance.setBrush,
+		xAxis: _instance.xAxis
+	};
+
+	// Set up default look and feel
+	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10  });
+	_instance.xAxis().ticks(6);
+	_instance.yAxis(null);
+
+
+	// Initialization of the timline and auto brush
+	_instance.init = function(container) {
+
+		// Initialize the timeline
+		_timeline.init(container);
+
+		// Turn on brushing and register for brush events
+		_timeline.brush(true);
+		_timeline.dispatch().on('brushend.internal', updateBrush);
+
+		// Grab and persist some important elements
+		_timeline.element.div = container.select('div.sentio.timeline');
+
+		// Set the initial brush
+		if (null == _brush) {
+			_brush = _initialBrush;
+			_instance.setBrush(_brush);
+		}
+
+		return _instance;
+	};
+
+
+	// Redraw the auto brush
+	_instance.redraw = function() {
+
+		// Let the timeline redraw like normal
+		_timeline.redraw();
+
+		/*
+		 * Update the X Axis
+		 */
+
+		// Set the x Axis ticks to be full height
+		_instance.xAxis()
+			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
+
+		// Update text position to be on the chart
+		_timeline.element.div.selectAll('g.x.axis g.tick text')
+			.attr('y', '3')
+			.attr('dy', '-0.71em')
+			.attr('dx', '0.35em')
+			.attr('text-anchor', 'start')
+			.attr('pointer-events', 'none');
+
+		// Call it to redraw
+		if (null != _instance.xAxis()) {
+			_timeline.element.div.select('g.x.axis').call(_instance.xAxis());
+		}
+
+		return _instance;
+	};
+
+	function cropBrush(brush) {
+
+		var newBrush = brush;
+
+		// Crop the brush to max extent
+		if (null != newBrush) {
+
+			// Make a new copy
+			newBrush = brush.slice();
+
+			// Crop the brush using the max extent
+			newBrush[0] = Math.max(newBrush[0], _maxExtent[0]);
+			newBrush[1] = Math.min(newBrush[1], _maxExtent[1]);
+
+		}
+
+		return newBrush;
+	}
+
+	/**
+	 * Handle a change to the brush (whether from the timeline or manual)
+	 * - Crop the brush if necessary based on maxExtent
+	 * - Ensure the brush is valid.
+	 * - Update the brush and recalculate the extent.
+	 *
+	 * @param newBrush
+	 */
+	function updateBrush(newBrush) {
+
+		newBrush = cropBrush(newBrush);
+
+		// Ensure the brush is valid
+		if (null != newBrush && (newBrush[1] - newBrush[0]) > _maxZoom) {
+
+			// Update the brush
+			_brush = newBrush;
+			_timeline.setBrush(newBrush);
+
+			// Update the extent as necessary
+			updateExtent();
+
+			// Fire the brush change event
+			_dispatch.call('brushChange', this, newBrush);
+
+		}
+		else {
+
+			// Don't allow them to apply an invalid brush
+			_timeline.setBrush(_brush);
+		}
+
+		_instance.redraw();
+
+	}
+
+	/**
+	 * Update the extent
+	 */
+	function updateExtent() {
+
+		if (checkBrush(_brush)) {
+
+			// Update the Extent and fire the event
+			var newExtent = calculateXExtent(_brush);
+			_instance.xExtent().overrideValue(newExtent);
+			_dispatch.call('extentChange', this, newExtent);
+
+		}
+
+	}
+
+	/**
+	 * Check to see if the extent needs to change
+	 * - Checks boundaries and zoom level
+	 *
+	 * @param brush
+	 */
+	function checkBrush(brush) {
+
+		if (null != brush) {
+
+			var xScale = _instance.xScale();
+
+			/**
+			 *
+			 * |  |\\\\\|      |
+			 * a  b     c      d
+			 *
+			 * a - lower boundary of the chart
+			 * b - lower boundary of the brush
+			 * c - upper boundary of the brush
+			 * d - upper boundary of the chart
+			 *
+			 */
+			var a = xScale.domain()[0];
+			var b = brush[0];
+			var c = brush[1];
+			var d = xScale.domain()[1];
+
+			var widthE = d - a;
+			var widthB = c - b;
+			var ratio = widthB / widthE;
+
+			// Detect edge collisions
+			var lowerCollision = ((b - a) / widthE <= _config.edgeTrigger && b > _maxExtent[0]);
+			var upperCollision = ((d - c) / widthE <= _config.edgeTrigger && c < _maxExtent[1]);
+
+			// Should we resize and/or recenter?
+			var resize = (ratio >= _config.zoomOutTrigger || ratio <= _config.zoomInTrigger);
+			var recenter = (lowerCollision || upperCollision);
+
+			return (resize || recenter);
+
+		}
+
+		return false;
+	}
+
+	/**
+	 * Given the brush, determine the new xExtent that should be applied
+	 * @param brush
+	 * @returns {[*,*]}
+	 */
+	function calculateXExtent(brush) {
+
+		var b = brush[0];
+		var c = brush[1];
+
+		// Calculate the new width of the extent (and make sure it isn't smaller than the max zoom)
+		var newWidthE = Math.max((c - b) / _config.zoomTarget, _maxZoom);
+
+		// Determine the center of the brush
+		var centerB = b + (c - b) / 2;
+
+		// Calculate the new lower bound as half the new width from the center
+		var newA = Math.max(centerB - (newWidthE) / 2, _maxExtent[0]);
+
+		// Track how much of the width we successfully applied to the new lower bound
+		newWidthE -= centerB - newA;
+
+		// Determine the new upper bound as as much of the width as we can apply above the center
+		var newD = Math.min(centerB + newWidthE, _maxExtent[1]);
+
+		// Track how much of the width we applied to the upper bound
+		newWidthE -= newD - centerB;
+
+		// If newWidthE is greater than zero, it means that clipping kept us from applying
+		// all of the width, so we should try to apply the rest to the lower bound
+		newA = Math.max(newA - newWidthE, _maxExtent[0]);
+
+		return [ newA, newD ];
+
+	}
+
+
+	// Basic Getters/Setters
+	_instance.edgeTrigger = function(v) {
+		if (!arguments.length) { return _config.edgeTrigger; }
+		_config.edgeTrigger = v;
+		return _instance;
+	};
+	_instance.zoomInTrigger = function(v) {
+		if (!arguments.length) { return _config.zoomInTrigger; }
+		_config.zoomInTrigger = v;
+		return _instance;
+	};
+	_instance.zoomOutTrigger = function(v) {
+		if (!arguments.length) { return _config.zoomOutTrigger; }
+		_config.zoomOutTrigger = v;
+		return _instance;
+	};
+	_instance.zoomTarget = function(v) {
+		if (!arguments.length) { return _config.zoomTarget; }
+		_config.zoomTarget = v;
+		return _instance;
+	};
+
+	_instance.maxExtent = function(v) {
+		if (!arguments.length) { return _maxExtent; }
+		_maxExtent = v;
+
+		return _instance;
+	};
+	_instance.maxZoom = function(v) {
+		if (!arguments.length) { return _maxZoom; }
+		_maxZoom = v;
+
+		return _instance;
+	};
+
+	_instance.setBrush = function(v) {
+		updateBrush(v);
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.rawDispatch = function() {
+		return _timeline.dispatch;
+	};
+
+	// Cannot disable the brush
+	_instance.brush = function() {
+		return true;
+	};
+
 
 	return _instance;
 }
@@ -1777,7 +2087,7 @@ function verticalBars() {
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+	var _dispatch = d3Dispatch.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
 		mouseover: function(d, i) {
 			_dispatch.call('mouseover', this, d, i);
@@ -1796,8 +2106,8 @@ function verticalBars() {
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.scaleLinear(),
-		y: d3.scaleLinear()
+		x: d3Scale.scaleLinear(),
+		y: d3Scale.scaleLinear()
 	};
 
 	// Extents
@@ -1956,14 +2266,6 @@ function verticalBars() {
 
 	return _instance;
 }
-
-var chart = {
-	donut: donut,
-	matrix: matrix,
-	realtimeTimeline: realtimeTimeline,
-	timeline: timeline,
-	verticalBars: verticalBars
-};
 
 function bins(config) {
 
@@ -2501,20 +2803,17 @@ function realtimeBins(config) {
 	return controller;
 }
 
-var controller = {
-	realtimeBins: realtimeBins,
-	timelineBrush: timelineBrush
-};
-
-var model = {
-	bins: bins,
-	extent: extent,
-	multiExtent: multiExtent
-};
-
-exports.chart = chart;
-exports.controller = controller;
-exports.model = model;
+exports.chartDonut = donut;
+exports.chartMatrix = matrix;
+exports.chartTimeline = timeline;
+exports.chartAutoBrushTimeline = autoBrushTimeline;
+exports.chartRealtimeTimeline = realtimeTimeline;
+exports.chartVerticalBars = verticalBars;
+exports.controllerRealtimeBins = realtimeBins;
+exports.timelineBrush = timelineBrush;
+exports.modelBins = bins;
+exports.modelExtent = extent;
+exports.modelMultiExtent = multiExtent;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

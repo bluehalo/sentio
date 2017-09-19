@@ -20,18 +20,18 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.chart.realtimeTimeline()
+		var timeline = sentio.chartRealtimeTimeline()
 			.height(100)
 			.width(600)
 			.interval(60000)
-			.yExtent(sentio.model.extent({
+			.yExtent(sentio.modelExtent({
 				overrideValue: [0, undefined],
 				getValue: function(d) { return d[1]; }
 			}))
 			.curve(d3.curveBasis)
 			.delay(0);
 
-		var controller = sentio.controller.realtimeBins({
+		var controller = sentio.controllerRealtimeBins({
 			binCount: 60,
 			binSize: 1000
 		});

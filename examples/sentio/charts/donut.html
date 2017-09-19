@@ -24,7 +24,7 @@
 
 	<script type="text/javascript">
 		var chartDiv = d3.select('#chart');
-		var chart = sentio.chart.donut()
+		var chart = sentio.chartDonut()
 				.width(300).height(300)
 				.label(function(d) { return 'label: ' + d.key + ' (' + d.value + ')'; });
 

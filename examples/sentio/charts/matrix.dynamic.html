@@ -23,7 +23,7 @@
 
 	<script>
 		var chartDiv = d3.select('#chart');
-		var chart = sentio.chart.matrix()
+		var chart = sentio.chartMatrix()
 			.key(function(d, i) { return i; })
 			.value(function(d) { return d; })
 			.margin({ top: 20, right: 2, bottom: 2, left: 80 });

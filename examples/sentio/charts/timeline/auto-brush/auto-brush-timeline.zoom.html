@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Static timeline with filter. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../../../../dist/sentio.css" />
+
+	<script src="../../../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
+	<script src="../../../../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<div id="timeline"></div>
+	<div id="brush"></div>
+
+	<script type="text/javascript">
+
+		var timelineData = [];
+		var brushData = [];
+
+
+		// Create them
+		var timelineDiv = d3.select('#timeline');
+		var brushDiv = d3.select('#brush');
+
+		var timeline = sentio.chartTimeline()
+			.height(200).width(800)
+			.brush(false);
+		var brush = sentio.chartAutoBrushTimeline()
+			.height(40).width(800)
+			.margin({ top: 2, right: 10, bottom: 2, left: 40 });
+
+
+		// Initialize them
+		timeline.init(timelineDiv).data(timelineData).redraw();
+		brush.init(brushDiv).data(brushData).redraw();
+
+
+		// Configure them
+		timeline.yExtent().overrideValue([0, undefined]);
+		brush.yExtent().overrideValue([0, undefined]);
+
+
+		brush.dispatch().on('extentChange', updateExtent);
+		brush.dispatch().on('brushChange', updateBrush);
+
+		function updateBrush(newBrush) {
+			console.log('brush change: ' + newBrush);
+
+			// This is where we would trigger a load of the new chart data
+			timeline.xExtent().overrideValue(newBrush);
+			timeline.redraw();
+		}
+
+		function updateExtent(newExtent) {
+			console.log('extent change: ' + newExtent);
+
+			// This is where we would trigger a load of the new brush data
+		}
+
+		updateBrush(brush.getBrush());
+
+		d3.tsv('./data.tsv', function(d) {
+
+		    // Parse data out of the tsv file
+		    d.date = new Date(d.date);
+			d.close = +d.close;
+			return d;
+
+		}, function(error, data) {
+
+		    if (null == error) {
+				data = data.map(function (d) {
+					return [ d.date, d.close ];
+				});
+
+				var ts = data.map(function(d) { return d[0].getTime(); });
+				var tsExtent = d3.extent(ts);
+
+				brush.maxExtent(tsExtent)
+					.setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
+
+				timelineData.push({key: 'series1', values: data});
+				brushData.push({key: 'series1', values: data});
+
+				timeline.redraw();
+				brush.redraw();
+
+			}
+			else {
+		        console.error(error);
+			}
+
+		});
+
+
+	</script>
+
+</body>
+</html>
+

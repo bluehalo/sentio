@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Static timeline with filter. Basic Example.</title>
+	<title>Static timeline with brush. Basic Example.</title>
 
 	<link rel="stylesheet" href="../../../../dist/sentio.css" />
 
@@ -26,17 +26,17 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.chart.timeline()
+		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
-			.filter(true);
+			.brush(true);
 
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
-			.on('filter', function(val) { console.log(val); })
-			.on('filterstart', function(val) { console.log(val); })
-			.on('filterend', function(val) { console.log(val); });
+			.on('brush', function(val) { console.log(val); })
+			.on('brushstart', function(val) { console.log(val); })
+			.on('brushend', function(val) { console.log(val); });
 
 		var hwm = Date.now();
 		var data = [];
