@@ -190,8 +190,9 @@ export default function timeline() {
 		_element.svg = _element.div.append('svg');
 
 		// Add the defs and add the clip path definition
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
+		var defs = _element.svg.append('defs');
+		_element.plotClipPath = defs.append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = defs.append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g');
@@ -273,7 +274,7 @@ export default function timeline() {
 			.attr('height', _height - _margin.top - _margin.bottom + 4);
 
 		_brush.brush()
-			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
+			.extent([ [ 0, -1 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom + 2 ] ]);
 
 		updateBrush(brushSelection);
 

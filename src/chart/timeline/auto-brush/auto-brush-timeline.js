@@ -5,6 +5,8 @@ import { dispatch as d3_dispatch } from 'd3-dispatch';
 
 export default function autoBrushTimeline() {
 
+	var _id = 'autobrush_timeline_' + Date.now();
+
 	/**
 	 * Auto brush configuration
 	 */
@@ -32,9 +34,9 @@ export default function autoBrushTimeline() {
 	var _instance = timeline();
 
 	var _timeline = {
+		element: {},
 		brush: _instance.brush,
 		dispatch: _instance.dispatch,
-		element: {},
 		init: _instance.init,
 		resize: _instance.resize,
 		redraw: _instance.redraw,
@@ -66,6 +68,15 @@ export default function autoBrushTimeline() {
 			_brush = _initialBrush;
 			_instance.setBrush(_brush);
 		}
+
+		// Add a clip path for the axis
+		_timeline.element.axisClipPath = container.select('svg defs').append('clipPath')
+			.attr('id', 'axis_' + _id).append('rect');
+
+		// Attach the clip path to the axis
+		_timeline.element.div.select('g.x.axis').attr('clip-path', 'url(#axis_' + _id + ')');
+
+		_instance.resize();
 
 		return _instance;
 	};
@@ -99,6 +110,27 @@ export default function autoBrushTimeline() {
 		}
 
 		return _instance;
+	};
+
+	// Resize
+	_instance.resize = function() {
+
+		_timeline.resize();
+
+		// Need to be defensive here since parent init calls resize
+		if (null != _timeline.element.axisClipPath) {
+
+			var margin = _instance.margin();
+			var width = _instance.width();
+			var height = _instance.height();
+
+			// Update the size of the xAxis clip path
+			_timeline.element.axisClipPath
+				.attr('transform', 'translate(0, -' + (height + margin.top) + ')')
+				.attr('width', Math.max(0, width - margin.left - margin.right))
+				.attr('height', Math.max(0, height + margin.bottom + margin.top));
+
+		}
 	};
 
 	function cropBrush(brush) {
@@ -161,10 +193,12 @@ export default function autoBrushTimeline() {
 	 */
 	function updateExtent() {
 
-		if (checkBrush(_brush)) {
+		var brushChange = checkBrush(_brush);
+
+		if (brushChange.pan || brushChange.zoom) {
 
 			// Update the Extent and fire the event
-			var newExtent = calculateXExtent(_brush);
+			var newExtent = calculateXExtent(_brush, brushChange);
 			_instance.xExtent().overrideValue(newExtent);
 			_dispatch.call('extentChange', this, newExtent);
 
@@ -175,10 +209,14 @@ export default function autoBrushTimeline() {
 	/**
 	 * Check to see if the extent needs to change
 	 * - Checks boundaries and zoom level
+	 * - Returns a status to indicate how the extent needs to change
 	 *
 	 * @param brush
+	 * @returns { pan: boolean, zoom: boolean }
 	 */
 	function checkBrush(brush) {
+
+		var toReturn = { pan: false, zoom: false };
 
 		if (null != brush) {
 
@@ -209,30 +247,40 @@ export default function autoBrushTimeline() {
 			var upperCollision = ((d - c) / widthE <= _config.edgeTrigger && c < _maxExtent[1]);
 
 			// Should we resize and/or recenter?
-			var resize = (ratio >= _config.zoomOutTrigger || ratio <= _config.zoomInTrigger);
-			var recenter = (lowerCollision || upperCollision);
-
-			return (resize || recenter);
+			toReturn.zoom = (ratio >= _config.zoomOutTrigger || ratio <= _config.zoomInTrigger);
+			toReturn.pan = (lowerCollision || upperCollision);
 
 		}
 
-		return false;
+		return toReturn;
 	}
 
 	/**
 	 * Given the brush, determine the new xExtent that should be applied
-	 * @param brush
+	 * @param brush The brush for which to determine the extent
+	 * @param transform What kind of transform we should apply (whether zoom or pan)
 	 * @returns {[*,*]}
 	 */
-	function calculateXExtent(brush) {
+	function calculateXExtent(brush, transform) {
 
+		var a = _instance.xScale().domain()[0];
 		var b = brush[0];
 		var c = brush[1];
+		var d = _instance.xScale().domain()[1];
 
-		// Calculate the new width of the extent (and make sure it isn't smaller than the max zoom)
-		var newWidthE = Math.max((c - b) / _config.zoomTarget, _maxZoom);
+		// Start with the width we currently have as the target width
+		var newWidthE = d - a;
 
-		// Determine the center of the brush
+		// If we're zooming, change the target width
+		if (transform.zoom) {
+
+			// Calculate the new width of the extent (and make sure it isn't smaller than the max zoom)
+			newWidthE = Math.max((c - b) / _config.zoomTarget, _maxZoom);
+
+		}
+
+
+		// Determine the current center of the brush
 		var centerB = b + (c - b) / 2;
 
 		// Calculate the new lower bound as half the new width from the center
@@ -308,7 +356,6 @@ export default function autoBrushTimeline() {
 	_instance.brush = function() {
 		return true;
 	};
-
 
 	return _instance;
 }
