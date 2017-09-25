@@ -9,17 +9,52 @@
 	<script src="../../../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
+		.quick-links {
+			font: 12px sans-serif;
+			padding-left: 40px;
+		}
+		.auto-brush-timeline .sentio.timeline .line {
+			stroke: rgba(0, 54, 168, 1);
+			stroke-width: 2px;
+		}
+		.auto-brush-timeline .sentio.timeline .area {
+			fill: rgba(0, 54, 168, 0.1);
+		}
+		.sentio.timeline .grid .tick line {
+			stroke: #eee;
+		}
+
+		.auto-brush-brush .sentio.timeline .line {
+			stroke: #aaa;
+			stroke-width: 2px;
+		}
+		.auto-brush-brush .sentio.timeline .area {
+			fill: #f6f6f6;
+		}
+
+
 	</style>
 
 </head>
 <body>
-	<div id="timeline"></div>
-	<div id="brush"></div>
+
+	<div class="quick-links">
+		<a href="#" onclick="zoom(24*60*60*1000)">1d</a> |
+		<a href="#" onclick="zoom(7*24*60*60*1000)">1w</a> |
+		<a href="#" onclick="zoom(30*24*60*60*1000)">1m</a> |
+		<a href="#" onclick="zoom(180*24*60*60*1000)">6m</a> |
+		<a href="#" onclick="zoom(365*24*60*60*1000)">1y</a> |
+		<a href="#" onclick="zoom(5*365*24*60*60*1000)">5y</a> |
+		<a href="#" onclick="zoom(9999999*24*60*60*1000)">all</a>
+	</div>
+	<div id="timeline" class="auto-brush-timeline"></div>
+	<div id="brush" class="auto-brush-brush"></div>
 
 	<script type="text/javascript">
 
 		var timelineData = [];
 		var brushData = [];
+		var hwm = 0;
 
 
 		// Create them
@@ -28,6 +63,7 @@
 
 		var timeline = sentio.chartTimeline()
 			.height(200).width(800)
+			.grid(true)
 			.brush(false);
 		var brush = sentio.chartAutoBrushTimeline()
 			.height(40).width(800)
@@ -41,6 +77,8 @@
 
 		// Configure them
 		timeline.yExtent().overrideValue([ 0, undefined ]);
+		timeline.xAxis().ticks(6);
+		timeline.xGridAxis().ticks(6);
 		brush.yExtent().overrideValue([ 0, undefined ]);
 
 
@@ -61,6 +99,15 @@
 			// This is where we would trigger a load of the new brush data
 		}
 
+		function zoom(v) {
+
+		    // Quick brush to the specified time span
+			brush.setBrush([ hwm - v, hwm ]);
+			timeline.redraw();
+			brush.redraw();
+
+		}
+
 		updateBrush(brush.getBrush());
 
 		d3.tsv('./data.tsv', function(d) {
@@ -79,6 +126,7 @@
 
 				var ts = data.map(function(d) { return d[0].getTime(); });
 				var tsExtent = d3.extent(ts);
+				hwm = tsExtent[1];
 
 				brush.maxExtent(tsExtent)
 					.setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);

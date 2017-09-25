@@ -18,6 +18,15 @@ export default function timeline() {
 	// Height and width of the SVG element
 	var _height = 100, _width = 600;
 
+	// Render the grid?
+	var _displayOptions = {
+		xGrid: false,
+		yGrid: false,
+		points: false,
+		tooltip: false
+	};
+
+	// Various configuration functions
 	var _fn = {
 		valueX: function(d) { return d[0]; },
 		valueY: function(d) { return d[1]; },
@@ -30,11 +39,12 @@ export default function timeline() {
 		seriesLabel: function(d) { return d.label; }
 	};
 
+
 	// Extent configuration for x and y dimensions of plot
 	var now = Date.now();
 	var _extent = {
 		x: extent({
-			defaultValue: [ now - 60000*5, now ],
+			defaultValue: [ now - 60000 * 5, now ],
 			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
 		y: extent({
@@ -43,32 +53,45 @@ export default function timeline() {
 	};
 	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
 
+
 	// Default scales for x and y dimensions
 	var _scale = {
 		x: d3_scaleTime(),
 		y: d3_scaleLinear()
 	};
 
+
 	// Default Axis definitions
 	var _axis = {
 		x: d3_axisBottom().scale(_scale.x),
-		y: d3_axisLeft().scale(_scale.y).ticks(3)
+		y: d3_axisLeft().ticks(3).scale(_scale.y),
+
+		xGrid: d3_axisBottom().tickFormat('').tickSizeOuter(0).scale(_scale.x),
+		yGrid: d3_axisLeft().tickFormat('').tickSizeOuter(0).ticks(3).scale(_scale.y)
 	};
+
 
 	// Storage for commonly used DOM elements
 	var _element = {
 		svg: undefined,
+
 		g: {
 			container: undefined,
 			plots: undefined,
+
 			xAxis: undefined,
 			yAxis: undefined,
+			xAxisGrid: undefined,
+			yAxisGrid: undefined,
+
 			markers: undefined,
 			brush: undefined
 		},
+
 		plotClipPath: undefined,
 		markerClipPath: undefined
 	};
+
 
 	// Line generator for the plot
 	var _line = d3_line();
@@ -111,6 +134,7 @@ export default function timeline() {
 
 	}
 
+
 	/**
 	 * Set the current brush state in terms of the x data domain
 	 * @param v The new value of the brush
@@ -119,6 +143,7 @@ export default function timeline() {
 	function setBrush(v) {
 		_brush.setSelection(_element.g.brush, v);
 	}
+
 
 	/**
 	 * Update the state of the brush (as part of redrawing everything)
@@ -164,6 +189,7 @@ export default function timeline() {
 	// The dispatch object and all events
 	var _dispatch = d3_dispatch('brush', 'brushstart', 'brushend', 'markerClick', 'markerMouseover', 'markerMouseout')
 
+
 	// The main data array
 	var _data = [];
 
@@ -171,6 +197,7 @@ export default function timeline() {
 	var _markers = {
 		values: []
 	};
+
 
 	// Chart create/init method
 	function _instance() {}
@@ -183,6 +210,7 @@ export default function timeline() {
 	 * @returns {_instance} Instance of the chart
 	 */
 	_instance.init = function(container) {
+
 		// Create a container div
 		_element.div = container.append('div').attr('class', 'sentio timeline');
 
@@ -197,18 +225,23 @@ export default function timeline() {
 		// Append a container for everything
 		_element.g.container = _element.svg.append('g');
 
+		// Append the grid
+		_element.g.xAxisGrid = _element.g.container.append('g').attr('class', 'x grid');
+		_element.g.yAxisGrid = _element.g.container.append('g').attr('class', 'y grid');
+
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// Add the brush element
-		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Append groups for the axes
 		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
 		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Add the brush element
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
+
 
 		_instance.resize();
 
@@ -242,44 +275,82 @@ export default function timeline() {
 		// Need to grab the brush extent before we change anything
 		var brushSelection = getBrush();
 
-		// Set up the scales
+
+		// Resize the SVG Pane
+		_element.svg.attr('width', _width).attr('height', _height);
+
+		// Update the margins on the main draw group
+		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
+
+
+		// Resize Scales
 		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
 		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
 
-		// Append the clip path
+
+		/**
+		 * Resize clip paths
+		 */
+
+		// Plot clip path is only the plot pane
 		_element.plotClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
+			.attr('transform', 'translate(0, -1)')
+			.attr('width', Math.max(0, _scale.x.range()[1]) + 2)
+			.attr('height', Math.max(0, _scale.y.range()[0]) + 2);
+
+		// Marker clip path includes top margin by default
 		_element.markerClipPath
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
 
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
 
-		// Update the positions of the axes
+		/**
+		 * Update axis and grids
+		 */
+
+		// Reset axis and grid positions
 		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
+		_element.g.xAxisGrid.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
 
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
 
-		// Update the size of the brush
-		_element.g.brush
-			.selectAll('rect')
-			.attr('y', 0).attr('x', 0)
-			.attr('height', _width - _margin.left - _margin.right)
-			.attr('height', _height - _margin.top - _margin.bottom + 4);
+		// Resize the x grid ticks
+		if (_displayOptions.xGrid) {
+			_axis.xGrid.tickSizeInner(-(_height - _margin.top - _margin.bottom));
+		}
+		else {
+			_axis.xGrid.tickSizeInner(0);
+		}
 
+		// Resize the y grid ticks
+		if (_displayOptions.yGrid) {
+			_axis.yGrid.tickSizeInner(-(_width - _margin.left - _margin.right));
+		}
+		else {
+			_axis.yGrid.tickSizeInner(0);
+		}
+
+
+		/**
+		 * Update the brush
+		 */
+
+		// Resize and position the brush g element
+		_element.g.brush.selectAll('rect')
+			.attr('y', -1).attr('x', 0)
+			.attr('width', _scale.x.range()[1])
+			.attr('height', _scale.y.range()[0] + 2);
+
+		// Resize the brush
 		_brush.brush()
-			.extent([ [ 0, -1 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom + 2 ] ]);
+			.extent([ [ 0, 0 ], [ _scale.x.range()[1], _scale.y.range()[0] + 2 ] ]);
 
 		updateBrush(brushSelection);
 
+
 		return _instance;
 	};
+
 
 	/*
 	 * Redraw the graphic
@@ -308,8 +379,14 @@ export default function timeline() {
 		if (null != _axis.x) {
 			_element.g.xAxis.call(_axis.x);
 		}
+		if (null != _axis.xGrid && _displayOptions.xGrid) {
+			_element.g.xAxisGrid.call(_axis.xGrid);
+		}
 		if (null != _axis.y) {
 			_element.g.yAxis.call(_axis.y);
+		}
+		if (null != _axis.yGrid && _displayOptions.yGrid) {
+			_element.g.yAxisGrid.call(_axis.yGrid);
 		}
 	}
 
@@ -400,15 +477,36 @@ export default function timeline() {
 		_margin = v;
 		return _instance;
 	};
+	_instance.xGrid = function(v) {
+		if (!arguments.length) { return _displayOptions.xGrid; }
+		_displayOptions.xGrid = v;
+		return _instance;
+	};
+	_instance.yGrid = function(v) {
+		if (!arguments.length) { return _displayOptions.yGrid; }
+		_displayOptions.yGrid = v;
+		return _instance;
+	};
+	_instance.grid = function(v) {
+		_displayOptions.xGrid = _displayOptions.yGrid = v;
+		return _instance;
+	};
+
 	_instance.curve = function(v) {
 		if (!arguments.length) { return _line.curve(); }
 		_line.curve(v);
 		_area.curve(v);
 		return _instance;
 	};
+
 	_instance.xAxis = function(v) {
 		if (!arguments.length) { return _axis.x; }
 		_axis.x = v;
+		return _instance;
+	};
+	_instance.xGridAxis = function(v) {
+		if (!arguments.length) { return _axis.xGrid; }
+		_axis.xGrid = v;
 		return _instance;
 	};
 	_instance.yAxis = function(v) {
@@ -416,11 +514,19 @@ export default function timeline() {
 		_axis.y = v;
 		return _instance;
 	};
+	_instance.yGridAxis = function(v) {
+		if (!arguments.length) { return _axis.yGrid; }
+		_axis.yGrid = v;
+		return _instance;
+	};
 	_instance.xScale = function(v) {
 		if (!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if (null != _axis.x) {
 			_axis.x.scale(v);
+		}
+		if (null != _axis.xGrid) {
+			_axis.xGrid.scale(v);
 		}
 		if (null != _brush) {
 			_brush.scale(v);
@@ -432,6 +538,9 @@ export default function timeline() {
 		_scale.y = v;
 		if (null != _axis.y) {
 			_axis.y.scale(v);
+		}
+		if (null != _axis.yGrid) {
+			_axis.yGrid.scale(v);
 		}
 		return _instance;
 	};
@@ -455,6 +564,7 @@ export default function timeline() {
 		_extent.x = v;
 		return _instance;
 	};
+
 	_instance.seriesKey = function(v) {
 		if(!arguments.length) { return _fn.seriesKey; }
 		_fn.seriesKey = v;
@@ -480,6 +590,7 @@ export default function timeline() {
 		_fn.markerValueLabel = v;
 		return _instance;
 	};
+
 	_instance.dispatch = function(v) {
 		if (!arguments.length) { return _dispatch; }
 		return _instance;

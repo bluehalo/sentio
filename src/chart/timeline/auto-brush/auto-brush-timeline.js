@@ -1,6 +1,7 @@
 import { default as timeline } from '../timeline';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
+import { curveNatural as d3_curveNatural } from 'd3-line';
 
 
 export default function autoBrushTimeline() {
@@ -19,7 +20,8 @@ export default function autoBrushTimeline() {
 		zoomTarget: 0.2
 	};
 
-	var _maxZoom = 24 * 60 * 60 * 1000;
+	var _minExtent = 24 * 60 * 60 * 1000;
+	var _minBrush = 60 * 60 * 1000;
 	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
 	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
 
@@ -34,7 +36,13 @@ export default function autoBrushTimeline() {
 	var _instance = timeline();
 
 	var _timeline = {
-		element: {},
+		element: {
+			g: {
+				container: undefined
+			},
+
+			axisClipPath: undefined
+		},
 		brush: _instance.brush,
 		dispatch: _instance.dispatch,
 		init: _instance.init,
@@ -46,12 +54,15 @@ export default function autoBrushTimeline() {
 
 	// Set up default look and feel
 	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10  });
-	_instance.xAxis().ticks(6);
+	_instance.xAxis().ticks(5);
 	_instance.yAxis(null);
 
 
 	// Initialization of the timline and auto brush
 	_instance.init = function(container) {
+
+		// Store the container
+		_timeline.element.g.container = container;
 
 		// Initialize the timeline
 		_timeline.init(container);
@@ -59,9 +70,6 @@ export default function autoBrushTimeline() {
 		// Turn on brushing and register for brush events
 		_timeline.brush(true);
 		_timeline.dispatch().on('brushend.internal', updateBrush);
-
-		// Grab and persist some important elements
-		_timeline.element.div = container.select('div.sentio.timeline');
 
 		// Set the initial brush
 		if (null == _brush) {
@@ -74,7 +82,8 @@ export default function autoBrushTimeline() {
 			.attr('id', 'axis_' + _id).append('rect');
 
 		// Attach the clip path to the axis
-		_timeline.element.div.select('g.x.axis').attr('clip-path', 'url(#axis_' + _id + ')');
+		_timeline.element.g.container.select('div.sentio.timeline')
+			.select('g.x.axis').attr('clip-path', 'url(#axis_' + _id + ')');
 
 		_instance.resize();
 
@@ -97,16 +106,27 @@ export default function autoBrushTimeline() {
 			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
 
 		// Update text position to be on the chart
-		_timeline.element.div.selectAll('g.x.axis g.tick text')
+		var xAxis = _timeline.element.g.container.select('div.sentio.timeline')
+			.select('g.x.axis')
+				.attr('pointer-events', 'none');
+
+		xAxis.selectAll('g.tick text')
 			.attr('y', '3')
 			.attr('dy', '-0.71em')
 			.attr('dx', '0.35em')
-			.attr('text-anchor', 'start')
-			.attr('pointer-events', 'none');
+			.attr('text-anchor', 'start');
+
+		// Set the x Axis ticks to be full height
+		_instance.xAxis()
+			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
+
+
+		// Set the curve to interpolate
+		_instance.curve(d3_curveNatural);
 
 		// Call it to redraw
 		if (null != _instance.xAxis()) {
-			_timeline.element.div.select('g.x.axis').call(_instance.xAxis());
+			xAxis.call(_instance.xAxis());
 		}
 
 		return _instance;
@@ -127,10 +147,11 @@ export default function autoBrushTimeline() {
 			// Update the size of the xAxis clip path
 			_timeline.element.axisClipPath
 				.attr('transform', 'translate(0, -' + (height + margin.top) + ')')
-				.attr('width', Math.max(0, width - margin.left - margin.right))
+				.attr('width', Math.max(0, width - margin.left - margin.right + 2))
 				.attr('height', Math.max(0, height + margin.bottom + margin.top));
 
 		}
+
 	};
 
 	function cropBrush(brush) {
@@ -165,7 +186,7 @@ export default function autoBrushTimeline() {
 		newBrush = cropBrush(newBrush);
 
 		// Ensure the brush is valid
-		if (null != newBrush && (newBrush[1] - newBrush[0]) > _maxZoom) {
+		if (null != newBrush) {
 
 			// Update the brush
 			_brush = newBrush;
@@ -275,7 +296,7 @@ export default function autoBrushTimeline() {
 		if (transform.zoom) {
 
 			// Calculate the new width of the extent (and make sure it isn't smaller than the max zoom)
-			newWidthE = Math.max((c - b) / _config.zoomTarget, _maxZoom);
+			newWidthE = Math.max((c - b) / _config.zoomTarget, _minExtent);
 
 		}
 
@@ -332,9 +353,15 @@ export default function autoBrushTimeline() {
 
 		return _instance;
 	};
-	_instance.maxZoom = function(v) {
-		if (!arguments.length) { return _maxZoom; }
-		_maxZoom = v;
+	_instance.minExtent = function(v) {
+		if (!arguments.length) { return _minExtent; }
+		_minExtent = v;
+
+		return _instance;
+	};
+	_instance.minBrush = function(v) {
+		if (!arguments.length) { return _minBrush; }
+		_minBrush = v;
 
 		return _instance;
 	};

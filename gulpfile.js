@@ -83,6 +83,7 @@ gulp.task('rollup-js', () => {
 			'd3-brush',
 			'd3-dispatch',
 			'd3-interpolate',
+			'd3-line',
 			'd3-scale',
 			'd3-selection',
 			'd3-shape'
@@ -100,6 +101,7 @@ gulp.task('rollup-js', () => {
 					'd3-brush': 'd3',
 					'd3-dispatch': 'd3',
 					'd3-interpolate': 'd3',
+					'd3-line': 'd3',
 					'd3-scale': 'd3',
 					'd3-selection': 'd3',
 					'd3-shape': 'd3'
