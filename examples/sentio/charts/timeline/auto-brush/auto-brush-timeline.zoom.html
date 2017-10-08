@@ -20,6 +20,10 @@
 		.auto-brush-timeline .sentio.timeline .area {
 			fill: rgba(0, 54, 168, 0.1);
 		}
+		.auto-brush-timeline .sentio.timeline .points circle {
+			fill: rgba(0, 54, 168, 1);
+			stroke: none;
+		}
 		.sentio.timeline .grid .tick line {
 			stroke: #eee;
 		}
@@ -52,63 +56,77 @@
 
 	<script type="text/javascript">
 
-		var timelineData = [];
-		var brushData = [];
 		var hwm = 0;
 
-
-		// Create them
+		// Timeline
+		var timelineData = [];
+		var timelineSeries = [ { key: 'series', getValue: function(d) { return d[1]; } } ];
 		var timelineDiv = d3.select('#timeline');
-		var brushDiv = d3.select('#brush');
 
 		var timeline = sentio.chartTimeline()
 			.height(200).width(800)
-			.grid(true)
+			.showGrid(true)
+			.pointEvents(true)
 			.brush(false);
-		var brush = sentio.chartAutoBrushTimeline()
-			.height(40).width(800)
-			.margin({ top: 2, right: 10, bottom: 2, left: 40 });
 
-
-		// Initialize them
-		timeline.init(timelineDiv).data(timelineData).redraw();
-		brush.init(brushDiv).data(brushData).redraw();
-
-
-		// Configure them
 		timeline.yExtent().overrideValue([ 0, undefined ]);
 		timeline.xAxis().ticks(6);
 		timeline.xGridAxis().ticks(6);
-		brush.yExtent().overrideValue([ 0, undefined ]);
 
+		timeline.init(timelineDiv).data(timelineData).redraw();
+		timeline.dispatch()
+			.on('pointMouseover', function(d) { console.log(d); })
+			.on('pointMouseout', function(d) { })
 
-		brush.dispatch().on('extentChange', updateExtent);
-		brush.dispatch().on('brushChange', updateBrush);
-
-		function updateBrush(newBrush) {
-			console.log('brush change: ' + newBrush);
-
+		function setTimelineBrush(newBrush) {
 			// This is where we would trigger a load of the new chart data
 			timeline.xExtent().overrideValue(newBrush);
 			timeline.redraw();
 		}
 
-		function updateExtent(newExtent) {
+
+		// Brush
+		var brushData = [];
+		var brushSeries = [ { key: 'series', getValue: function(d) { return d[1]; } } ];
+		var brushDiv = d3.select('#brush');
+
+		var brush = sentio.chartAutoBrushTimeline()
+			.height(40).width(800)
+			.margin({ top: 2, right: 10, bottom: 2, left: 40 });
+
+		brush.yExtent().overrideValue([ 0, undefined ]);
+		brush.dispatch()
+			.on('extentChange', onExtentChange)
+			.on('brushChange', onBrushChange);
+
+		brush.init(brushDiv).data(brushData).redraw();
+
+		function setBrush(newBrush) {
+			// Quick brush to the specified time span
+			brush.setBrush(newBrush);
+			brush.redraw();
+		}
+
+		function onBrushChange(newBrush) {
+			console.log('brush change: ' + newBrush);
+
+			setTimelineBrush(newBrush);
+		}
+
+		function onExtentChange(newExtent) {
 			console.log('extent change: ' + newExtent);
 
 			// This is where we would trigger a load of the new brush data
 		}
 
+
+
+		// Load data and initialize the views
+		setTimelineBrush(brush.getBrush());
+
 		function zoom(v) {
-
-		    // Quick brush to the specified time span
-			brush.setBrush([ hwm - v, hwm ]);
-			timeline.redraw();
-			brush.redraw();
-
+			setBrush([ hwm - v, hwm ]);
 		}
-
-		updateBrush(brush.getBrush());
 
 		d3.tsv('./data.tsv', function(d) {
 
@@ -128,14 +146,14 @@
 				var tsExtent = d3.extent(ts);
 				hwm = tsExtent[1];
 
-				brush.maxExtent(tsExtent)
-					.setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
+				brush.maxExtent(tsExtent);
+				setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
 
-				timelineData.push({key: 'series1', values: data});
-				brushData.push({key: 'series1', values: data});
+				timelineData = data;
+				brushData = data;
 
-				timeline.redraw();
-				brush.redraw();
+				timeline.series(timelineSeries).data(timelineData).redraw();
+				brush.series(timelineSeries).data(timelineData).redraw();
 
 			}
 			else {

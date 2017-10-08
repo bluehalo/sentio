@@ -29,35 +29,42 @@
 		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
-			.brush(true);
+			.brush(true)
+			.xValue(function(d) { return d.x; });
 
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
 			.on('brush', function(val) { console.log(val); })
-			.on('brushstart', function(val) { console.log(val); })
-			.on('brushend', function(val) { console.log(val); });
+			.on('brushStart', function(val) { console.log(val); })
+			.on('brushEnd', function(val) { console.log(val); });
 
 		var hwm = Date.now();
 		var data = [];
+		var series = [
+			{ key: 'series1', category: 'series1', getValue: function(d) { return d.y0; }},
+			{ key: 'series2', category: 'series2', getValue: function(d) { return d.y1; }},
+			{ key: 'series3', category: 'series3', getValue: function(d) { return d.y2; }},
+		];
 
-		timeline.init(timelineDiv).data(data).redraw();
+		timeline.init(timelineDiv).series(series).data(data).redraw();
 		updateData();
 
 		function generateData(start, samples){
 			var toReturn = [];
-			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+			for(var i = 0; i < samples; i++){
+				toReturn.push({
+				    x: start + i * 1000,
+					y0: Math.random() * 10,
+					y1: Math.random() * 6,
+					y2: Math.random() * 15
+				});
 			}
 			return toReturn;
 		}
 
 		function updateData(){
-			data.length = 0;
-			data.push({ key: 'series1', cssClass: 'series1', values: generateData(hwm - 1000*15, 15) });
-			data.push({ key: 'series2', cssClass: 'series2', values: generateData(hwm - 1000*15, 15) });
-			data.push({ key: 'series3', cssClass: 'series3', values: generateData(hwm - 1000*15, 15) });
-			timeline.redraw();
+			timeline.data(generateData(hwm - 1000 * 15, 15)).redraw();
 		}
 
 	</script>

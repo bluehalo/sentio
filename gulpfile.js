@@ -86,7 +86,8 @@ gulp.task('rollup-js', () => {
 			'd3-line',
 			'd3-scale',
 			'd3-selection',
-			'd3-shape'
+			'd3-shape',
+			'd3-voronoi'
 		]
 		})
 		.then((bundle) => {
@@ -104,7 +105,8 @@ gulp.task('rollup-js', () => {
 					'd3-line': 'd3',
 					'd3-scale': 'd3',
 					'd3-selection': 'd3',
-					'd3-shape': 'd3'
+					'd3-shape': 'd3',
+					'd3-voronoi': 'd3'
 				},
 
 				banner: bannerString,

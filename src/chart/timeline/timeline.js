@@ -3,14 +3,26 @@ import { brushX as d3_brushX } from 'd3-brush';
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { scaleTime as d3_scaleTime, scaleLinear as d3_scaleLinear } from 'd3-scale';
 import { line as d3_line, area as d3_area } from 'd3-shape';
+import { voronoi as d3_voronoi } from 'd3-voronoi';
 
 import { default as extent } from '../../model/extent';
 import { default as multiExtent } from '../../model/multi-extent';
 import { default as timelineBrush } from '../../controller/timeline-brush';
 
+
+/**
+ *
+ *  data: []
+ *  series: [ {label, x, y} ]
+ *
+ */
 export default function timeline() {
 
 	var _id = 'timeline_line_' + Date.now();
+
+	/**
+	 * Style stuff
+	 */
 
 	// Margin between the main plot group and the svg border
 	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
@@ -22,23 +34,28 @@ export default function timeline() {
 	var _displayOptions = {
 		xGrid: false,
 		yGrid: false,
-		points: false,
-		tooltip: false
+		pointEvents: false
 	};
+
+
+	/**
+	 * Configuration of accessors to data
+	 */
 
 	// Various configuration functions
 	var _fn = {
 		valueX: function(d) { return d[0]; },
-		valueY: function(d) { return d[1]; },
 
 		markerValueX: function(d) { return d[0]; },
 		markerLabel: function(d) { return d[1]; },
 
-		seriesKey: function(d) { return d.key; },
-		seriesValues: function(d) { return d.values; },
-		seriesLabel: function(d) { return d.label; }
+		pointRadius: function() { return 2; }
 	};
 
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
 
 	// Extent configuration for x and y dimensions of plot
 	var now = Date.now();
@@ -47,11 +64,9 @@ export default function timeline() {
 			defaultValue: [ now - 60000 * 5, now ],
 			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
-		y: extent({
-			getValue: function(d, i) { return _fn.valueY(d, i); }
-		})
+		y: extent()
 	};
-	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
+	var _multiExtent = multiExtent();
 
 
 	// Default scales for x and y dimensions
@@ -59,7 +74,6 @@ export default function timeline() {
 		x: d3_scaleTime(),
 		y: d3_scaleLinear()
 	};
-
 
 	// Default Axis definitions
 	var _axis = {
@@ -71,6 +85,48 @@ export default function timeline() {
 	};
 
 
+	/**
+	 * Generators
+	 */
+
+	var _line = d3_line()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	var _area = d3_area()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	// Voronoi that we'll use for hovers
+	var _voronoi = d3_voronoi()
+		.x(function(d, i) {
+			return _scale.x(d.x, i);
+		})
+		.y(function(d, i) {
+			return _scale.y(d.y, i);
+		});
+
+
+	/**
+	 * Brush and Events
+	 */
+
+	// Brush Management
+	var _brush = timelineBrush({ brush: d3_brushX(), scale: _scale.x });
+	_brush.dispatch()
+		.on('end', function() { _dispatch.call('brushEnd', this, getBrush()); })
+		.on('start', function() { _dispatch.call('brushStart', this, getBrush()); })
+		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
+
+	// The dispatch object and all events
+	var _dispatch = d3_dispatch(
+		'brush', 'brushStart', 'brushEnd',
+		'markerClick', 'markerMouseover', 'markerMouseout',
+		'pointMouseover', 'pointMouseout', 'pointClick');
+
+
+	/**
+	 * Keep track of commonly access DOM elements
+	 */
+
 	// Storage for commonly used DOM elements
 	var _element = {
 		svg: undefined,
@@ -78,6 +134,8 @@ export default function timeline() {
 		g: {
 			container: undefined,
 			plots: undefined,
+			points: undefined,
+			voronoi: undefined,
 
 			xAxis: undefined,
 			yAxis: undefined,
@@ -93,33 +151,101 @@ export default function timeline() {
 	};
 
 
-	// Line generator for the plot
-	var _line = d3_line();
-	_line.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_line.y(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
+	/**
+	 * Data and Series and Markers
+	 */
 
-	// Area generator for the plot
-	var _area = d3_area();
-	_area.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_area.y1(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
+	// The main data array
+	var _data = [];
 
+	// The definition of the series to draw
+	var _series = [];
 
-	// Brush Management
-	var _brush = timelineBrush({ brush: d3_brushX(), scale: _scale.x });
-	_brush.dispatch()
-		.on('end', function() { _dispatch.call('brushend', this, getBrush()); })
-		.on('start', function() { _dispatch.call('brushstart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
+	// Markers data
+	var _markers = [];
 
+	/**
+	 * Explodes the data into an array with one point per unique point
+	 * in the data (according to the series).
+	 *
+	 * I.e.,
+	 *
+	 * data: [{ x: 0, y1: 1, y2: 2}]
+	 * series: [
+	 *     { key: 's1', getValue: function(d) { return d.y1; } },
+	 *     { key: 's2', getValue: function(d) { return d.y2; } }
+	 * ]
+	 *
+	 * ==>
+	 *
+	 * [
+	 *     { x: 0, y: 1, series: { key: 's1', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 *     { x: 0, y: 2, series: { key: 's2', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 * ]
+	 *
+	 * @param series
+	 * @param data
+	 */
+	function getVoronoiData(series, data, getXValue) {
+		var toReturn = [];
 
+		// Loop over each series
+		series.forEach(function(s, i) {
+
+			// Convert the data to x/y series
+			toReturn = toReturn.concat(data.map(function(d, ii) {
+				return {
+					x: getXValue(d, ii),
+					y: s.getValue(d, ii),
+					series: s,
+					data: d
+				};
+			}));
+
+		});
+
+		return toReturn;
+	}
+
+	function highlightPoints(hovered) {
+		if (null != hovered) {
+
+			var join = _element.g.points.selectAll('circle')
+				.data(_series.map(function(d) {
+					return {
+						x: _fn.valueX(hovered.data.data),
+						y: d.getValue(hovered.data.data),
+						category: d.category
+					};
+				}));
+			var enter = join.enter().append('circle');
+			var update = join.selectAll('circle');
+
+			enter.merge(update)
+				.attr('class', function(d, i) { return d.category; })
+				.attr('cx', function(d, i) { return _scale.x(d.x); })
+				.attr('cy', function(d, i) { return _scale.y(d.y); })
+				.attr('r', 3);
+		}
+		else {
+			_element.g.points.selectAll('circle').remove();
+		}
+	}
+
+	function onPointMouseover(d, i) {
+		highlightPoints(d);
+		_dispatch.call('pointMouseover', this, d, i);
+	}
+
+	function onPointMouseout(d, i) {
+		highlightPoints();
+		_dispatch.call('pointMouseout', this, d, i);
+	}
+
+	function onPointClick(d, i) {
+		highlightPoints();
+		_dispatch.call('pointClick', this, d, i);
+	}
 
 	/**
 	 * Get the current brush state in terms of the x data domain, in ms epoch time
@@ -165,7 +291,7 @@ export default function timeline() {
 		if (null != previousExtent) {
 
 			// Derive the overall plot extent from the collection of series
-			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+			var plotExtent = _extent.x.getExtent(_data);
 
 			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
 
@@ -186,17 +312,129 @@ export default function timeline() {
 	}
 
 
-	// The dispatch object and all events
-	var _dispatch = d3_dispatch('brush', 'brushstart', 'brushend', 'markerClick', 'markerMouseover', 'markerMouseout')
+	function updateAxes() {
+		if (null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
+		}
+		if (null != _axis.xGrid && _displayOptions.xGrid) {
+			_element.g.xAxisGrid.call(_axis.xGrid);
+		}
+		if (null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
+		}
+		if (null != _axis.yGrid && _displayOptions.yGrid) {
+			_element.g.yAxisGrid.call(_axis.yGrid);
+		}
+	}
 
 
-	// The main data array
-	var _data = [];
+	function updateLine() {
 
-	// Markers data
-	var _markers = {
-		values: []
-	};
+		// Join
+		var plotJoin = _element.g.plots
+			.selectAll('.plot')
+			.data(_series, function(d) { return d.key; });
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g').attr('class', 'plot');
+
+		var lineEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate)
+			.attr('d', function(series) {
+				return _line.y(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		areaEnter.merge(areaUpdate)
+			.attr('d', function(series) {
+				return _area
+					.y0(_scale.y.range()[0])
+					.y1(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+
+		// Remove the previous voronoi
+		_element.g.voronoi.selectAll('path').remove();
+
+		if (_displayOptions.pointEvents) {
+
+			// check range against width
+			var extent = _scale.x.domain();
+			var voronoiData = getVoronoiData(_series, _data, _fn.valueX)
+				.filter(function(d) {
+					// Filter out points that are outside of the extent
+					return (extent[0] <= d.x && d.x <= extent[1]);
+				});
+
+			// Filter out paths that are null
+			voronoiData  = _voronoi.polygons(voronoiData)
+				.filter(function (d) { return (null != d); });
+
+			// Draw the circle markers
+			_element.g.voronoi.selectAll('path').data(voronoiData).enter().append('path')
+				.attr('d', function (d) { return (null != d) ? 'M' + d.join('L') + 'Z' : null; })
+				.on('mouseover', onPointMouseover)
+				.on('mouseout', onPointMouseout)
+				.on('click', onPointClick);
+
+		}
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
+	}
+
+
+	function updateMarkers() {
+
+		// Join
+		var markerJoin = _element.g.markers
+			.selectAll('.marker')
+			.data(_markers, _fn.markerValueX);
+
+		// Enter
+		var markerEnter = markerJoin.enter().append('g')
+			.attr('class', 'marker')
+			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
+			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
+			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
+
+		var lineEnter = markerEnter.append('line');
+		var textEnter = markerEnter.append('text');
+
+		lineEnter
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
+
+		textEnter
+			.attr('dy', '0em')
+			.attr('y', -3)
+			.attr('text-anchor', 'middle')
+			.text(_fn.markerValueLabel);
+
+		// Enter + Update
+		var lineUpdate = markerJoin.select('line');
+		var textUpdate = markerJoin.select('text');
+
+		lineEnter.merge(lineUpdate)
+			.attr('x1', function(d, i) { return _scale.x(_fn.markerValueX(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
+
+		textEnter.merge(textUpdate)
+			.attr('x', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
+
+		// Exit
+		markerJoin.exit().remove();
+
+	}
 
 
 	// Chart create/init method
@@ -226,21 +464,32 @@ export default function timeline() {
 		_element.g.container = _element.svg.append('g');
 
 		// Append the grid
-		_element.g.xAxisGrid = _element.g.container.append('g').attr('class', 'x grid');
-		_element.g.yAxisGrid = _element.g.container.append('g').attr('class', 'y grid');
+		_element.g.grid = _element.g.container.append('g').attr('class', 'grid');
+		_element.g.xAxisGrid = _element.g.grid.append('g').attr('class', 'x');
+		_element.g.yAxisGrid = _element.g.grid.append('g').attr('class', 'y');
 
 		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots');
+		_element.g.plots.attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+		_element.g.axes = _element.g.container.append('g').attr('class', 'axis');
+		_element.g.xAxis = _element.g.axes.append('g').attr('class', 'x');
+		_element.g.yAxis = _element.g.axes.append('g').attr('class', 'y');
+
+		// Append a group for the voronoi and the points
+		_element.g.points = _element.g.container.append('g').attr('class', 'points');
+		_element.g.points.attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.voronoi = _element.g.container.append('g').attr('class', 'voronoi');
+
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers');
+		_element.g.markers.attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Add the brush element
-		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
+		_element.g.brush.attr('clip-path', 'url(#marker_' + _id + ')');
 
 
 		_instance.resize();
@@ -249,7 +498,7 @@ export default function timeline() {
 	};
 
 	/*
-	 * Set the _instance data
+	 * Set the data to drive the chart
 	 */
 	_instance.data = function(v) {
 		if (!arguments.length) { return _data; }
@@ -259,11 +508,21 @@ export default function timeline() {
 	};
 
 	/*
+	 * Define the series to show on the chart
+	 */
+	_instance.series = function(v) {
+		if (!arguments.length) { return _series; }
+		_series = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if (!arguments.length) { return _markers.values; }
-		_markers.values = (null != v)? v : [];
+		if (!arguments.length) { return _markers; }
+		_markers = (null != v)? v : [];
 		return _instance;
 	};
 
@@ -303,6 +562,12 @@ export default function timeline() {
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		// Resize the clip extent of the plot
+		_voronoi.extent([
+			[ 0, 0 ],
+			[ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ]
+		]);
 
 
 		/**
@@ -361,10 +626,10 @@ export default function timeline() {
 		var brushSelection = getBrush();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
+		_scale.x.domain(_extent.x.getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
+		_scale.y.domain(_multiExtent.extent(_extent.y).series(_series).getExtent(_data));
 
 		// Update the plot elements
 		updateAxes();
@@ -374,91 +639,6 @@ export default function timeline() {
 
 		return _instance;
 	};
-
-	function updateAxes() {
-		if (null != _axis.x) {
-			_element.g.xAxis.call(_axis.x);
-		}
-		if (null != _axis.xGrid && _displayOptions.xGrid) {
-			_element.g.xAxisGrid.call(_axis.xGrid);
-		}
-		if (null != _axis.y) {
-			_element.g.yAxis.call(_axis.y);
-		}
-		if (null != _axis.yGrid && _displayOptions.yGrid) {
-			_element.g.yAxisGrid.call(_axis.yGrid);
-		}
-	}
-
-	function updateLine() {
-
-		// Join
-		var plotJoin = _element.g.plots
-			.selectAll('.plot')
-			.data(_data, _fn.seriesKey);
-
-		// Enter
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
-
-		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
-
-		var lineUpdate = plotJoin.select('.line');
-		var areaUpdate = plotJoin.select('.area');
-
-		// Enter + Update
-		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
-		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
-
-		// Exit
-		var plotExit = plotJoin.exit();
-		plotExit.remove();
-
-	}
-
-	function updateMarkers() {
-
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers.values, _fn.markerValueX);
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
-			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
-			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
-
-		var lineEnter = markerEnter.append('line');
-		var textEnter = markerEnter.append('text');
-
-		lineEnter
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		textEnter
-			.attr('dy', '0em')
-			.attr('y', -3)
-			.attr('text-anchor', 'middle')
-			.text(_fn.markerValueLabel);
-
-		// Enter + Update
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
-
-		lineEnter.merge(lineUpdate)
-			.attr('x1', function(d, i) { return _scale.x(_fn.markerValueX(d, i)); })
-			.attr('x2', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
-
-		textEnter.merge(textUpdate)
-			.attr('x', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
-
-		// Exit
-		markerJoin.exit().remove();
-
-	}
 
 
 	// Basic Getters/Setters
@@ -477,18 +657,23 @@ export default function timeline() {
 		_margin = v;
 		return _instance;
 	};
-	_instance.xGrid = function(v) {
+	_instance.showXGrid = function(v) {
 		if (!arguments.length) { return _displayOptions.xGrid; }
 		_displayOptions.xGrid = v;
 		return _instance;
 	};
-	_instance.yGrid = function(v) {
+	_instance.showYGrid = function(v) {
 		if (!arguments.length) { return _displayOptions.yGrid; }
 		_displayOptions.yGrid = v;
 		return _instance;
 	};
-	_instance.grid = function(v) {
+	_instance.showGrid = function(v) {
 		_displayOptions.xGrid = _displayOptions.yGrid = v;
+		return _instance;
+	};
+	_instance.pointEvents = function(v) {
+		if (!arguments.length) { return _displayOptions.pointEvents; }
+		_displayOptions.pointEvents = v;
 		return _instance;
 	};
 
@@ -549,11 +734,6 @@ export default function timeline() {
 		_fn.valueX = v;
 		return _instance;
 	};
-	_instance.yValue = function(v) {
-		if (!arguments.length) { return _fn.valueY; }
-		_fn.valueY = v;
-		return _instance;
-	};
 	_instance.yExtent = function(v) {
 		if (!arguments.length) { return _extent.y; }
 		_extent.y = v;
@@ -565,21 +745,6 @@ export default function timeline() {
 		return _instance;
 	};
 
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
 	_instance.markerXValue = function(v) {
 		if (!arguments.length) { return _fn.markerValueX; }
 		_fn.markerValueX = v;
@@ -595,6 +760,7 @@ export default function timeline() {
 		if (!arguments.length) { return _dispatch; }
 		return _instance;
 	};
+
 	_instance.brush = function(v) {
 		if (!arguments.length) { return _brush.enabled(); }
 		_brush.enabled(v);

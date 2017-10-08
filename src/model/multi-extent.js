@@ -2,31 +2,34 @@ import { default as extent } from './extent';
 
 export default function multiExtent(config) {
 
-	/**
-	 * Private variables
-	 */
-
-	var _fn = {
-		values: function(d) { return d.values; }
-	};
-
 	var _extent = extent();
-
-	/**
-	 * Private Functions
-	 */
+	var _series = [];
 
 	function setExtent(v) {
 		_extent = v;
 	}
 
+	function setSeries(v) {
+		_series = v;
+	}
+
+
 	/*
 	 * Constructor/initialization method
 	 */
 	function _instance(config) {
-		if(null != config && null != config.extent) {
-			setExtent(config.extent);
+
+		if (null != config) {
+
+			if (null != config.extent) {
+				setExtent(config.extent);
+			}
+
+			if (null != config.series) {
+				setSeries(config.series);
+			}
 		}
+
 	}
 
 
@@ -43,14 +46,16 @@ export default function multiExtent(config) {
 		return _instance;
 	};
 
+
 	/*
 	 * Get/Set the values accessor function
 	 */
-	_instance.values = function(v) {
-		if(!arguments.length) { return _fn.values; }
-		_fn.values = v;
+	_instance.series = function(v) {
+		if(!arguments.length) { return _series; }
+		_series = v;
 		return _instance;
 	};
+
 
 	/*
 	 * Calculate the extent given some data.
@@ -60,11 +65,20 @@ export default function multiExtent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e, i) {
-			var tExtent = _extent.getExtent(_fn.values(e, i));
-			if(null == toReturn) {
+		// Iterate over each series
+		_series.forEach(function(s) {
+
+			// Update the extent to set the value getter
+			_extent.getValue(s.getValue);
+
+			// Get the extent of the current series
+			var tExtent = _extent.getExtent(data);
+
+			// If it's null, use the new extent
+			if (null == toReturn) {
 				toReturn = tExtent;
 			}
+			// Otherwise combine the extents
 			else {
 				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
 				toReturn[1] = Math.max(toReturn[1], tExtent[1]);

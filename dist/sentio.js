@@ -1,9 +1,9 @@
 /*! @asymmetrik/sentio - 5.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-selection'), require('d3-line')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-selection', 'd3-line'], factory) :
-	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
-}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Selection,d3Line) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection'), require('d3-line')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection', 'd3-line'], factory) :
+	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
+}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Voronoi,d3Selection,d3Line) { 'use strict';
 
 function donut() {
 
@@ -557,31 +557,34 @@ function extent(config) {
 
 function multiExtent(config) {
 
-	/**
-	 * Private variables
-	 */
-
-	var _fn = {
-		values: function(d) { return d.values; }
-	};
-
 	var _extent = extent();
-
-	/**
-	 * Private Functions
-	 */
+	var _series = [];
 
 	function setExtent(v) {
 		_extent = v;
 	}
 
+	function setSeries(v) {
+		_series = v;
+	}
+
+
 	/*
 	 * Constructor/initialization method
 	 */
 	function _instance(config) {
-		if(null != config && null != config.extent) {
-			setExtent(config.extent);
+
+		if (null != config) {
+
+			if (null != config.extent) {
+				setExtent(config.extent);
+			}
+
+			if (null != config.series) {
+				setSeries(config.series);
+			}
 		}
+
 	}
 
 
@@ -598,14 +601,16 @@ function multiExtent(config) {
 		return _instance;
 	};
 
+
 	/*
 	 * Get/Set the values accessor function
 	 */
-	_instance.values = function(v) {
-		if(!arguments.length) { return _fn.values; }
-		_fn.values = v;
+	_instance.series = function(v) {
+		if(!arguments.length) { return _series; }
+		_series = v;
 		return _instance;
 	};
+
 
 	/*
 	 * Calculate the extent given some data.
@@ -615,11 +620,20 @@ function multiExtent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e, i) {
-			var tExtent = _extent.getExtent(_fn.values(e, i));
-			if(null == toReturn) {
+		// Iterate over each series
+		_series.forEach(function(s) {
+
+			// Update the extent to set the value getter
+			_extent.getValue(s.getValue);
+
+			// Get the extent of the current series
+			var tExtent = _extent.getExtent(data);
+
+			// If it's null, use the new extent
+			if (null == toReturn) {
 				toReturn = tExtent;
 			}
+			// Otherwise combine the extents
 			else {
 				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
 				toReturn[1] = Math.max(toReturn[1], tExtent[1]);
@@ -642,58 +656,35 @@ function multiExtent(config) {
 
 function matrix() {
 
-	// Chart dimensions
+	/**
+	 * Style stuff
+	 */
+
+	// Cell dimensions
 	var _cellSize = 16;
 	var _cellMargin = 1;
+
+	// Margin between plot and svg borders
 	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
 
 	// Transition duration
 	var _duration = 500;
 
-	// d3 dispatcher for handling events
-	var _dispatch = d3Dispatch.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
-	// Function handlers
+	/**
+	 * Configuration of accessors to data
+	 */
+
+	// Various configuration functions
 	var _fn = {
-		updateActiveSeries: function(d, i) {
-			var seriesLabels = _element.g.chart.selectAll('.row text');
-
-			if(null != d) {
-				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d, i);
-				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
-			}
-			else {
-				// Now update the style
-				seriesLabels.classed('active', false);
-			}
-		},
-		rowMouseover: function(d, i) {
-			_fn.updateActiveSeries(d, i);
-			_dispatch.call('rowMouseover', this, d, i);
-		},
-		rowMouseout: function(d, i) {
-			_fn.updateActiveSeries();
-			_dispatch.call('rowMouseout', this, d, i);
-		},
-		rowClick: function(d, i) {
-			_dispatch.call('rowClick', this, d, i);
-		},
-		cellMouseover: function(d, i) {
-			_dispatch.call('cellMouseover', this, d, i);
-		},
-		cellMouseout: function(d, i) {
-			_dispatch.call('cellMouseout', this, d, i);
-		},
-		cellClick: function(d, i) {
-			_dispatch.call('cellClick', this, d, i);
-		},
-		seriesKey: function(d) { return d.key; },
-		seriesLabel: function(d) { return d.label; },
-		seriesValues: function(d) { return d.values; },
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; }
 	};
+
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
 
 	// Extents
 	var _extent = {
@@ -709,10 +700,15 @@ function matrix() {
 		color: d3Scale.scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
+	// X axis
 	var _axis = {
 		x: d3Axis.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
 	};
 
+
+	/**
+	 * Common DOM elements
+	 */
 	var _element = {
 		div: undefined,
 		svg: undefined,
@@ -722,11 +718,71 @@ function matrix() {
 		}
 	};
 
+	/**
+	 * Data and Series
+	 */
+
+	// The main data array
 	var _data = [];
+
+	// The series definition
+	var _series = [];
+
+
+	/**
+	 * Events
+	 */
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3Dispatch.dispatch(
+		'cellMouseover', 'cellMouseout', 'cellClick',
+		'rowMouseover', 'rowMouseout', 'rowClick');
+
+	function updateActiveSeries(d, i) {
+		var seriesLabels = _element.g.chart.selectAll('.row text');
+
+		if(null != d) {
+			// Set the highlight on the row
+			var seriesKey = d.key;
+			seriesLabels.classed('active', function(series) { return series.key == seriesKey; });
+		}
+		else {
+			// Now update the style
+			seriesLabels.classed('active', false);
+		}
+	}
+
+	function rowMouseover(d, i) {
+		updateActiveSeries(d, i);
+		_dispatch.call('rowMouseover', this, d, i);
+	}
+
+	function rowMouseout(d, i) {
+		updateActiveSeries();
+		_dispatch.call('rowMouseout', this, d, i);
+	}
+
+	function rowClick(d, i) {
+		_dispatch.call('rowClick', this, d, i);
+	}
+
+	function cellMouseover(d, i) {
+		_dispatch.call('cellMouseover', this, d, i);
+	}
+
+	function cellMouseout(d, i) {
+		_dispatch.call('cellMouseout', this, d, i);
+	}
+
+	function cellClick(d, i) {
+		_dispatch.call('cellClick', this, d, i);
+	}
+
 
 	var _instance = function () {};
 
 	_instance.init = function(d3Container) {
+
 		// Add the svg element
 		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
 		_element.svg = _element.div.append('svg');
@@ -737,38 +793,22 @@ function matrix() {
 		// Add a group for the chart itself
 		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
 
-		_instance.resize();
-
 		return _instance;
-	};
 
-	_instance.data = function(v) {
-		if(!arguments.length) {
-			return _data;
-		}
-		_data = (null != v)? v : [];
-		return _instance;
 	};
-
-	_instance.resize = function() { };
 
 	_instance.redraw = function() {
-		// Determine the number of rows to render
-		var rowCount = _data.length;
 
-		// Determine the number of boxes to render (assume complete data)
-		var boxes = [];
-		if(rowCount > 0) {
-			boxes = _fn.seriesValues(_data[0]);
-		}
-		var boxCount = boxes.length;
+		// Determine the number of rows/boxes to render
+		var rowCount = _series.length;
+		var boxCount = _data.length;
 
 		// Dimensions of the visualization
 		var cellSpan = _cellMargin + _cellSize;
 
 		// calculate the width/height of the svg
-		var width = boxCount*cellSpan + _cellMargin,
-			height = rowCount*cellSpan + _cellMargin;
+		var width = boxCount * cellSpan + _cellMargin,
+			height = rowCount * cellSpan + _cellMargin;
 
 		// scale the svg to the right size
 		_element.svg
@@ -776,16 +816,17 @@ function matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
-		_scale.color.domain(
-			_extent.multi
-				.values(_fn.seriesValues)
-				.extent(_extent.value)
-				.getExtent(_data));
+		_scale.x
+			.domain(_extent.x.getExtent(_data))
+			.range([ 0, width - _cellMargin - cellSpan ]);
+
+		_scale.color
+			.domain(_extent.multi.extent(_extent.value).series(_series).getExtent(_data));
 
 		// Draw the x axis
-		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize / 2) + "," + _margin.top + ")");
 		_element.g.xAxis.call(_axis.x);
+
 
 		/**
 		 * Chart Manipulation
@@ -794,7 +835,9 @@ function matrix() {
 		/*
 		 * Row Join
 		 */
-		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+		var row = _element.g.chart
+			.selectAll('g.row')
+			.data(_series, function(d) { return d.key; });
 
 		/*
 		 * Row Update Only
@@ -808,17 +851,17 @@ function matrix() {
 		rowEnter
 			.style('opacity', '0.1')
 			.attr('class', 'row')
-			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.rowMouseover)
-			.on('mouseout', _fn.rowMouseout)
-			.on('click', _fn.rowClick);
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')'; })
+			.on('mouseover', rowMouseover)
+			.on('mouseout', rowMouseout)
+			.on('click', rowClick);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
 			.attr('class', 'series label')
 			.style('text-anchor', 'end')
 			.attr('x', -6)
-			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('y', _cellMargin + (_cellSize / 2))
 			.attr('dy', '.32em');
 
 		// Also must append a line
@@ -826,23 +869,24 @@ function matrix() {
 			.attr('class', 'series tick')
 			.attr('x1', -3)
 			.attr('x2', 0)
-			.attr('y1', _cellMargin + (_cellSize/2))
-			.attr('y2', _cellMargin + (_cellSize/2));
+			.attr('y1', _cellMargin + (_cellSize / 2))
+			.attr('y2', _cellMargin + (_cellSize / 2));
 
 		/*
 		 * Row Enter + Update
 		 */
+
 		// Transition rows to their new positions
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
 			.attr('transform', function(d, i) {
-				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')';
 			});
 
 		// Update the series labels in case they changed
 		rowEnterUpdate.select('text.series.label')
-			.text(_fn.seriesLabel);
+			.text(function(d) { return d.label; });
 
 		/*
 		 * Row Exit
@@ -856,8 +900,13 @@ function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = rowEnterUpdate.selectAll('rect.cell')
-			.data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate
+			.selectAll('rect.cell')
+			.data(function(s) {
+				return _data.map((function(d, i) {
+					return { key: _fn.key(d, i), value: s.getValue(d, i) };
+				}));
+			}, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -869,14 +918,14 @@ function matrix() {
 		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
 			.style('opacity', '0.1')
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); })
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
-			.on('mouseover', _fn.cellMouseover)
-			.on('mouseout', _fn.cellMouseout)
-			.on('click', _fn.cellClick);
+			.on('mouseover', cellMouseover)
+			.on('mouseout', cellMouseout)
+			.on('click', cellClick);
 
 		/*
 		 * Cell Enter + Update
@@ -885,8 +934,8 @@ function matrix() {
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); });
 
 		/*
 		 * Cell Remove
@@ -899,6 +948,22 @@ function matrix() {
 		return _instance;
 	};
 
+
+	_instance.data = function(v) {
+		if (!arguments.length) {
+			return _data;
+		}
+		_data = (null != v)? v : [];
+		return _instance;
+	};
+
+	_instance.series = function(v) {
+		if (!arguments.length) {
+			return _series;
+		}
+		_series = (null != v)? v : [];
+		return _instance;
+	};
 
 	_instance.cellSize = function(v) {
 		if(!arguments.length) { return _cellSize; }
@@ -922,29 +987,9 @@ function matrix() {
 		return _instance;
 	};
 
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
 		_fn.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _fn.value; }
-		_fn.value = v;
 		return _instance;
 	};
 
@@ -1181,9 +1226,19 @@ function timelineBrush(config) {
 	return _instance;
 }
 
+/**
+ *
+ *  data: []
+ *  series: [ {label, x, y} ]
+ *
+ */
 function timeline() {
 
 	var _id = 'timeline_line_' + Date.now();
+
+	/**
+	 * Style stuff
+	 */
 
 	// Margin between the main plot group and the svg border
 	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
@@ -1195,23 +1250,28 @@ function timeline() {
 	var _displayOptions = {
 		xGrid: false,
 		yGrid: false,
-		points: false,
-		tooltip: false
+		pointEvents: false
 	};
+
+
+	/**
+	 * Configuration of accessors to data
+	 */
 
 	// Various configuration functions
 	var _fn = {
 		valueX: function(d) { return d[0]; },
-		valueY: function(d) { return d[1]; },
 
 		markerValueX: function(d) { return d[0]; },
 		markerLabel: function(d) { return d[1]; },
 
-		seriesKey: function(d) { return d.key; },
-		seriesValues: function(d) { return d.values; },
-		seriesLabel: function(d) { return d.label; }
+		pointRadius: function() { return 2; }
 	};
 
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
 
 	// Extent configuration for x and y dimensions of plot
 	var now = Date.now();
@@ -1220,11 +1280,9 @@ function timeline() {
 			defaultValue: [ now - 60000 * 5, now ],
 			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
-		y: extent({
-			getValue: function(d, i) { return _fn.valueY(d, i); }
-		})
+		y: extent()
 	};
-	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
+	var _multiExtent = multiExtent();
 
 
 	// Default scales for x and y dimensions
@@ -1232,7 +1290,6 @@ function timeline() {
 		x: d3Scale.scaleTime(),
 		y: d3Scale.scaleLinear()
 	};
-
 
 	// Default Axis definitions
 	var _axis = {
@@ -1244,6 +1301,48 @@ function timeline() {
 	};
 
 
+	/**
+	 * Generators
+	 */
+
+	var _line = d3Shape.line()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	var _area = d3Shape.area()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	// Voronoi that we'll use for hovers
+	var _voronoi = d3Voronoi.voronoi()
+		.x(function(d, i) {
+			return _scale.x(d.x, i);
+		})
+		.y(function(d, i) {
+			return _scale.y(d.y, i);
+		});
+
+
+	/**
+	 * Brush and Events
+	 */
+
+	// Brush Management
+	var _brush = timelineBrush({ brush: d3Brush.brushX(), scale: _scale.x });
+	_brush.dispatch()
+		.on('end', function() { _dispatch.call('brushEnd', this, getBrush()); })
+		.on('start', function() { _dispatch.call('brushStart', this, getBrush()); })
+		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
+
+	// The dispatch object and all events
+	var _dispatch = d3Dispatch.dispatch(
+		'brush', 'brushStart', 'brushEnd',
+		'markerClick', 'markerMouseover', 'markerMouseout',
+		'pointMouseover', 'pointMouseout', 'pointClick');
+
+
+	/**
+	 * Keep track of commonly access DOM elements
+	 */
+
 	// Storage for commonly used DOM elements
 	var _element = {
 		svg: undefined,
@@ -1251,6 +1350,8 @@ function timeline() {
 		g: {
 			container: undefined,
 			plots: undefined,
+			points: undefined,
+			voronoi: undefined,
 
 			xAxis: undefined,
 			yAxis: undefined,
@@ -1266,33 +1367,101 @@ function timeline() {
 	};
 
 
-	// Line generator for the plot
-	var _line = d3Shape.line();
-	_line.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_line.y(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
+	/**
+	 * Data and Series and Markers
+	 */
 
-	// Area generator for the plot
-	var _area = d3Shape.area();
-	_area.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_area.y1(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
+	// The main data array
+	var _data = [];
 
+	// The definition of the series to draw
+	var _series = [];
 
-	// Brush Management
-	var _brush = timelineBrush({ brush: d3Brush.brushX(), scale: _scale.x });
-	_brush.dispatch()
-		.on('end', function() { _dispatch.call('brushend', this, getBrush()); })
-		.on('start', function() { _dispatch.call('brushstart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
+	// Markers data
+	var _markers = [];
 
+	/**
+	 * Explodes the data into an array with one point per unique point
+	 * in the data (according to the series).
+	 *
+	 * I.e.,
+	 *
+	 * data: [{ x: 0, y1: 1, y2: 2}]
+	 * series: [
+	 *     { key: 's1', getValue: function(d) { return d.y1; } },
+	 *     { key: 's2', getValue: function(d) { return d.y2; } }
+	 * ]
+	 *
+	 * ==>
+	 *
+	 * [
+	 *     { x: 0, y: 1, series: { key: 's1', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 *     { x: 0, y: 2, series: { key: 's2', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 * ]
+	 *
+	 * @param series
+	 * @param data
+	 */
+	function getVoronoiData(series, data, getXValue) {
+		var toReturn = [];
 
+		// Loop over each series
+		series.forEach(function(s, i) {
+
+			// Convert the data to x/y series
+			toReturn = toReturn.concat(data.map(function(d, ii) {
+				return {
+					x: getXValue(d, ii),
+					y: s.getValue(d, ii),
+					series: s,
+					data: d
+				};
+			}));
+
+		});
+
+		return toReturn;
+	}
+
+	function highlightPoints(hovered) {
+		if (null != hovered) {
+
+			var join = _element.g.points.selectAll('circle')
+				.data(_series.map(function(d) {
+					return {
+						x: _fn.valueX(hovered.data.data),
+						y: d.getValue(hovered.data.data),
+						category: d.category
+					};
+				}));
+			var enter = join.enter().append('circle');
+			var update = join.selectAll('circle');
+
+			enter.merge(update)
+				.attr('class', function(d, i) { return d.category; })
+				.attr('cx', function(d, i) { return _scale.x(d.x); })
+				.attr('cy', function(d, i) { return _scale.y(d.y); })
+				.attr('r', 3);
+		}
+		else {
+			_element.g.points.selectAll('circle').remove();
+		}
+	}
+
+	function onPointMouseover(d, i) {
+		highlightPoints(d);
+		_dispatch.call('pointMouseover', this, d, i);
+	}
+
+	function onPointMouseout(d, i) {
+		highlightPoints();
+		_dispatch.call('pointMouseout', this, d, i);
+	}
+
+	function onPointClick(d, i) {
+		highlightPoints();
+		_dispatch.call('pointClick', this, d, i);
+	}
 
 	/**
 	 * Get the current brush state in terms of the x data domain, in ms epoch time
@@ -1338,7 +1507,7 @@ function timeline() {
 		if (null != previousExtent) {
 
 			// Derive the overall plot extent from the collection of series
-			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+			var plotExtent = _extent.x.getExtent(_data);
 
 			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
 
@@ -1359,17 +1528,129 @@ function timeline() {
 	}
 
 
-	// The dispatch object and all events
-	var _dispatch = d3Dispatch.dispatch('brush', 'brushstart', 'brushend', 'markerClick', 'markerMouseover', 'markerMouseout');
+	function updateAxes() {
+		if (null != _axis.x) {
+			_element.g.xAxis.call(_axis.x);
+		}
+		if (null != _axis.xGrid && _displayOptions.xGrid) {
+			_element.g.xAxisGrid.call(_axis.xGrid);
+		}
+		if (null != _axis.y) {
+			_element.g.yAxis.call(_axis.y);
+		}
+		if (null != _axis.yGrid && _displayOptions.yGrid) {
+			_element.g.yAxisGrid.call(_axis.yGrid);
+		}
+	}
 
 
-	// The main data array
-	var _data = [];
+	function updateLine() {
 
-	// Markers data
-	var _markers = {
-		values: []
-	};
+		// Join
+		var plotJoin = _element.g.plots
+			.selectAll('.plot')
+			.data(_series, function(d) { return d.key; });
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g').attr('class', 'plot');
+
+		var lineEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate)
+			.attr('d', function(series) {
+				return _line.y(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		areaEnter.merge(areaUpdate)
+			.attr('d', function(series) {
+				return _area
+					.y0(_scale.y.range()[0])
+					.y1(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+
+		// Remove the previous voronoi
+		_element.g.voronoi.selectAll('path').remove();
+
+		if (_displayOptions.pointEvents) {
+
+			// check range against width
+			var extent$$1 = _scale.x.domain();
+			var voronoiData = getVoronoiData(_series, _data, _fn.valueX)
+				.filter(function(d) {
+					// Filter out points that are outside of the extent
+					return (extent$$1[0] <= d.x && d.x <= extent$$1[1]);
+				});
+
+			// Filter out paths that are null
+			voronoiData  = _voronoi.polygons(voronoiData)
+				.filter(function (d) { return (null != d); });
+
+			// Draw the circle markers
+			_element.g.voronoi.selectAll('path').data(voronoiData).enter().append('path')
+				.attr('d', function (d) { return (null != d) ? 'M' + d.join('L') + 'Z' : null; })
+				.on('mouseover', onPointMouseover)
+				.on('mouseout', onPointMouseout)
+				.on('click', onPointClick);
+
+		}
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
+	}
+
+
+	function updateMarkers() {
+
+		// Join
+		var markerJoin = _element.g.markers
+			.selectAll('.marker')
+			.data(_markers, _fn.markerValueX);
+
+		// Enter
+		var markerEnter = markerJoin.enter().append('g')
+			.attr('class', 'marker')
+			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
+			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
+			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
+
+		var lineEnter = markerEnter.append('line');
+		var textEnter = markerEnter.append('text');
+
+		lineEnter
+			.attr('y1', function(d) { return _scale.y.range()[1]; })
+			.attr('y2', function(d) { return _scale.y.range()[0]; });
+
+		textEnter
+			.attr('dy', '0em')
+			.attr('y', -3)
+			.attr('text-anchor', 'middle')
+			.text(_fn.markerValueLabel);
+
+		// Enter + Update
+		var lineUpdate = markerJoin.select('line');
+		var textUpdate = markerJoin.select('text');
+
+		lineEnter.merge(lineUpdate)
+			.attr('x1', function(d, i) { return _scale.x(_fn.markerValueX(d, i)); })
+			.attr('x2', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
+
+		textEnter.merge(textUpdate)
+			.attr('x', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
+
+		// Exit
+		markerJoin.exit().remove();
+
+	}
 
 
 	// Chart create/init method
@@ -1399,21 +1680,32 @@ function timeline() {
 		_element.g.container = _element.svg.append('g');
 
 		// Append the grid
-		_element.g.xAxisGrid = _element.g.container.append('g').attr('class', 'x grid');
-		_element.g.yAxisGrid = _element.g.container.append('g').attr('class', 'y grid');
+		_element.g.grid = _element.g.container.append('g').attr('class', 'grid');
+		_element.g.xAxisGrid = _element.g.grid.append('g').attr('class', 'x');
+		_element.g.yAxisGrid = _element.g.grid.append('g').attr('class', 'y');
 
 		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots');
+		_element.g.plots.attr('clip-path', 'url(#plot_' + _id + ')');
 
 		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
+		_element.g.axes = _element.g.container.append('g').attr('class', 'axis');
+		_element.g.xAxis = _element.g.axes.append('g').attr('class', 'x');
+		_element.g.yAxis = _element.g.axes.append('g').attr('class', 'y');
+
+		// Append a group for the voronoi and the points
+		_element.g.points = _element.g.container.append('g').attr('class', 'points');
+		_element.g.points.attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.voronoi = _element.g.container.append('g').attr('class', 'voronoi');
+
 
 		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers');
+		_element.g.markers.attr('clip-path', 'url(#marker_' + _id + ')');
 
 		// Add the brush element
-		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
+		_element.g.brush.attr('clip-path', 'url(#marker_' + _id + ')');
 
 
 		_instance.resize();
@@ -1422,7 +1714,7 @@ function timeline() {
 	};
 
 	/*
-	 * Set the _instance data
+	 * Set the data to drive the chart
 	 */
 	_instance.data = function(v) {
 		if (!arguments.length) { return _data; }
@@ -1432,11 +1724,21 @@ function timeline() {
 	};
 
 	/*
+	 * Define the series to show on the chart
+	 */
+	_instance.series = function(v) {
+		if (!arguments.length) { return _series; }
+		_series = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
 	 * Set the markers data
 	 */
 	_instance.markers = function(v) {
-		if (!arguments.length) { return _markers.values; }
-		_markers.values = (null != v)? v : [];
+		if (!arguments.length) { return _markers; }
+		_markers = (null != v)? v : [];
 		return _instance;
 	};
 
@@ -1476,6 +1778,12 @@ function timeline() {
 			.attr('transform', 'translate(0, -' + _margin.top + ')')
 			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
 			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		// Resize the clip extent of the plot
+		_voronoi.extent([
+			[ 0, 0 ],
+			[ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ]
+		]);
 
 
 		/**
@@ -1534,10 +1842,10 @@ function timeline() {
 		var brushSelection$$1 = getBrush();
 
 		// Update the x domain (to the latest time window)
-		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
+		_scale.x.domain(_extent.x.getExtent(_data));
 
 		// Update the y domain (based on configuration and data)
-		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
+		_scale.y.domain(_multiExtent.extent(_extent.y).series(_series).getExtent(_data));
 
 		// Update the plot elements
 		updateAxes();
@@ -1547,91 +1855,6 @@ function timeline() {
 
 		return _instance;
 	};
-
-	function updateAxes() {
-		if (null != _axis.x) {
-			_element.g.xAxis.call(_axis.x);
-		}
-		if (null != _axis.xGrid && _displayOptions.xGrid) {
-			_element.g.xAxisGrid.call(_axis.xGrid);
-		}
-		if (null != _axis.y) {
-			_element.g.yAxis.call(_axis.y);
-		}
-		if (null != _axis.yGrid && _displayOptions.yGrid) {
-			_element.g.yAxisGrid.call(_axis.yGrid);
-		}
-	}
-
-	function updateLine() {
-
-		// Join
-		var plotJoin = _element.g.plots
-			.selectAll('.plot')
-			.data(_data, _fn.seriesKey);
-
-		// Enter
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
-
-		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
-
-		var lineUpdate = plotJoin.select('.line');
-		var areaUpdate = plotJoin.select('.area');
-
-		// Enter + Update
-		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
-		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
-
-		// Exit
-		var plotExit = plotJoin.exit();
-		plotExit.remove();
-
-	}
-
-	function updateMarkers() {
-
-		// Join
-		var markerJoin = _element.g.markers
-			.selectAll('.marker')
-			.data(_markers.values, _fn.markerValueX);
-
-		// Enter
-		var markerEnter = markerJoin.enter().append('g')
-			.attr('class', 'marker')
-			.on('mouseover', function(d, i) { _dispatch.call('markerMouseover', this, d, i); })
-			.on('mouseout', function(d, i) { _dispatch.call('markerMouseout', this, d, i); })
-			.on('click', function(d, i) { _dispatch.call('markerClick', this, d, i); });
-
-		var lineEnter = markerEnter.append('line');
-		var textEnter = markerEnter.append('text');
-
-		lineEnter
-			.attr('y1', function(d) { return _scale.y.range()[1]; })
-			.attr('y2', function(d) { return _scale.y.range()[0]; });
-
-		textEnter
-			.attr('dy', '0em')
-			.attr('y', -3)
-			.attr('text-anchor', 'middle')
-			.text(_fn.markerValueLabel);
-
-		// Enter + Update
-		var lineUpdate = markerJoin.select('line');
-		var textUpdate = markerJoin.select('text');
-
-		lineEnter.merge(lineUpdate)
-			.attr('x1', function(d, i) { return _scale.x(_fn.markerValueX(d, i)); })
-			.attr('x2', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
-
-		textEnter.merge(textUpdate)
-			.attr('x', function(d, i) { return _scale.x(_fn.markerValueX(d)); });
-
-		// Exit
-		markerJoin.exit().remove();
-
-	}
 
 
 	// Basic Getters/Setters
@@ -1650,18 +1873,23 @@ function timeline() {
 		_margin = v;
 		return _instance;
 	};
-	_instance.xGrid = function(v) {
+	_instance.showXGrid = function(v) {
 		if (!arguments.length) { return _displayOptions.xGrid; }
 		_displayOptions.xGrid = v;
 		return _instance;
 	};
-	_instance.yGrid = function(v) {
+	_instance.showYGrid = function(v) {
 		if (!arguments.length) { return _displayOptions.yGrid; }
 		_displayOptions.yGrid = v;
 		return _instance;
 	};
-	_instance.grid = function(v) {
+	_instance.showGrid = function(v) {
 		_displayOptions.xGrid = _displayOptions.yGrid = v;
+		return _instance;
+	};
+	_instance.pointEvents = function(v) {
+		if (!arguments.length) { return _displayOptions.pointEvents; }
+		_displayOptions.pointEvents = v;
 		return _instance;
 	};
 
@@ -1722,11 +1950,6 @@ function timeline() {
 		_fn.valueX = v;
 		return _instance;
 	};
-	_instance.yValue = function(v) {
-		if (!arguments.length) { return _fn.valueY; }
-		_fn.valueY = v;
-		return _instance;
-	};
 	_instance.yExtent = function(v) {
 		if (!arguments.length) { return _extent.y; }
 		_extent.y = v;
@@ -1738,21 +1961,6 @@ function timeline() {
 		return _instance;
 	};
 
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
 	_instance.markerXValue = function(v) {
 		if (!arguments.length) { return _fn.markerValueX; }
 		_fn.markerValueX = v;
@@ -1768,6 +1976,7 @@ function timeline() {
 		if (!arguments.length) { return _dispatch; }
 		return _instance;
 	};
+
 	_instance.brush = function(v) {
 		if (!arguments.length) { return _brush.enabled(); }
 		_brush.enabled(v);
@@ -1783,6 +1992,8 @@ function timeline() {
 
 	return _instance;
 }
+
+// import { voronoi as d3_voronoi } from 'd3-voronoi';
 
 function autoBrushTimeline() {
 
@@ -1823,22 +2034,25 @@ function autoBrushTimeline() {
 
 			axisClipPath: undefined
 		},
+
 		brush: _instance.brush,
 		dispatch: _instance.dispatch,
+
 		init: _instance.init,
 		resize: _instance.resize,
 		redraw: _instance.redraw,
 		setBrush: _instance.setBrush,
+
 		xAxis: _instance.xAxis
 	};
 
 	// Set up default look and feel
-	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10  });
+	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10 });
 	_instance.xAxis().ticks(5);
 	_instance.yAxis(null);
 
 
-	// Initialization of the timline and auto brush
+	// Initialization of the timeline and auto brush
 	_instance.init = function(container) {
 
 		// Store the container
@@ -1849,7 +2063,7 @@ function autoBrushTimeline() {
 
 		// Turn on brushing and register for brush events
 		_timeline.brush(true);
-		_timeline.dispatch().on('brushend.internal', updateBrush);
+		_timeline.dispatch().on('brushEnd.internal', updateBrush);
 
 		// Set the initial brush
 		if (null == _brush) {
@@ -1863,7 +2077,7 @@ function autoBrushTimeline() {
 
 		// Attach the clip path to the axis
 		_timeline.element.g.container.select('div.sentio.timeline')
-			.select('g.x.axis').attr('clip-path', 'url(#axis_' + _id + ')');
+			.select('g.axis .x').attr('clip-path', 'url(#axis_' + _id + ')');
 
 		_instance.resize();
 
@@ -1887,7 +2101,7 @@ function autoBrushTimeline() {
 
 		// Update text position to be on the chart
 		var xAxis = _timeline.element.g.container.select('div.sentio.timeline')
-			.select('g.x.axis')
+			.select('g.axis .x')
 				.attr('pointer-events', 'none');
 
 		xAxis.selectAll('g.tick text')
@@ -2155,7 +2369,7 @@ function autoBrushTimeline() {
 		return _dispatch;
 	};
 
-	_instance.rawDispatch = function() {
+	_instance.timelineDispatch = function() {
 		return _timeline.dispatch;
 	};
 
@@ -2452,6 +2666,13 @@ function verticalBars() {
 	return _instance;
 }
 
+/**
+ * Binning model for timelines
+ *
+ * This data model is responsible for subdiving a period of time into an array of sequential bins.
+ * As data objects are added to the model, they are aggregated into the bins.
+ *
+ */
 function bins(config) {
 
 	/**
@@ -2459,6 +2680,7 @@ function bins(config) {
 	 */
 	// Configuration
 	var _config = {
+
 		// The number of bins in our model
 		count: 1,
 
@@ -2468,9 +2690,11 @@ function bins(config) {
 		// The min and max bins
 		lwm: undefined,
 		hwm: undefined
+
 	};
 
 	var _fn = {
+
 		// The default function for creating the seed value for a bin
 		createSeed: function() { return []; },
 

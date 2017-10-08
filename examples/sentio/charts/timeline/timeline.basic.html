@@ -14,7 +14,7 @@
 </head>
 <body>
 	<div id="chart"></div>
-	<button onclick="updateData()">Update Data</button>
+	<button onclick="updateData()">Add Series</button>
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
@@ -27,26 +27,43 @@
 
 		timeline.dispatch()
 			.on('brush', function(val) { console.log(val); })
-			.on('brushstart', function(val) { console.log(val); })
-			.on('brushend', function(val) { console.log(val); });
+			.on('brushStart', function(val) { console.log(val); })
+			.on('brushEnd', function(val) { console.log(val); });
 
-		var hwm = Date.now();
-		var data = [];
-		var series = 0;
-		data.push({ key: 'series' + series++, values: generateData(hwm - 1000*15, 15) });
+		var data = createData(Date.now() - 600 * 1000, 60, 10000);
+		var series = [];
+		var seriesCount = 0;
 
-		timeline.init(timelineDiv).data(data).redraw();
+		timeline.init(timelineDiv)
+			.data(data)
+			.series(series)
+			.xValue(function(d) { return d.x; })
+			.redraw();
 
-		function generateData(start, samples){
-			var toReturn = [];
-			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+		function createData(start, samples, period) {
+		    var toReturn = [];
+			for(var i = 0; i < samples; i++){
+				toReturn.push({ x: start + (i * period) });
 			}
 			return toReturn;
 		}
 
+		function addSeries(id) {
+
+		    series.push({
+		        key: 'series' + id,
+				label: 'Series ' + id,
+				getValue: function(d) { return d['y' + id]; }
+			});
+
+		    data.forEach(function(d) {
+		        d['y' + id] = Math.random() * 10;
+			});
+
+		}
+
 		function updateData() {
-			data.push({ key: 'series' + series++, values: generateData(hwm - 1000*15, 15) });
+			addSeries(seriesCount++);
 			timeline.redraw();
 		}
 

@@ -8,9 +8,14 @@
 	stroke-width: 1.5px;
 }
 
+.sentio.timeline .point {
+	fill: #eee;
+	stroke: #ccc;
+}
+
 .sentio.timeline .marker line {
 	stroke: #f00;
-	stroke-width: 1;
+	stroke-width: 1px;
 }
 
 .sentio.timeline .marker:hover {
@@ -33,4 +38,10 @@
 	fill-opacity: .125;
 	shape-rendering: crispEdges;
 	stroke: #fff;
+}
+
+.sentio.timeline .voronoi path {
+	fill: none;
+	pointer-events: all;
+	stroke: none;
 }

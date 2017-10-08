@@ -27,7 +27,12 @@
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		var data = generateData(Date.now() - 1000*15, 15);
-		timeline.data([{ key: 'series1', values: data }]).start();
+		var series = [{
+			key: 'series1',
+			getValue: function(d) { return d[1]; }
+		}];
+
+		timeline.series(series).data(data).start();
 
 		function addData() {
 			data.shift();
@@ -38,8 +43,8 @@
 
 		function generateData(start, samples){
 			var toReturn = [];
-			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+			for(var i = 0; i < samples; i++){
+				toReturn.push([ start + i * 1000, Math.random() * 10 ]);
 			}
 			return toReturn;
 		}

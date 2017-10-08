@@ -2,7 +2,7 @@ import { default as timeline } from '../timeline';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { curveNatural as d3_curveNatural } from 'd3-line';
-
+// import { voronoi as d3_voronoi } from 'd3-voronoi';
 
 export default function autoBrushTimeline() {
 
@@ -43,22 +43,25 @@ export default function autoBrushTimeline() {
 
 			axisClipPath: undefined
 		},
+
 		brush: _instance.brush,
 		dispatch: _instance.dispatch,
+
 		init: _instance.init,
 		resize: _instance.resize,
 		redraw: _instance.redraw,
 		setBrush: _instance.setBrush,
+
 		xAxis: _instance.xAxis
 	};
 
 	// Set up default look and feel
-	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10  });
+	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10 });
 	_instance.xAxis().ticks(5);
 	_instance.yAxis(null);
 
 
-	// Initialization of the timline and auto brush
+	// Initialization of the timeline and auto brush
 	_instance.init = function(container) {
 
 		// Store the container
@@ -69,7 +72,7 @@ export default function autoBrushTimeline() {
 
 		// Turn on brushing and register for brush events
 		_timeline.brush(true);
-		_timeline.dispatch().on('brushend.internal', updateBrush);
+		_timeline.dispatch().on('brushEnd.internal', updateBrush);
 
 		// Set the initial brush
 		if (null == _brush) {
@@ -83,7 +86,7 @@ export default function autoBrushTimeline() {
 
 		// Attach the clip path to the axis
 		_timeline.element.g.container.select('div.sentio.timeline')
-			.select('g.x.axis').attr('clip-path', 'url(#axis_' + _id + ')');
+			.select('g.axis .x').attr('clip-path', 'url(#axis_' + _id + ')');
 
 		_instance.resize();
 
@@ -107,7 +110,7 @@ export default function autoBrushTimeline() {
 
 		// Update text position to be on the chart
 		var xAxis = _timeline.element.g.container.select('div.sentio.timeline')
-			.select('g.x.axis')
+			.select('g.axis .x')
 				.attr('pointer-events', 'none');
 
 		xAxis.selectAll('g.tick text')
@@ -375,7 +378,7 @@ export default function autoBrushTimeline() {
 		return _dispatch;
 	};
 
-	_instance.rawDispatch = function() {
+	_instance.timelineDispatch = function() {
 		return _timeline.dispatch;
 	};
 

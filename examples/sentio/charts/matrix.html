@@ -31,22 +31,35 @@
 			.on('cellMouseover', function(d, i) { console.log({ type: 'cellMouseover', event: d, index: i, context: this }); })
 			.on('rowMouseover', function(d, i) { console.log({ type: 'rowMouseover', event: d, index: i, context: this }); });
 
-		chart.init(chartDiv);
-		updateData();
-
-		function updateData(){
-			var data = [];
-
-			// Build an hourly series for each day of the week
-			['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].forEach(function(d) {
-				var row = { key: d, label: d, values: [] };
-				for(var i=0; i<24; i++) {
-					row.values.push({ key: i, value: Math.random() * 5 });
+		var days = [ 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday' ];
+		var series = days.map(function(day) {
+			return {
+				key: day,
+				label: day,
+				getValue: function (d) {
+					return d[day];
 				}
-				data.push(row);
-			});
+			};
+		});
 
-			chart.data(data).redraw();
+		chart.init(chartDiv).data(generateData()).series(series).redraw();
+
+		function generateData() {
+		    var toReturn = [];
+
+			for (var i = 0; i < 24; i++) {
+			    var entry = { key: i };
+				days.forEach(function(d) {
+				    entry[d] = Math.random() * 5;
+				});
+				toReturn.push(entry);
+			}
+
+			return toReturn;
+		}
+
+		function updateData() {
+			chart.data(generateData()).redraw();
 		}
 
 	</script>

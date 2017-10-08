@@ -26,10 +26,10 @@
 		var data = [];
 		brush.init(brushDiv).data(data).redraw();
 
-		brush.autoBrushDispatch().on('extentChange', function(newExtent) {
+		brush.dispatch().on('extentChange', function(newExtent) {
 		    console.log('extentChange: ' + newExtent);
 		});
-		brush.dispatch().on('brushend', function(newBrush) {
+		brush.dispatch().on('brushChange', function(newBrush) {
 		    console.log('brush: ' + newBrush);
 		});
 

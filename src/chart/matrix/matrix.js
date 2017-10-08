@@ -7,58 +7,35 @@ import { default as multiExtent } from '../../model/multi-extent';
 
 export default function matrix() {
 
-	// Chart dimensions
+	/**
+	 * Style stuff
+	 */
+
+	// Cell dimensions
 	var _cellSize = 16;
 	var _cellMargin = 1;
+
+	// Margin between plot and svg borders
 	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
 
 	// Transition duration
 	var _duration = 500;
 
-	// d3 dispatcher for handling events
-	var _dispatch = d3_dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
-	// Function handlers
+	/**
+	 * Configuration of accessors to data
+	 */
+
+	// Various configuration functions
 	var _fn = {
-		updateActiveSeries: function(d, i) {
-			var seriesLabels = _element.g.chart.selectAll('.row text');
-
-			if(null != d) {
-				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d, i);
-				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
-			}
-			else {
-				// Now update the style
-				seriesLabels.classed('active', false);
-			}
-		},
-		rowMouseover: function(d, i) {
-			_fn.updateActiveSeries(d, i);
-			_dispatch.call('rowMouseover', this, d, i);
-		},
-		rowMouseout: function(d, i) {
-			_fn.updateActiveSeries();
-			_dispatch.call('rowMouseout', this, d, i);
-		},
-		rowClick: function(d, i) {
-			_dispatch.call('rowClick', this, d, i);
-		},
-		cellMouseover: function(d, i) {
-			_dispatch.call('cellMouseover', this, d, i);
-		},
-		cellMouseout: function(d, i) {
-			_dispatch.call('cellMouseout', this, d, i);
-		},
-		cellClick: function(d, i) {
-			_dispatch.call('cellClick', this, d, i);
-		},
-		seriesKey: function(d) { return d.key; },
-		seriesLabel: function(d) { return d.label; },
-		seriesValues: function(d) { return d.values; },
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; }
 	};
+
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
 
 	// Extents
 	var _extent = {
@@ -74,10 +51,15 @@ export default function matrix() {
 		color: d3_scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
+	// X axis
 	var _axis = {
 		x: d3_axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
 	};
 
+
+	/**
+	 * Common DOM elements
+	 */
 	var _element = {
 		div: undefined,
 		svg: undefined,
@@ -87,11 +69,71 @@ export default function matrix() {
 		}
 	};
 
+	/**
+	 * Data and Series
+	 */
+
+	// The main data array
 	var _data = [];
+
+	// The series definition
+	var _series = [];
+
+
+	/**
+	 * Events
+	 */
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3_dispatch(
+		'cellMouseover', 'cellMouseout', 'cellClick',
+		'rowMouseover', 'rowMouseout', 'rowClick');
+
+	function updateActiveSeries(d, i) {
+		var seriesLabels = _element.g.chart.selectAll('.row text');
+
+		if(null != d) {
+			// Set the highlight on the row
+			var seriesKey = d.key;
+			seriesLabels.classed('active', function(series) { return series.key == seriesKey; });
+		}
+		else {
+			// Now update the style
+			seriesLabels.classed('active', false);
+		}
+	}
+
+	function rowMouseover(d, i) {
+		updateActiveSeries(d, i);
+		_dispatch.call('rowMouseover', this, d, i);
+	}
+
+	function rowMouseout(d, i) {
+		updateActiveSeries();
+		_dispatch.call('rowMouseout', this, d, i);
+	}
+
+	function rowClick(d, i) {
+		_dispatch.call('rowClick', this, d, i);
+	}
+
+	function cellMouseover(d, i) {
+		_dispatch.call('cellMouseover', this, d, i);
+	}
+
+	function cellMouseout(d, i) {
+		_dispatch.call('cellMouseout', this, d, i);
+	}
+
+	function cellClick(d, i) {
+		_dispatch.call('cellClick', this, d, i);
+	}
+
 
 	var _instance = function () {};
 
 	_instance.init = function(d3Container) {
+
 		// Add the svg element
 		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
 		_element.svg = _element.div.append('svg');
@@ -102,38 +144,22 @@ export default function matrix() {
 		// Add a group for the chart itself
 		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
 
-		_instance.resize();
-
 		return _instance;
-	};
 
-	_instance.data = function(v) {
-		if(!arguments.length) {
-			return _data;
-		}
-		_data = (null != v)? v : [];
-		return _instance;
 	};
-
-	_instance.resize = function() { };
 
 	_instance.redraw = function() {
-		// Determine the number of rows to render
-		var rowCount = _data.length;
 
-		// Determine the number of boxes to render (assume complete data)
-		var boxes = [];
-		if(rowCount > 0) {
-			boxes = _fn.seriesValues(_data[0]);
-		}
-		var boxCount = boxes.length;
+		// Determine the number of rows/boxes to render
+		var rowCount = _series.length;
+		var boxCount = _data.length;
 
 		// Dimensions of the visualization
 		var cellSpan = _cellMargin + _cellSize;
 
 		// calculate the width/height of the svg
-		var width = boxCount*cellSpan + _cellMargin,
-			height = rowCount*cellSpan + _cellMargin;
+		var width = boxCount * cellSpan + _cellMargin,
+			height = rowCount * cellSpan + _cellMargin;
 
 		// scale the svg to the right size
 		_element.svg
@@ -141,16 +167,17 @@ export default function matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
-		_scale.color.domain(
-			_extent.multi
-				.values(_fn.seriesValues)
-				.extent(_extent.value)
-				.getExtent(_data));
+		_scale.x
+			.domain(_extent.x.getExtent(_data))
+			.range([ 0, width - _cellMargin - cellSpan ]);
+
+		_scale.color
+			.domain(_extent.multi.extent(_extent.value).series(_series).getExtent(_data));
 
 		// Draw the x axis
-		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize / 2) + "," + _margin.top + ")");
 		_element.g.xAxis.call(_axis.x);
+
 
 		/**
 		 * Chart Manipulation
@@ -159,7 +186,9 @@ export default function matrix() {
 		/*
 		 * Row Join
 		 */
-		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+		var row = _element.g.chart
+			.selectAll('g.row')
+			.data(_series, function(d) { return d.key; });
 
 		/*
 		 * Row Update Only
@@ -173,17 +202,17 @@ export default function matrix() {
 		rowEnter
 			.style('opacity', '0.1')
 			.attr('class', 'row')
-			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.rowMouseover)
-			.on('mouseout', _fn.rowMouseout)
-			.on('click', _fn.rowClick);
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')'; })
+			.on('mouseover', rowMouseover)
+			.on('mouseout', rowMouseout)
+			.on('click', rowClick);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
 			.attr('class', 'series label')
 			.style('text-anchor', 'end')
 			.attr('x', -6)
-			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('y', _cellMargin + (_cellSize / 2))
 			.attr('dy', '.32em');
 
 		// Also must append a line
@@ -191,23 +220,24 @@ export default function matrix() {
 			.attr('class', 'series tick')
 			.attr('x1', -3)
 			.attr('x2', 0)
-			.attr('y1', _cellMargin + (_cellSize/2))
-			.attr('y2', _cellMargin + (_cellSize/2));
+			.attr('y1', _cellMargin + (_cellSize / 2))
+			.attr('y2', _cellMargin + (_cellSize / 2));
 
 		/*
 		 * Row Enter + Update
 		 */
+
 		// Transition rows to their new positions
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
 			.attr('transform', function(d, i) {
-				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')';
 			});
 
 		// Update the series labels in case they changed
 		rowEnterUpdate.select('text.series.label')
-			.text(_fn.seriesLabel);
+			.text(function(d) { return d.label; });
 
 		/*
 		 * Row Exit
@@ -221,8 +251,13 @@ export default function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = rowEnterUpdate.selectAll('rect.cell')
-			.data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate
+			.selectAll('rect.cell')
+			.data(function(s) {
+				return _data.map((function(d, i) {
+					return { key: _fn.key(d, i), value: s.getValue(d, i) };
+				}));
+			}, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -234,14 +269,14 @@ export default function matrix() {
 		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
 			.style('opacity', '0.1')
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); })
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
-			.on('mouseover', _fn.cellMouseover)
-			.on('mouseout', _fn.cellMouseout)
-			.on('click', _fn.cellClick);
+			.on('mouseover', cellMouseover)
+			.on('mouseout', cellMouseout)
+			.on('click', cellClick);
 
 		/*
 		 * Cell Enter + Update
@@ -250,8 +285,8 @@ export default function matrix() {
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); });
 
 		/*
 		 * Cell Remove
@@ -264,6 +299,22 @@ export default function matrix() {
 		return _instance;
 	};
 
+
+	_instance.data = function(v) {
+		if (!arguments.length) {
+			return _data;
+		}
+		_data = (null != v)? v : [];
+		return _instance;
+	};
+
+	_instance.series = function(v) {
+		if (!arguments.length) {
+			return _series;
+		}
+		_series = (null != v)? v : [];
+		return _instance;
+	};
 
 	_instance.cellSize = function(v) {
 		if(!arguments.length) { return _cellSize; }
@@ -287,29 +338,9 @@ export default function matrix() {
 		return _instance;
 	};
 
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
 		_fn.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _fn.value; }
-		_fn.value = v;
 		return _instance;
 	};
 

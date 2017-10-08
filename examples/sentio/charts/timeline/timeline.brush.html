@@ -29,43 +29,44 @@
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
-			.on('brushend', function(val) { console.log({ msg: 'brushend', val }); })
-			.on('brushstart', function(val) { console.log({ msg: 'brushstart', val }); });
+			.on('brushEnd', function(val) { console.log({ msg: 'brushEnd', val }); })
+			.on('brushStart', function(val) { console.log({ msg: 'brushStart', val }); });
 
 		var interval = 60000;
 		var binSize = 1000;
 		var hwm = Math.round(Date.now()/1000)*1000;
 
-		var model1 = sentio.modelBins({
+		var model = sentio.modelBins({
 			count: interval/binSize,
 			size: binSize,
 			lwm: hwm - interval,
-			updateBin: function(bin, d) { bin[1] += d; },
-			createSeed: function() { return 0; },
+			updateBin: function(bin, d) { bin[1].push(d); },
+			createSeed: function() { return []; },
 			getKey: function(d) { return d[0]; },
 			getValue: function(d) { return d[1]; }
 		});
-		var model2 = sentio.modelBins({
-			count: interval/binSize,
-			size: binSize,
-			lwm: hwm - interval,
-			updateBin: function(bin, d) { bin[1] += d; },
-			createSeed: function() { return 0; },
-			getKey: function(d) { return d[0]; },
-			getValue: function(d) { return d[1]; }
-		});
+		model.add(generateData(hwm - interval, hwm));
 
-		var data1 = generateData(hwm - interval, hwm);
-		model1.add(data1);
-		var series1 = { key: 'series1', values: model1.bins() };
+		var series = [
+			{
+			    key: 'sum',
+				getValue: function(d) {
+		    		return model.getValue()(d).reduce(function(p, c) { return p + c; }, 0);
+			    }
+			},
+			{
+			    key: 'average',
+				getValue: function(d) {
+			        var val = model.getValue()(d);
 
-		var data2 = generateData(hwm - interval, hwm);
-		model2.add(data2);
-		var series2 = { key: 'series2', values: model2.bins() };
+			        var sum = val.reduce(function(p, c) { return p + c; }, 0);
+			        var length = val.length;
+			        return (length > 0)? sum/length : 0;
+			    }
+			}
+		];
 
-		var data = [ series1, series2 ];
-
-		timeline.init(timelineDiv).data(data).redraw();
+		timeline.init(timelineDiv).data(model.bins()).series(series).redraw();
 
 		function generateData(minTs, maxTs) {
 			var data = [];
@@ -80,13 +81,8 @@
 			var oldHwm = Math.round(hwm/1000)*1000;
 			hwm = Math.round(Date.now()/1000)*1000;
 
-			model1.clear().lwm(hwm - interval);
-			data1 = data1.concat(generateData(oldHwm, hwm));
-			model1.add(data1);
-
-			model2.clear().lwm(hwm - interval);
-			data2 = data2.concat(generateData(oldHwm, hwm));
-			model2.add(data2);
+			model.lwm(hwm - interval);
+			model.add(generateData(oldHwm, hwm));
 
 			timeline.xExtent().overrideValue([Date.now() - interval, Date.now()]);
 			timeline.redraw();
@@ -96,7 +92,7 @@
 			var lf = hwm - Math.random() * interval;
 			var hf = lf + Math.random() * 20000;
 			var newBrush = [lf, hf];
-			console.log({m: 'Applying brush', brush: newBrush});
+			console.log({ m: 'Applying brush', brush: newBrush });
 			timeline.setBrush(newBrush);
 			timeline.redraw();
 		}

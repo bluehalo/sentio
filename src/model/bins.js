@@ -1,3 +1,10 @@
+/**
+ * Binning model for timelines
+ *
+ * This data model is responsible for subdiving a period of time into an array of sequential bins.
+ * As data objects are added to the model, they are aggregated into the bins.
+ *
+ */
 export default function bins(config) {
 
 	/**
@@ -5,6 +12,7 @@ export default function bins(config) {
 	 */
 	// Configuration
 	var _config = {
+
 		// The number of bins in our model
 		count: 1,
 
@@ -14,9 +22,11 @@ export default function bins(config) {
 		// The min and max bins
 		lwm: undefined,
 		hwm: undefined
+
 	};
 
 	var _fn = {
+
 		// The default function for creating the seed value for a bin
 		createSeed: function() { return []; },
 
