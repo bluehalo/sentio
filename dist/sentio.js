@@ -1250,7 +1250,7 @@ function timeline() {
 	var _displayOptions = {
 		xGrid: false,
 		yGrid: false,
-		pointEvents: false
+		pointEvents: 'highlight-values' // highlight-value, highlight-series, custom (falsey is off)
 	};
 
 
@@ -1423,14 +1423,14 @@ function timeline() {
 		return toReturn;
 	}
 
-	function highlightPoints(hovered) {
+	function highlightValues(hovered) {
 		if (null != hovered) {
 
 			var join = _element.g.points.selectAll('circle')
 				.data(_series.map(function(d) {
 					return {
-						x: _fn.valueX(hovered.data.data),
-						y: d.getValue(hovered.data.data),
+						x: _fn.valueX(hovered.data),
+						y: d.getValue(hovered.data),
 						category: d.category
 					};
 				}));
@@ -1449,18 +1449,39 @@ function timeline() {
 	}
 
 	function onPointMouseover(d, i) {
-		highlightPoints(d);
-		_dispatch.call('pointMouseover', this, d, i);
+
+		var pointAction = _displayOptions.pointEvents;
+		if('highlight-value' === pointAction) {
+			
+		}
+		else if('highlight-values' === pointAction) {
+			highlightValues(d.data);
+		}
+		else if('highlight-series' === pointAction) {
+			
+		}
+
+		_dispatch.call('pointMouseover', this, d.data, i);
 	}
 
 	function onPointMouseout(d, i) {
-		highlightPoints();
-		_dispatch.call('pointMouseout', this, d, i);
+
+		var pointAction = _displayOptions.pointEvents;
+		if('highlight-value' === pointAction) {
+			
+		}
+		else if('highlight-values' === pointAction) {
+			highlightValues();
+		}
+		else if('highlight-series' === pointAction) {
+			
+		}
+
+		_dispatch.call('pointMouseout', this, d.data, i);
 	}
 
 	function onPointClick(d, i) {
-		highlightPoints();
-		_dispatch.call('pointClick', this, d, i);
+		_dispatch.call('pointClick', this, d.data, i);
 	}
 
 	/**
