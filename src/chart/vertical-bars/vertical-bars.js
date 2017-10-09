@@ -14,15 +14,6 @@ export default function verticalBars() {
 	// d3 dispatcher for handling events
 	var _dispatch = d3_dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
-		mouseover: function(d, i) {
-			_dispatch.call('mouseover', this, d, i);
-		},
-		mouseout: function(d, i) {
-			_dispatch.call('mouseout', this, d, i);
-		},
-		click: function(d, i) {
-			_dispatch.call('click', this, d, i);
-		},
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; },
 		label: function(d) { return d.key + ' (' + d.value + ')'; }
@@ -49,6 +40,19 @@ export default function verticalBars() {
 	};
 
 	var _data = [];
+
+	function mouseover(d, i) {
+		_dispatch.call('mouseover', this, d, i);
+	}
+
+	function mouseout(d, i) {
+		_dispatch.call('mouseout', this, d, i);
+	}
+
+	function click(d, i) {
+		_dispatch.call('click', this, d, i);
+	}
+
 
 	// Chart create/init method
 	function _instance(selection) { }
@@ -108,9 +112,9 @@ export default function verticalBars() {
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.mouseover)
-			.on('mouseout', _fn.mouseout)
-			.on('click', _fn.click)
+			.on('mouseover', mouseover)
+			.on('mouseout', mouseout)
+			.on('click', click)
 			.style('opacity', '0.01');
 
 		var barLabel = barEnter.append('div')

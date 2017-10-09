@@ -40,7 +40,7 @@ export default function matrix() {
 	// Extents
 	var _extent = {
 		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
-		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
+		value: extent(),
 		multi: multiExtent()
 	};
 
@@ -147,6 +147,8 @@ export default function matrix() {
 		return _instance;
 
 	};
+
+	_instance.resize = function() { }
 
 	_instance.redraw = function() {
 
@@ -370,7 +372,6 @@ export default function matrix() {
 	_instance.valueExtent = function(v) {
 		if(!arguments.length) { return _extent.value; }
 		_extent.value = v;
-		_extent.value.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 

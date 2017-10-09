@@ -1,13 +1,20 @@
 declare namespace sentio {
 
-	namespace internal {
+	interface Margin {
+		top: number,
+		right: number,
+		bottom: number,
+		left: number
+	}
 
-		interface Margin {
-			top: number,
-			right: number,
-			bottom: number,
-			left: number
-		}
+	interface Series {
+		key: string | number;
+		getValue: internal.UnionFn<any>;
+		label? : string;
+		category?: string;
+	}
+
+	namespace internal {
 
 		type SimpleFn<T> = () => T;
 		type ObjectFn<T> = (d: any) => T;
@@ -24,7 +31,7 @@ declare namespace sentio {
 			margin(v: Margin): this;
 
 			data(): any[];
-			data(v? : any[]): this;
+			data(v?: any[]): this;
 
 			init(container: any): this;
 			resize(): this;
@@ -37,14 +44,10 @@ declare namespace sentio {
 		}
 
 		interface MultiSeriesChart {
-			seriesKey(): UnionFn<string | number>;
-			seriesKey(v: UnionFn<string | number>): this;
 
-			seriesValues(): UnionFn<any[]>;
-			seriesValues(v: UnionFn<any[]>): this;
+			series(): Series[];
+			series(v? : Series[]): this;
 
-			seriesLabel(): UnionFn<string>;
-			seriesLabel(v: UnionFn<string>): this;
 		}
 
 		interface KeyValueChart {
@@ -69,6 +72,7 @@ declare namespace sentio {
 		}
 
 	}
+
 
 	/*
 	 * Charts
@@ -100,8 +104,7 @@ declare namespace sentio {
 
 
 	export interface MatrixChart
-		extends internal.BaseChart, internal.DurationChart, internal.KeyValueChart,
-			internal.MultiSeriesChart {
+		extends internal.BaseChart, internal.DurationChart, internal.MultiSeriesChart {
 
 		cellSize(): number;
 		cellSize(v: number): this;
@@ -124,6 +127,9 @@ declare namespace sentio {
 		valueExtent(): Extent;
 		valueExtent(v: Extent): this;
 
+		key(): internal.UnionFn<string | number>;
+		key(v: internal.UnionFn<string | number>): this;
+
 		dispatch(): any;
 	}
 	export function chartMatrix(): MatrixChart;
@@ -144,7 +150,7 @@ declare namespace sentio {
 
 		dispatch(): any;
 	}
-	export function verticalBars(): VerticalBarsChart;
+	export function chartVerticalBars(): VerticalBarsChart;
 
 
 	export interface TimelineChart
@@ -153,6 +159,24 @@ declare namespace sentio {
 
 		curve(): any;
 		curve(v: any): this;
+
+		pointEvents(): string;
+		pointEvents(v: 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false);
+
+		showGrid(): boolean;
+		showGrid(v: boolean): this;
+
+		showXGrid(): boolean;
+		showXGrid(v: boolean): this;
+
+		showYGrid(): boolean;
+		showYGrid(v: boolean): this;
+
+		xGridAxis(): any;
+		xGridAxis(v: any): this;
+
+		yGridAxis(): any;
+		yGridAxis(v: any): this;
 
 		xAxis(): any;
 		xAxis(v: any): this;
@@ -169,9 +193,6 @@ declare namespace sentio {
 		xValue(): any;
 		xValue(v: any): this;
 
-		yValue(): any;
-		yValue(v: any): this;
-
 		xExtent(): Extent;
 		xExtent(v: Extent): this;
 
@@ -187,11 +208,11 @@ declare namespace sentio {
 		markerLabel(): internal.UnionFn<string | number>;
 		markerLabel(v: internal.UnionFn<string | number>): this;
 
-		filter(): boolean;
-		filter(v: boolean): this;
+		brush(): boolean;
+		brush(v: boolean): this;
 
-		setFilter(v?: [number, number] | null): this;
-		getFilter(): [number, number] | null;
+		setBrush(v?: [number, number] | null): this;
+		getBrush(): [number, number] | null;
 
 		dispatch(): any;
 	}
@@ -408,13 +429,14 @@ declare namespace sentio {
 		extent(): Extent;
 		extent(v: Extent): this;
 
-		values(): (v: any) => any[];
-		values(v: (v: any) => any[]): this;
+		series(): Series;
+		series(v: Series): this;
 
 		getExtent(data: any[]): [ number, number ];
 	}
 	export interface MultiExtentConfig {
 		extent?: Extent;
+		series?: Series;
 	}
 	export function modelMultiExtent(config?: MultiExtentConfig): MultiExtent;
 

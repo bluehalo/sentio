@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.2 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection'), require('d3-line')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection', 'd3-line'], factory) :
@@ -689,7 +689,7 @@ function matrix() {
 	// Extents
 	var _extent = {
 		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
-		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
+		value: extent(),
 		multi: multiExtent()
 	};
 
@@ -796,6 +796,8 @@ function matrix() {
 		return _instance;
 
 	};
+
+	_instance.resize = function() { };
 
 	_instance.redraw = function() {
 
@@ -1019,7 +1021,6 @@ function matrix() {
 	_instance.valueExtent = function(v) {
 		if(!arguments.length) { return _extent.value; }
 		_extent.value = v;
-		_extent.value.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 
@@ -2509,15 +2510,6 @@ function verticalBars() {
 	// d3 dispatcher for handling events
 	var _dispatch = d3Dispatch.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
-		mouseover: function(d, i) {
-			_dispatch.call('mouseover', this, d, i);
-		},
-		mouseout: function(d, i) {
-			_dispatch.call('mouseout', this, d, i);
-		},
-		click: function(d, i) {
-			_dispatch.call('click', this, d, i);
-		},
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; },
 		label: function(d) { return d.key + ' (' + d.value + ')'; }
@@ -2544,6 +2536,19 @@ function verticalBars() {
 	};
 
 	var _data = [];
+
+	function mouseover(d, i) {
+		_dispatch.call('mouseover', this, d, i);
+	}
+
+	function mouseout(d, i) {
+		_dispatch.call('mouseout', this, d, i);
+	}
+
+	function click(d, i) {
+		_dispatch.call('click', this, d, i);
+	}
+
 
 	// Chart create/init method
 	function _instance(selection) { }
@@ -2603,9 +2608,9 @@ function verticalBars() {
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.mouseover)
-			.on('mouseout', _fn.mouseout)
-			.on('click', _fn.click)
+			.on('mouseover', mouseover)
+			.on('mouseout', mouseout)
+			.on('click', click)
 			.style('opacity', '0.01');
 
 		var barLabel = barEnter.append('div')
