@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection'), require('d3-line')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection', 'd3-line'], factory) :
