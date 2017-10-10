@@ -3,7 +3,7 @@
 	"artifactName": "sentio",
 	"moduleName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "5.0.0-alpha.2",
+	"version": "5.0.0-alpha.3",
 	"author": "Asymmetrik, Ltd.",
 	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
 	"license": "UNLICENSED",

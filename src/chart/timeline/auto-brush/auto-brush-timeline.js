@@ -1,8 +1,7 @@
 import { default as timeline } from '../timeline';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
-import { curveNatural as d3_curveNatural } from 'd3-line';
-// import { voronoi as d3_voronoi } from 'd3-voronoi';
+import { curveNatural as d3_curveNatural } from 'd3-shape';
 
 export default function autoBrushTimeline() {
 

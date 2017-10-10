@@ -161,7 +161,7 @@ declare namespace sentio {
 		curve(v: any): this;
 
 		pointEvents(): string;
-		pointEvents(v: 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false);
+		pointEvents(v: 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false): this;
 
 		showGrid(): boolean;
 		showGrid(v: boolean): this;
@@ -236,11 +236,37 @@ declare namespace sentio {
 	export function chartRealtimeTimeline(): RealtimeTimelineChart;
 
 
+	export interface AutoBrushTimelineChart extends TimelineChart {
+		edgeTrigger(): number;
+		edgeTrigger(v: number): this;
+
+		zoomInTrigger(): number;
+		zoomInTrigger(v: number): this;
+
+		zoomOutTrigger(): number;
+		zoomOutTrigger(v: number): this;
+
+		zoomTarget(): number;
+		zoomTarget(v: number): this;
+
+		maxExtent(): [ number, number ];
+		maxExtent(v: [ number, number ]): this;
+
+		minExtent(): number;
+		minExtent(v: number): this;
+
+		minBrush(): number;
+		minBrush(v: number): this;
+
+		timelineDispatch(): any;
+	}
+	export function chartAutoBrushTimeline(): AutoBrushTimelineChart;
+
+
 	/*
 	 * Controllers
 	 */
 	export interface RealtimeBinsController {
-
 		model(): BinsModel;
 		bins(): any[];
 		start(): this;
@@ -254,7 +280,6 @@ declare namespace sentio {
 
 		binCount(): number;
 		binCount(v: number): this;
-
 	}
 	export interface RealtimeBinsControllerConfig {
 		delay?: number,

@@ -224,7 +224,7 @@ export default function donut() {
 			var centerX = _margin.left + _radius;
 			var centerY = _margin.top + _radius;
 			var legendWidth = (null == _element.gLegend._maxWidth)? 0 : _element.gLegend._maxWidth;
-			var legendHeight = entrySpan*_data.length + _legend.markMargin;
+			var legendHeight = entrySpan * _data.length + _legend.markMargin;
 
 			var offsetX = legendWidth/2;
 			var offsetY = legendHeight/2;

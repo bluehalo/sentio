@@ -37,9 +37,9 @@
 		var csi = 0;
 
 		chart.dispatch()
-				.on('mouseover', function(d, i) { console.log({ type: 'mouseover', event: d, index: i, context: this }); })
-				.on('mouseout', function(d, i) { console.log({ type: 'mouseout', event: d, index: i, context: this }); })
-				.on('click', function(d, i) { console.log({ type: 'click', event: d, index: i, context: this }); });
+			.on('mouseover', function(d, i) { console.log({ type: 'mouseover', event: d, index: i, context: this }); })
+			.on('mouseout', function(d, i) { console.log({ type: 'mouseout', event: d, index: i, context: this }); })
+			.on('click', function(d, i) { console.log({ type: 'click', event: d, index: i, context: this }); });
 
 		chart.label(function(d) {
 			return 'Label ' + d.key + ' (' + d.value + ')';
