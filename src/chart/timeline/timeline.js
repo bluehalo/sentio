@@ -443,7 +443,7 @@ export default function timeline() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(_fn.markerValueLabel);
+			.text(_fn.markerLabel);
 
 		// Enter + Update
 		var lineUpdate = markerJoin.select('line');
@@ -776,8 +776,8 @@ export default function timeline() {
 		return _instance;
 	};
 	_instance.markerLabel = function(v) {
-		if (!arguments.length) { return _fn.markerValueLabel; }
-		_fn.markerValueLabel = v;
+		if (!arguments.length) { return _fn.markerLabel; }
+		_fn.markerLabel = v;
 		return _instance;
 	};
 

@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.4 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.5 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
@@ -1656,7 +1656,7 @@ function timeline() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(_fn.markerValueLabel);
+			.text(_fn.markerLabel);
 
 		// Enter + Update
 		var lineUpdate = markerJoin.select('line');
@@ -1989,8 +1989,8 @@ function timeline() {
 		return _instance;
 	};
 	_instance.markerLabel = function(v) {
-		if (!arguments.length) { return _fn.markerValueLabel; }
-		_fn.markerValueLabel = v;
+		if (!arguments.length) { return _fn.markerLabel; }
+		_fn.markerLabel = v;
 		return _instance;
 	};
 
