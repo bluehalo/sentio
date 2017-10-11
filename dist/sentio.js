@@ -1,9 +1,9 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.3 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.4 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection'), require('d3-line')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection', 'd3-line'], factory) :
-	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
-}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Voronoi,d3Selection,d3Line) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
+	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
+}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Voronoi,d3Selection) { 'use strict';
 
 function donut() {
 
@@ -1251,7 +1251,7 @@ function timeline() {
 	var _displayOptions = {
 		xGrid: false,
 		yGrid: false,
-		pointEvents: 'highlight-values' // highlight-value, highlight-series, custom (falsey is off)
+		pointEvents: false // value, values, series, custom (falsey is off)
 	};
 
 
@@ -1452,13 +1452,13 @@ function timeline() {
 	function onPointMouseover(d, i) {
 
 		var pointAction = _displayOptions.pointEvents;
-		if('highlight-value' === pointAction) {
+		if('value' === pointAction) {
 			
 		}
-		else if('highlight-values' === pointAction) {
+		else if('values' === pointAction) {
 			highlightValues(d.data);
 		}
-		else if('highlight-series' === pointAction) {
+		else if('series' === pointAction) {
 			
 		}
 
@@ -1468,13 +1468,13 @@ function timeline() {
 	function onPointMouseout(d, i) {
 
 		var pointAction = _displayOptions.pointEvents;
-		if('highlight-value' === pointAction) {
+		if('value' === pointAction) {
 			
 		}
-		else if('highlight-values' === pointAction) {
+		else if('values' === pointAction) {
 			highlightValues();
 		}
-		else if('highlight-series' === pointAction) {
+		else if('series' === pointAction) {
 			
 		}
 
@@ -2015,8 +2015,6 @@ function timeline() {
 	return _instance;
 }
 
-// import { voronoi as d3_voronoi } from 'd3-voronoi';
-
 function autoBrushTimeline() {
 
 	var _id = 'autobrush_timeline_' + Date.now();
@@ -2047,6 +2045,14 @@ function autoBrushTimeline() {
 	 */
 
 	var _instance = timeline();
+
+	// Turn on brushing and register for brush events
+	_instance.brush(true);
+	_instance.dispatch().on('brushEnd.internal', updateBrush);
+
+	// Turn off pointer events by default
+	_instance.pointEvents(false);
+
 
 	var _timeline = {
 		element: {
@@ -2082,10 +2088,6 @@ function autoBrushTimeline() {
 
 		// Initialize the timeline
 		_timeline.init(container);
-
-		// Turn on brushing and register for brush events
-		_timeline.brush(true);
-		_timeline.dispatch().on('brushEnd.internal', updateBrush);
 
 		// Set the initial brush
 		if (null == _brush) {
@@ -2138,7 +2140,7 @@ function autoBrushTimeline() {
 
 
 		// Set the curve to interpolate
-		_instance.curve(d3Line.curveNatural);
+		_instance.curve(d3Shape.curveNatural);
 
 		// Call it to redraw
 		if (null != _instance.xAxis()) {
@@ -2425,6 +2427,10 @@ function realtimeTimeline() {
 		return (x < xExtent[1] && x > xExtent[0]);
 	});
 
+	_instance.brush(false);
+	_instance.pointEvents(false);
+
+
 	/*
 	 * This is the main update loop function. It is called every time the
 	 * _instance is updating to proceed through time.
@@ -2494,6 +2500,10 @@ function realtimeTimeline() {
 			_instance.restart();
 		}
 		return _instance;
+	};
+
+	_instance.brush = function(v) {
+		return false;
 	};
 
 	return _instance;

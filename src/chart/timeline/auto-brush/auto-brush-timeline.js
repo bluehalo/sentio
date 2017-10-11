@@ -34,6 +34,14 @@ export default function autoBrushTimeline() {
 
 	var _instance = timeline();
 
+	// Turn on brushing and register for brush events
+	_instance.brush(true);
+	_instance.dispatch().on('brushEnd.internal', updateBrush);
+
+	// Turn off pointer events by default
+	_instance.pointEvents(false);
+
+
 	var _timeline = {
 		element: {
 			g: {
@@ -68,10 +76,6 @@ export default function autoBrushTimeline() {
 
 		// Initialize the timeline
 		_timeline.init(container);
-
-		// Turn on brushing and register for brush events
-		_timeline.brush(true);
-		_timeline.dispatch().on('brushEnd.internal', updateBrush);
 
 		// Set the initial brush
 		if (null == _brush) {

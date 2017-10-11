@@ -22,6 +22,10 @@ export default function realtimeTimeline() {
 		return (x < xExtent[1] && x > xExtent[0]);
 	});
 
+	_instance.brush(false);
+	_instance.pointEvents(false);
+
+
 	/*
 	 * This is the main update loop function. It is called every time the
 	 * _instance is updating to proceed through time.
@@ -92,6 +96,10 @@ export default function realtimeTimeline() {
 		}
 		return _instance;
 	};
+
+	_instance.brush = function(v) {
+		return false;
+	}
 
 	return _instance;
 }

@@ -34,7 +34,7 @@ export default function timeline() {
 	var _displayOptions = {
 		xGrid: false,
 		yGrid: false,
-		pointEvents: 'highlight-values' // highlight-value, highlight-series, custom (falsey is off)
+		pointEvents: false // value, values, series, custom (falsey is off)
 	};
 
 
@@ -239,13 +239,13 @@ export default function timeline() {
 	function onPointMouseover(d, i) {
 
 		var pointAction = _displayOptions.pointEvents;
-		if('highlight-value' === pointAction) {
+		if('value' === pointAction) {
 			highlightValue(d.data);
 		}
-		else if('highlight-values' === pointAction) {
+		else if('values' === pointAction) {
 			highlightValues(d.data);
 		}
-		else if('highlight-series' === pointAction) {
+		else if('series' === pointAction) {
 			highlightSeries(d.data);
 		}
 
@@ -255,13 +255,13 @@ export default function timeline() {
 	function onPointMouseout(d, i) {
 
 		var pointAction = _displayOptions.pointEvents;
-		if('highlight-value' === pointAction) {
+		if('value' === pointAction) {
 			highlightValue();
 		}
-		else if('highlight-values' === pointAction) {
+		else if('values' === pointAction) {
 			highlightValues();
 		}
-		else if('highlight-series' === pointAction) {
+		else if('series' === pointAction) {
 			highlightSeries();
 		}
 
