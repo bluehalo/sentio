@@ -14,6 +14,8 @@ declare namespace sentio {
 		category?: string;
 	}
 
+	type PointEvents = 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false;
+
 	namespace internal {
 
 		type SimpleFn<T> = () => T;
@@ -161,7 +163,7 @@ declare namespace sentio {
 		curve(v: any): this;
 
 		pointEvents(): string;
-		pointEvents(v: 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false): this;
+		pointEvents(v: PointEvents): this;
 
 		showGrid(): boolean;
 		showGrid(v: boolean): this;
