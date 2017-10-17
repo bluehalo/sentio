@@ -104,7 +104,7 @@
 
 			// Update the units
 			var newUnits = responsiveUnits.getUnit(newBrush);
-			d3.select('.context-info .units').text(newUnits.key);
+			d3.select('.context-info .units').text(newUnits.key + ' - ' + (newBrush[1] - newBrush[0]) / newUnits.value);
 		}
 
 

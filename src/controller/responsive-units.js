@@ -10,7 +10,7 @@ export default function responsiveUnits(config) {
 	// Configuration
 	var _config = {
 		minTrigger: 30,
-		maxTrigger: 300
+		maxTrigger: 400
 	};
 
 	// var _fn = {};
@@ -65,7 +65,9 @@ export default function responsiveUnits(config) {
 		var unitIndex = 0;
 
 		// Loop while there's too many points
-		while (0 < checkUnit(v, _units[unitIndex++]) && unitIndex < _units.length);
+		while (0 < checkUnit(v, _units[unitIndex]) && unitIndex < _units.length) {
+			unitIndex++;
+		}
 		_currentUnit = _units[unitIndex];
 
 		return unit;

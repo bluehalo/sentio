@@ -2188,6 +2188,24 @@ function autoBrushTimeline() {
 			newBrush[0] = Math.max(newBrush[0], _maxExtent[0]);
 			newBrush[1] = Math.min(newBrush[1], _maxExtent[1]);
 
+
+			// What brush width do we need to obtain
+			var delta = newBrush[1] - newBrush[0];
+			var newWidth = Math.max(Math.min(delta, _maxBrush), _minBrush);
+
+			// If the width has to change
+			if (newWidth != delta) {
+				if (newBrush[0] === _brush[0]) {
+					// We should move the upper bound
+					newBrush[1] = newBrush[0] + newWidth;
+
+				}
+				else if (newBrush[1] === _brush[1]) {
+					// We should move the lower bound
+					newBrush[0] = newBrush[1] - newWidth;
+				}
+			}
+
 		}
 
 		return newBrush;
@@ -3272,7 +3290,7 @@ function responsiveUnits(config) {
 	// Configuration
 	var _config = {
 		minTrigger: 30,
-		maxTrigger: 300
+		maxTrigger: 400
 	};
 
 	// var _fn = {};
@@ -3327,7 +3345,9 @@ function responsiveUnits(config) {
 		var unitIndex = 0;
 
 		// Loop while there's too many points
-		while (0 < checkUnit(v, _units[unitIndex++]) && unitIndex < _units.length);
+		while (0 < checkUnit(v, _units[unitIndex]) && unitIndex < _units.length) {
+			unitIndex++;
+		}
 		_currentUnit = _units[unitIndex];
 
 		return unit;
