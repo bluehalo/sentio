@@ -179,7 +179,10 @@ export default function autoBrushTimeline() {
 
 			// What brush width do we need to obtain
 			var delta = newBrush[1] - newBrush[0];
-			var newWidth = Math.max(Math.min(delta, _maxBrush), _minBrush);
+			var newWidth = delta;
+
+			if (null != _maxBrush) { newWidth = Math.min(delta, _maxBrush); }
+			if (null != _minBrush) { newWidth = Math.max(newWidth, _minBrush); }
 
 			// If the width has to change
 			if (newWidth != delta) {
