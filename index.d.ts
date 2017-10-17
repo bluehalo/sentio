@@ -46,10 +46,8 @@ declare namespace sentio {
 		}
 
 		interface MultiSeriesChart {
-
 			series(): Series[];
 			series(v? : Series[]): this;
-
 		}
 
 		interface KeyValueChart {
@@ -268,6 +266,7 @@ declare namespace sentio {
 	/*
 	 * Controllers
 	 */
+
 	export interface RealtimeBinsController {
 		model(): BinsModel;
 		bins(): any[];
@@ -307,6 +306,25 @@ declare namespace sentio {
 		brush: any;
 	}
 	export function timelineBrush(config: TimelineBrushConfig): TimelineBrush;
+
+	export interface ResponsiveUnit {
+		key: string;
+		value: number
+	}
+	export interface ResponsiveUnitsController {
+		units(): ResponsiveUnit[];
+		units(v: ResponsiveUnit[]): this;
+
+		getUnit(v: [ number, number ]): ResponsiveUnit;
+
+		currentUnit(): ResponsiveUnit;
+		currentUnit(v: ResponsiveUnit): this;
+	}
+	export interface ResponsiveUnitsControllerConfig {
+		minTrigger?: number;
+		maxTrigger?: number;
+	}
+	export function controllerResponsiveUnits(config?: ResponsiveUnitsControllerConfig): ResponsiveUnitsController;
 
 
 	/*
