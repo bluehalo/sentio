@@ -14,7 +14,7 @@ declare namespace sentio {
 		category?: string;
 	}
 
-	type PointEvents = 'highlight-value' | 'highlight-values' | 'highlight-series' | null | false;
+	type PointEvents = 'value' | 'values' | 'series' | null | false;
 
 	namespace internal {
 
