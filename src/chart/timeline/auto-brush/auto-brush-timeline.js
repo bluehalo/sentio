@@ -20,8 +20,10 @@ export default function autoBrushTimeline() {
 	};
 
 	var _minExtent = 24 * 60 * 60 * 1000;
-	var _minBrush = 60 * 60 * 1000;
 	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
+
+	var _minBrush = 60 * 60 * 1000;
+	var _maxBrush = undefined;
 	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
 
 	var _brush;
@@ -179,6 +181,10 @@ export default function autoBrushTimeline() {
 		return newBrush;
 	}
 
+	function validateBrush(brush) {
+		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush));
+	}
+
 	/**
 	 * Handle a change to the brush (whether from the timeline or manual)
 	 * - Crop the brush if necessary based on maxExtent
@@ -192,7 +198,7 @@ export default function autoBrushTimeline() {
 		newBrush = cropBrush(newBrush);
 
 		// Ensure the brush is valid
-		if (null != newBrush) {
+		if (validateBrush(newBrush)) {
 
 			// Update the brush
 			_brush = newBrush;
@@ -368,6 +374,12 @@ export default function autoBrushTimeline() {
 	_instance.minBrush = function(v) {
 		if (!arguments.length) { return _minBrush; }
 		_minBrush = v;
+
+		return _instance;
+	};
+	_instance.maxBrush = function(v) {
+		if (!arguments.length) { return _maxBrush; }
+		_maxBrush = v;
 
 		return _instance;
 	};

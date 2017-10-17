@@ -13,10 +13,9 @@
 			font: 11px sans-serif;
 			padding-left: 40px;
 		}
-		.quick-links {
-			padding-bottom: 4px;
-		}
+		.quick-links {}
 		.context-info .value {
+			padding-top: 4px;
 			color: rgba(0, 54, 168, 1);
 		}
 		.auto-brush-timeline .sentio.timeline .line {
@@ -63,6 +62,10 @@
 			<span class="date"></span>
 			<span class="value"></span>
 		</div>
+		<div class="context-info">
+			<strong>Units: </strong>
+			<span class="units"></span>
+		</div>
 	</div>
 	<div id="timeline" class="auto-brush-timeline"></div>
 	<div id="brush" class="auto-brush-brush"></div>
@@ -92,10 +95,16 @@
 			.on('pointMouseover', updateContextPoint)
 			.on('pointMouseout', updateContextNoPoint);
 
+		var responsiveUnits = sentio.controllerResponsiveUnits();
+
 		function setTimelineBrush(newBrush) {
 			// This is where we would trigger a load of the new chart data
 			timeline.xExtent().overrideValue(newBrush);
 			timeline.redraw();
+
+			// Update the units
+			var newUnits = responsiveUnits.getUnit(newBrush);
+			d3.select('.context-info .units').text(newUnits.key);
 		}
 
 
@@ -106,7 +115,8 @@
 
 		var brush = sentio.chartAutoBrushTimeline()
 			.height(40).width(800)
-			.margin({ top: 2, right: 10, bottom: 2, left: 40 });
+			.margin({ top: 2, right: 10, bottom: 2, left: 40 })
+			.maxBrush(365 * 24 * 60 * 60 * 1000);
 
 		brush.yExtent().overrideValue([ 0, undefined ]);
 		brush.dispatch()
