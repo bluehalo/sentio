@@ -35,7 +35,7 @@ export default function responsiveUnits(config) {
 		var delta = v[1] - v[0];
 		var points = delta / u.value;
 
-		return (points > _config.maxTrigger) ? 1 : (points < _config.minTrigger) ? -1 : 0;
+		return (points >= _config.maxTrigger) ? 1 : (points <= _config.minTrigger) ? -1 : 0;
 	}
 
 	/*
@@ -65,12 +65,14 @@ export default function responsiveUnits(config) {
 		var unitIndex = 0;
 
 		// Loop while there's too many points
-		while (0 < checkUnit(v, _units[unitIndex]) && unitIndex < _units.length) {
+		while (unitIndex < _units.length && 0 < checkUnit(v, _units[unitIndex])) {
 			unitIndex++;
 		}
-		_currentUnit = _units[unitIndex];
 
-		return unit;
+		_currentUnit = _units[Math.min(unitIndex, _units.length - 1)];
+
+		return _currentUnit;
+
 	};
 
 	model.units = function(v) {
@@ -82,6 +84,18 @@ export default function responsiveUnits(config) {
 	model.currentUnit = function(v) {
 		if (!arguments.length) { return _currentUnit; }
 		_currentUnit = v;
+		return model;
+	};
+
+	model.minTrigger = function(v) {
+		if (!arguments.length) { return _config.minTrigger; }
+		_config.minTrigger = v;
+		return model;
+	};
+
+	model.maxTrigger = function(v) {
+		if (!arguments.length) { return _config.maxTrigger; }
+		_config.maxTrigger = v;
 		return model;
 	};
 
