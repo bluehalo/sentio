@@ -2050,7 +2050,10 @@ function autoBrushTimeline() {
 
 	// Turn on brushing and register for brush events
 	_instance.brush(true);
-	_instance.dispatch().on('brushEnd.internal', updateBrush);
+	_instance.dispatch().on('brushEnd.internal', function(d) {
+		updateBrush(d);
+		_instance.redraw();
+	});
 
 	// Turn off pointer events by default
 	_instance.pointEvents(false);
@@ -2093,8 +2096,7 @@ function autoBrushTimeline() {
 
 		// Set the initial brush
 		if (null == _brush) {
-			_brush = _initialBrush;
-			_instance.setBrush(_brush);
+			updateBrush(_initialBrush);
 		}
 
 		// Add a clip path for the axis
@@ -2233,15 +2235,19 @@ function autoBrushTimeline() {
 		// Ensure the brush is valid
 		if (validateBrush(newBrush)) {
 
+			var didBrushChange = (null == _brush || _brush[0] != newBrush[0] || _brush[1] != newBrush[1]);
+
 			// Update the brush
 			_brush = newBrush;
-			_timeline.setBrush(newBrush);
+			_timeline.setBrush(_brush);
 
 			// Update the extent as necessary
 			updateExtent();
 
-			// Fire the brush change event
-			_dispatch.call('brushChange', this, newBrush);
+			// Only fire the brush event if it actually changed
+			if (didBrushChange) {
+				_dispatch.call('brushChange', this, _brush);
+			}
 
 		}
 		else {
@@ -2249,8 +2255,6 @@ function autoBrushTimeline() {
 			// Don't allow them to apply an invalid brush
 			_timeline.setBrush(_brush);
 		}
-
-		_instance.redraw();
 
 	}
 

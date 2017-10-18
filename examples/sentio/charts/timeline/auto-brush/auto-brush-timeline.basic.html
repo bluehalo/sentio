@@ -22,16 +22,16 @@
 			.width(600);
 
 		brush.yExtent().overrideValue([0, undefined]);
+		brush.dispatch().on('extentChange', function(newExtent) {
+			console.log('extentChange: ' + newExtent);
+		});
+		brush.dispatch().on('brushChange', function(newBrush) {
+			console.log('brushChange: ' + newBrush);
+		});
 
 		var data = [];
 		brush.init(brushDiv).data(data).redraw();
 
-		brush.dispatch().on('extentChange', function(newExtent) {
-		    console.log('extentChange: ' + newExtent);
-		});
-		brush.dispatch().on('brushChange', function(newBrush) {
-		    console.log('brush: ' + newBrush);
-		});
 
 	</script>
 
