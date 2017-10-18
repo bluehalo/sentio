@@ -2548,6 +2548,7 @@ function verticalBars() {
 	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
+	var _barWidthMinRatio = 0.1;
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
@@ -2623,7 +2624,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([ 0, _width ]);
+		_scale.x.range([ _width * _barWidthMinRatio, _width ]);
 
 		return _instance;
 	};
@@ -2691,6 +2692,11 @@ function verticalBars() {
 		_width = v;
 		return _instance;
 	};
+	_instance.barWidthMinRatio = function(v) {
+		if(!arguments.length) { return _barWidthMinRatio; }
+		_barWidthMinRatio = v;
+		return _instance;
+	};
 	_instance.barHeight = function(v) {
 		if(!arguments.length) { return _barHeight; }
 		_barHeight = v;
@@ -2701,6 +2707,7 @@ function verticalBars() {
 		_barPadding = v;
 		return _instance;
 	};
+
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
 		_fn.key = v;
@@ -2716,12 +2723,14 @@ function verticalBars() {
 		_fn.label = v;
 		return _instance;
 	};
+
 	_instance.widthExtent = function(v) {
 		if(!arguments.length) { return _extent.width; }
 		_extent.width = v;
 		_extent.width.getValue(function(d, i) { return _fn.value(d, i); });
 		return _instance;
 	};
+
 	_instance.dispatch = function(v) {
 		if(!arguments.length) { return _dispatch; }
 		return _instance;
