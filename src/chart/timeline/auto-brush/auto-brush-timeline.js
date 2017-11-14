@@ -1,7 +1,6 @@
 import { default as timeline } from '../timeline';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
-import { curveNatural as d3_curveNatural } from 'd3-shape';
 
 export default function autoBrushTimeline() {
 
@@ -129,10 +128,6 @@ export default function autoBrushTimeline() {
 		// Set the x Axis ticks to be full height
 		_instance.xAxis()
 			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
-
-
-		// Set the curve to interpolate
-		_instance.curve(d3_curveNatural);
 
 		// Call it to redraw
 		if (null != _instance.xAxis()) {
