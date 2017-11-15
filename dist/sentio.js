@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.14 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.15 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
@@ -1600,23 +1600,21 @@ function timeline() {
 
 			// Create/Update the handles
 			var handleJoin = _element.g.brush
-				.selectAll('.handle-grip').data([ { type: 'w' }, { type: 'e' } ]);
+				.selectAll('.resize-handle').data([ { type: 'w' }, { type: 'e' } ]);
 
 			var handleEnter = handleJoin.enter().append('g')
-				.attr('class', 'handle-grip')
+				.attr('class', 'resize-handle')
 				.attr('cursor', 'ew-resize');
 
-			handleEnter
-				.append('path')
+			handleEnter.append('path').attr('class', 'handle-line');
+			handleEnter.append('path').attr('class', 'handle-grip');
+
+			var merge = handleEnter.merge(handleJoin);
+			merge.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
+			merge.select('.handle-line')
 				.attr('d', 'M0 ' + height + ' v' + (-height));
-
-			handleEnter
-				.append('path')
+			merge.select('.handle-grip')
 				.attr('d', getBrushHandlePath);
-
-			handleEnter.merge(handleJoin)
-				.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
-
 
 		}
 		else {
@@ -2383,7 +2381,6 @@ function autoBrushTimeline() {
 			// Don't allow them to apply an invalid brush
 			_timeline.setBrush(_brush);
 		}
-
 	}
 
 	/**
