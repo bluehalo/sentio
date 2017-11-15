@@ -238,7 +238,6 @@ export default function autoBrushTimeline() {
 			// Don't allow them to apply an invalid brush
 			_timeline.setBrush(_brush);
 		}
-
 	}
 
 	/**

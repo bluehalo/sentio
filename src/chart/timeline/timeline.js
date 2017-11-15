@@ -379,23 +379,21 @@ export default function timeline() {
 
 			// Create/Update the handles
 			var handleJoin = _element.g.brush
-				.selectAll('.handle-grip').data([ { type: 'w' }, { type: 'e' } ]);
+				.selectAll('.resize-handle').data([ { type: 'w' }, { type: 'e' } ]);
 
 			var handleEnter = handleJoin.enter().append('g')
-				.attr('class', 'handle-grip')
+				.attr('class', 'resize-handle')
 				.attr('cursor', 'ew-resize');
 
-			handleEnter
-				.append('path')
+			handleEnter.append('path').attr('class', 'handle-line');
+			handleEnter.append('path').attr('class', 'handle-grip');
+
+			var merge = handleEnter.merge(handleJoin);
+			merge.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
+			merge.select('.handle-line')
 				.attr('d', 'M0 ' + height + ' v' + (-height));
-
-			handleEnter
-				.append('path')
+			merge.select('.handle-grip')
 				.attr('d', getBrushHandlePath);
-
-			handleEnter.merge(handleJoin)
-				.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
-
 
 		}
 		else {

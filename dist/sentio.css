@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.14 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */.sentio.donut .legend {
+/*! @asymmetrik/sentio - 5.0.0-alpha.15 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */.sentio.donut .legend {
   font: 12px sans-serif; }
 
 .sentio.donut .arc {
@@ -60,10 +60,11 @@
   pointer-events: all;
   stroke: none; }
 
-.sentio.timeline .handle-grip {
-  fill: #efefef;
+.sentio.timeline .resize-handle {
   stroke: #000;
   stroke-width: 1px; }
+  .sentio.timeline .resize-handle .handle-grip {
+    fill: #efefef; }
 
 .sentio.bars-vertical {
   position: relative; }

@@ -46,8 +46,11 @@
 	stroke: none;
 }
 
-.sentio.timeline .handle-grip {
-	fill: #efefef;
+.sentio.timeline .resize-handle {
 	stroke: #000;
 	stroke-width: 1px;
+
+	.handle-grip {
+		fill: #efefef;
+	}
 }
