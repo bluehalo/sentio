@@ -184,6 +184,10 @@ export default function timelineBrush(config) {
 		return _instance;
 	};
 
+	_instance.getBrushSelection = function(node) {
+		return brushSelection(node);
+	};
+
 	_instance.getSelection = function(node) {
 		return getSelection(node);
 	};

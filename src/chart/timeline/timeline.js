@@ -112,9 +112,18 @@ export default function timeline() {
 	// Brush Management
 	var _brush = timelineBrush({ brush: d3_brushX(), scale: _scale.x });
 	_brush.dispatch()
-		.on('end', function() { _dispatch.call('brushEnd', this, getBrush()); })
-		.on('start', function() { _dispatch.call('brushStart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('brush', this, getBrush()); });
+		.on('end', function() {
+			updateBrush();
+			_dispatch.call('brushEnd', this, getBrush());
+		})
+		.on('start', function() {
+			updateBrush();
+			_dispatch.call('brushStart', this, getBrush());
+		})
+		.on('brush', function() {
+			updateBrush();
+			_dispatch.call('brush', this, getBrush());
+		});
 
 	// The dispatch object and all events
 	var _dispatch = d3_dispatch(
@@ -134,6 +143,7 @@ export default function timeline() {
 		g: {
 			container: undefined,
 			plots: undefined,
+			plotBrushes: undefined,
 			points: undefined,
 			voronoi: undefined,
 
@@ -147,6 +157,7 @@ export default function timeline() {
 		},
 
 		plotClipPath: undefined,
+		plotBrushClipPath: undefined,
 		markerClipPath: undefined
 	};
 
@@ -285,6 +296,22 @@ export default function timeline() {
 
 	}
 
+	function getBrushSelection() {
+
+		// Try to get the node from the brush group selection
+		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
+
+		// Get the current brush selection
+		return _brush.getBrushSelection(node);
+
+	}
+
+	function getBrushHandlePath(d) {
+		var w = 8, h = 12, ch = 4;
+		var y = (_scale.y.range()[0] / 2) + (h / 2);
+
+		return 'M' + (w / 2) + ' ' + y + ' c 0 ' + ch + ', ' + (-w) + ' ' + ch + ', ' + (-w) + ' 0 v0 ' + (-h) + ' c 0 ' + (-ch) + ', ' + w + ' ' + (-ch) + ', ' + w + ' 0 Z M0' + ' ' + y + ' v' + (-h);
+	}
 
 	/**
 	 * Set the current brush state in terms of the x data domain
@@ -334,6 +361,57 @@ export default function timeline() {
 		_element.g.brush
 			.style('display', (_brush.enabled())? 'unset' : 'none')
 			.call(_brush.brush());
+
+
+		/*
+		 * Update the clip path for the brush plot
+		 */
+		var brushExtent = getBrushSelection();
+		if (null != brushExtent) {
+
+			var height = _scale.y.range()[0];
+
+			// Update the brush clip path
+			_element.plotBrushClipPath
+				.attr('transform', 'translate(' + brushExtent[0] + ', -1)')
+				.attr('width', Math.max(0, brushExtent[1] - brushExtent[0]))
+				.attr('height', Math.max(0, height) + 2);
+
+			// Create/Update the handles
+			var handleJoin = _element.g.brush
+				.selectAll('.handle-grip').data([ { type: 'w' }, { type: 'e' } ]);
+
+			var handleEnter = handleJoin.enter().append('g')
+				.attr('class', 'handle-grip')
+				.attr('cursor', 'ew-resize');
+
+			handleEnter
+				.append('path')
+				.attr('d', 'M0 ' + height + ' v' + (-height));
+
+			handleEnter
+				.append('path')
+				.attr('d', getBrushHandlePath);
+
+			handleEnter.merge(handleJoin)
+				.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
+
+
+		}
+		else {
+
+			// Empty the clip path
+			_element.plotBrushClipPath
+				.attr('transform', 'translate(-1, -1)')
+				.attr('width', 0)
+				.attr('height', 0);
+
+			// Remove the handles
+			_element.g.brush.selectAll('.handle-grip')
+				.remove();
+
+		}
+
 	}
 
 
@@ -353,7 +431,7 @@ export default function timeline() {
 	}
 
 
-	function updateLine() {
+	function updatePlots() {
 
 		// Join
 		var plotJoin = _element.g.plots
@@ -402,7 +480,7 @@ export default function timeline() {
 			voronoiData  = _voronoi.polygons(voronoiData)
 				.filter(function (d) { return (null != d); });
 
-			// Draw the circle markers
+			// Draw the voronoi overlay polygons
 			_element.g.voronoi.selectAll('path').data(voronoiData).enter().append('path')
 				.attr('d', function (d) { return (null != d) ? 'M' + d.join('L') + 'Z' : null; })
 				.on('mouseover', onPointMouseover)
@@ -414,9 +492,44 @@ export default function timeline() {
 		// Exit
 		var plotExit = plotJoin.exit();
 		plotExit.remove();
-
 	}
 
+	function updatePlotBrushes() {
+
+		// Join
+		var plotJoin = _element.g.plotBrushes
+			.selectAll('.plot-brush')
+			.data((_brush.enabled())? _series : [], function(d) { return d.key; });
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g').attr('class', 'plot plot-brush');
+
+		var lineEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate)
+			.attr('d', function(series) {
+				return _line.y(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		areaEnter.merge(areaUpdate)
+			.attr('d', function(series) {
+				return _area
+					.y0(_scale.y.range()[0])
+					.y1(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+
+	}
 
 	function updateMarkers() {
 
@@ -482,6 +595,7 @@ export default function timeline() {
 
 		// Add the defs and add the clip path definition
 		var defs = _element.svg.append('defs');
+		_element.plotBrushClipPath = defs.append('clipPath').attr('id', 'plotBrush_' + _id).append('rect');
 		_element.plotClipPath = defs.append('clipPath').attr('id', 'plot_' + _id).append('rect');
 		_element.markerClipPath = defs.append('clipPath').attr('id', 'marker_' + _id).append('rect');
 
@@ -496,6 +610,11 @@ export default function timeline() {
 		// Append the path group (which will have the clip path and the line path
 		_element.g.plots = _element.g.container.append('g').attr('class', 'plots');
 		_element.g.plots.attr('clip-path', 'url(#plot_' + _id + ')');
+
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plotBrushes = _element.g.container.append('g').attr('class', 'plot-brushes');
+		_element.g.plotBrushes.attr('clip-path', 'url(#plotBrush_' + _id + ')');
+		_element.g.plotBrushHandles = _element.g.container.append('g').attr('class', 'plot-brush-handles');
 
 		// Append groups for the axes
 		_element.g.axes = _element.g.container.append('g').attr('class', 'axis');
@@ -514,8 +633,6 @@ export default function timeline() {
 
 		// Add the brush element
 		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
-		_element.g.brush.attr('clip-path', 'url(#marker_' + _id + ')');
-
 
 		_instance.resize();
 
@@ -576,9 +693,15 @@ export default function timeline() {
 		 * Resize clip paths
 		 */
 
+		// Plot Brush clip path is only the plot pane
+		_element.plotBrushClipPath
+			.attr('transform', 'translate(-1, -1)')
+			.attr('width', Math.max(0, _scale.x.range()[1]) + 2)
+			.attr('height', Math.max(0, _scale.y.range()[0]) + 2);
+
 		// Plot clip path is only the plot pane
 		_element.plotClipPath
-			.attr('transform', 'translate(0, -1)')
+			.attr('transform', 'translate(-1, -1)')
 			.attr('width', Math.max(0, _scale.x.range()[1]) + 2)
 			.attr('height', Math.max(0, _scale.y.range()[0]) + 2);
 
@@ -658,7 +781,8 @@ export default function timeline() {
 
 		// Update the plot elements
 		updateAxes();
-		updateLine();
+		updatePlots();
+		updatePlotBrushes();
 		updateMarkers();
 		updateBrush(brushSelection);
 

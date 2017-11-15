@@ -178,6 +178,9 @@ gulp.task('run-tests', () => {
 
 gulp.task('build', (done) => { runSequence('validate-js', [ 'build-css', 'build-tests', 'build-js' ], done); } );
 gulp.task('test', (done) => { runSequence('build', 'run-tests', done); } );
+gulp.task('watch', [ 'build' ], () => {
+	return gulp.watch('src/**/*', [ 'build' ]);
+});
 
 // Default task builds and tests
 gulp.task('default', [ 'test' ]);
