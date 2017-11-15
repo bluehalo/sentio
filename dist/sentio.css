@@ -65,8 +65,6 @@
   stroke-width: 1px; }
   .sentio.timeline .resize-handle .handle-grip {
     fill: #efefef; }
-  .sentio.timeline .resize-handle .handle-line {
-    shape-rendering: crispEdges; }
 
 .sentio.bars-vertical {
   position: relative; }
