@@ -3,7 +3,7 @@
 	"artifactName": "sentio",
 	"moduleName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "4.1.1",
+	"version": "5.0.0-alpha.14",
 	"author": "Asymmetrik, Ltd.",
 	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
 	"license": "UNLICENSED",
@@ -22,16 +22,16 @@
 	},
 
 	"devDependencies": {
-		"d3": "4.10",
-		"@types/d3": "4.10",
+		"d3": "4.11",
+		"@types/d3": "4.11",
 
-		"rollup": "0.49",
+		"rollup": "0.51",
 
 		"mocha": "3.5",
-		"should": "13.0",
+		"should": "13.1",
 
 		"gulp": "3.9",
-		"gulp-clean-css": "3.8",
+		"gulp-clean-css": "3.9",
 		"gulp-concat": "2.6",
 		"gulp-eslint": "4.0",
 		"gulp-filter": "5.0",
@@ -43,7 +43,8 @@
 		"gulp-sass-lint": "1.3",
 		"gulp-sourcemaps": "2.6",
 		"gulp-uglify": "3.0",
-		"run-sequence": "2.1",
-		"node-sass": "4.5"
+		"gulp-util": "3.0",
+		"run-sequence": "2.2",
+		"node-sass": "4.6"
 	}
 }

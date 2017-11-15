@@ -1,9 +1,9 @@
-/*! @asymmetrik/sentio - 4.1.1 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.14 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3')) :
-	typeof define === 'function' && define.amd ? define(['exports', 'd3'], factory) :
-	(factory((global.sentio = {}),global.d3));
-}(this, (function (exports,d3) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
+	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
+	(factory((global.sentio = {}),global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3,global.d3));
+}(this, (function (exports,d3Dispatch,d3Interpolate,d3Scale,d3Shape,d3Axis,d3Brush,d3Voronoi,d3Selection) { 'use strict';
 
 function donut() {
 
@@ -30,7 +30,7 @@ function donut() {
 	};
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+	var _dispatch = d3Dispatch.dispatch('mouseover', 'mouseout', 'click');
 
 	// Function handlers
 	var _fn = {
@@ -77,12 +77,12 @@ function donut() {
 
 
 	var _scale = {
-		color: d3.scaleOrdinal(d3.schemeCategory10)
+		color: d3Scale.scaleOrdinal(d3Scale.schemeCategory10)
 	};
 
 	var _layout = {
-		arc: d3.arc().padAngle(0.01),
-		pie: d3.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
+		arc: d3Shape.arc().padAngle(0.01),
+		pie: d3Shape.pie().value(function(d, i) { return _fn.value(d, i); }).sort(null)
 	};
 
 	// elements
@@ -124,7 +124,7 @@ function donut() {
 	 * Set the _instance data
 	 */
 	_instance.data = function(v) {
-		if(!arguments.length) { return _data; }
+		if (!arguments.length) { return _data; }
 		_data = (null != v)? v : [];
 		return _instance;
 	};
@@ -200,7 +200,7 @@ function donut() {
 		var gEnterUpdate = gEnter.merge(g);
 		gEnterUpdate.transition().duration(_duration)
 			.attrTween('d', function(d) {
-				var interpolate$$1 = d3.interpolate(this._current, d);
+				var interpolate$$1 = d3Interpolate.interpolate(this._current, d);
 				this._current = interpolate$$1(0);
 				return function(t) {
 					return _layout.arc(interpolate$$1(t));
@@ -226,7 +226,7 @@ function donut() {
 			var centerX = _margin.left + _radius;
 			var centerY = _margin.top + _radius;
 			var legendWidth = (null == _element.gLegend._maxWidth)? 0 : _element.gLegend._maxWidth;
-			var legendHeight = entrySpan*_data.length + _legend.markMargin;
+			var legendHeight = entrySpan * _data.length + _legend.markMargin;
 
 			var offsetX = legendWidth/2;
 			var offsetY = legendHeight/2;
@@ -557,31 +557,34 @@ function extent(config) {
 
 function multiExtent(config) {
 
-	/**
-	 * Private variables
-	 */
-
-	var _fn = {
-		values: function(d) { return d.values; }
-	};
-
 	var _extent = extent();
-
-	/**
-	 * Private Functions
-	 */
+	var _series = [];
 
 	function setExtent(v) {
 		_extent = v;
 	}
 
+	function setSeries(v) {
+		_series = v;
+	}
+
+
 	/*
 	 * Constructor/initialization method
 	 */
 	function _instance(config) {
-		if(null != config && null != config.extent) {
-			setExtent(config.extent);
+
+		if (null != config) {
+
+			if (null != config.extent) {
+				setExtent(config.extent);
+			}
+
+			if (null != config.series) {
+				setSeries(config.series);
+			}
 		}
+
 	}
 
 
@@ -598,14 +601,16 @@ function multiExtent(config) {
 		return _instance;
 	};
 
+
 	/*
 	 * Get/Set the values accessor function
 	 */
-	_instance.values = function(v) {
-		if(!arguments.length) { return _fn.values; }
-		_fn.values = v;
+	_instance.series = function(v) {
+		if(!arguments.length) { return _series; }
+		_series = v;
 		return _instance;
 	};
+
 
 	/*
 	 * Calculate the extent given some data.
@@ -615,11 +620,20 @@ function multiExtent(config) {
 	_instance.getExtent = function(data) {
 		var toReturn;
 
-		data.forEach(function(e, i) {
-			var tExtent = _extent.getExtent(_fn.values(e, i));
-			if(null == toReturn) {
+		// Iterate over each series
+		_series.forEach(function(s) {
+
+			// Update the extent to set the value getter
+			_extent.getValue(s.getValue);
+
+			// Get the extent of the current series
+			var tExtent = _extent.getExtent(data);
+
+			// If it's null, use the new extent
+			if (null == toReturn) {
 				toReturn = tExtent;
 			}
+			// Otherwise combine the extents
 			else {
 				toReturn[0] = Math.min(toReturn[0], tExtent[0]);
 				toReturn[1] = Math.max(toReturn[1], tExtent[1]);
@@ -642,77 +656,59 @@ function multiExtent(config) {
 
 function matrix() {
 
-	// Chart dimensions
+	/**
+	 * Style stuff
+	 */
+
+	// Cell dimensions
 	var _cellSize = 16;
 	var _cellMargin = 1;
+
+	// Margin between plot and svg borders
 	var _margin = { top: 20, right: 2, bottom: 2, left: 64 };
 
 	// Transition duration
 	var _duration = 500;
 
-	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('cellMouseover', 'cellMouseout', 'cellClick', 'rowMouseover', 'rowMouseout', 'rowClick');
 
-	// Function handlers
+	/**
+	 * Configuration of accessors to data
+	 */
+
+	// Various configuration functions
 	var _fn = {
-		updateActiveSeries: function(d, i) {
-			var seriesLabels = _element.g.chart.selectAll('.row text');
-
-			if(null != d) {
-				// Set the highlight on the row
-				var seriesKey = _fn.seriesKey(d, i);
-				seriesLabels.classed('active', function(series, ii) { return _fn.seriesKey(series, ii) == seriesKey; });
-			}
-			else {
-				// Now update the style
-				seriesLabels.classed('active', false);
-			}
-		},
-		rowMouseover: function(d, i) {
-			_fn.updateActiveSeries(d, i);
-			_dispatch.call('rowMouseover', this, d, i);
-		},
-		rowMouseout: function(d, i) {
-			_fn.updateActiveSeries();
-			_dispatch.call('rowMouseout', this, d, i);
-		},
-		rowClick: function(d, i) {
-			_dispatch.call('rowClick', this, d, i);
-		},
-		cellMouseover: function(d, i) {
-			_dispatch.call('cellMouseover', this, d, i);
-		},
-		cellMouseout: function(d, i) {
-			_dispatch.call('cellMouseout', this, d, i);
-		},
-		cellClick: function(d, i) {
-			_dispatch.call('cellClick', this, d, i);
-		},
-		seriesKey: function(d) { return d.key; },
-		seriesLabel: function(d) { return d.label; },
-		seriesValues: function(d) { return d.values; },
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; }
 	};
 
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
+
 	// Extents
 	var _extent = {
 		x: extent().getValue(function(d, i) { return _fn.key(d, i); }),
-		value: extent().getValue(function(d, i) { return _fn.value(d, i); }),
+		value: extent(),
 		multi: multiExtent()
 	};
 
 	// Scales for x, y, and color
 	var _scale = {
-		x: d3.scaleLinear(),
-		y: d3.scaleOrdinal(),
-		color: d3.scaleLinear().range([ '#e7e7e7', '#008500' ])
+		x: d3Scale.scaleLinear(),
+		y: d3Scale.scaleOrdinal(),
+		color: d3Scale.scaleLinear().range([ '#e7e7e7', '#008500' ])
 	};
 
+	// X axis
 	var _axis = {
-		x: d3.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
+		x: d3Axis.axisTop().scale(_scale.x).tickSizeOuter(0).tickSizeInner(2)
 	};
 
+
+	/**
+	 * Common DOM elements
+	 */
 	var _element = {
 		div: undefined,
 		svg: undefined,
@@ -722,11 +718,71 @@ function matrix() {
 		}
 	};
 
+	/**
+	 * Data and Series
+	 */
+
+	// The main data array
 	var _data = [];
+
+	// The series definition
+	var _series = [];
+
+
+	/**
+	 * Events
+	 */
+
+	// d3 dispatcher for handling events
+	var _dispatch = d3Dispatch.dispatch(
+		'cellMouseover', 'cellMouseout', 'cellClick',
+		'rowMouseover', 'rowMouseout', 'rowClick');
+
+	function updateActiveSeries(d, i) {
+		var seriesLabels = _element.g.chart.selectAll('.row text');
+
+		if(null != d) {
+			// Set the highlight on the row
+			var seriesKey = d.key;
+			seriesLabels.classed('active', function(series) { return series.key == seriesKey; });
+		}
+		else {
+			// Now update the style
+			seriesLabels.classed('active', false);
+		}
+	}
+
+	function rowMouseover(d, i) {
+		updateActiveSeries(d, i);
+		_dispatch.call('rowMouseover', this, d, i);
+	}
+
+	function rowMouseout(d, i) {
+		updateActiveSeries();
+		_dispatch.call('rowMouseout', this, d, i);
+	}
+
+	function rowClick(d, i) {
+		_dispatch.call('rowClick', this, d, i);
+	}
+
+	function cellMouseover(d, i) {
+		_dispatch.call('cellMouseover', this, d, i);
+	}
+
+	function cellMouseout(d, i) {
+		_dispatch.call('cellMouseout', this, d, i);
+	}
+
+	function cellClick(d, i) {
+		_dispatch.call('cellClick', this, d, i);
+	}
+
 
 	var _instance = function () {};
 
 	_instance.init = function(d3Container) {
+
 		// Add the svg element
 		_element.div = d3Container.append('div').attr('class', 'sentio matrix');
 		_element.svg = _element.div.append('svg');
@@ -737,38 +793,24 @@ function matrix() {
 		// Add a group for the chart itself
 		_element.g.chart = _element.svg.append('g').attr('class', 'chart');
 
-		_instance.resize();
-
 		return _instance;
-	};
 
-	_instance.data = function(v) {
-		if(!arguments.length) {
-			return _data;
-		}
-		_data = (null != v)? v : [];
-		return _instance;
 	};
 
 	_instance.resize = function() { };
 
 	_instance.redraw = function() {
-		// Determine the number of rows to render
-		var rowCount = _data.length;
 
-		// Determine the number of boxes to render (assume complete data)
-		var boxes = [];
-		if(rowCount > 0) {
-			boxes = _fn.seriesValues(_data[0]);
-		}
-		var boxCount = boxes.length;
+		// Determine the number of rows/boxes to render
+		var rowCount = _series.length;
+		var boxCount = _data.length;
 
 		// Dimensions of the visualization
 		var cellSpan = _cellMargin + _cellSize;
 
 		// calculate the width/height of the svg
-		var width = boxCount*cellSpan + _cellMargin,
-			height = rowCount*cellSpan + _cellMargin;
+		var width = boxCount * cellSpan + _cellMargin,
+			height = rowCount * cellSpan + _cellMargin;
 
 		// scale the svg to the right size
 		_element.svg
@@ -776,16 +818,17 @@ function matrix() {
 			.attr('height', height + _margin.top + _margin.bottom);
 
 		// Configure the scales
-		_scale.x.domain(_extent.x.getExtent(boxes)).range([ 0, width - _cellMargin - cellSpan ]);
-		_scale.color.domain(
-			_extent.multi
-				.values(_fn.seriesValues)
-				.extent(_extent.value)
-				.getExtent(_data));
+		_scale.x
+			.domain(_extent.x.getExtent(_data))
+			.range([ 0, width - _cellMargin - cellSpan ]);
+
+		_scale.color
+			.domain(_extent.multi.extent(_extent.value).series(_series).getExtent(_data));
 
 		// Draw the x axis
-		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize/2) + "," + _margin.top + ")");
+		_element.g.xAxis.attr('transform', 'translate(' + (_margin.left + _cellMargin + _cellSize / 2) + "," + _margin.top + ")");
 		_element.g.xAxis.call(_axis.x);
+
 
 		/**
 		 * Chart Manipulation
@@ -794,7 +837,9 @@ function matrix() {
 		/*
 		 * Row Join
 		 */
-		var row = _element.g.chart.selectAll('g.row').data(_data, _fn.seriesKey);
+		var row = _element.g.chart
+			.selectAll('g.row')
+			.data(_series, function(d) { return d.key; });
 
 		/*
 		 * Row Update Only
@@ -808,17 +853,17 @@ function matrix() {
 		rowEnter
 			.style('opacity', '0.1')
 			.attr('class', 'row')
-			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')'; })
-			.on('mouseover', _fn.rowMouseover)
-			.on('mouseout', _fn.rowMouseout)
-			.on('click', _fn.rowClick);
+			.attr('transform', function(d, i) { return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')'; })
+			.on('mouseover', rowMouseover)
+			.on('mouseout', rowMouseout)
+			.on('click', rowClick);
 
 		// Also must append the label of the row
 		rowEnter.append('text')
 			.attr('class', 'series label')
 			.style('text-anchor', 'end')
 			.attr('x', -6)
-			.attr('y', _cellMargin + (_cellSize/2))
+			.attr('y', _cellMargin + (_cellSize / 2))
 			.attr('dy', '.32em');
 
 		// Also must append a line
@@ -826,23 +871,24 @@ function matrix() {
 			.attr('class', 'series tick')
 			.attr('x1', -3)
 			.attr('x2', 0)
-			.attr('y1', _cellMargin + (_cellSize/2))
-			.attr('y2', _cellMargin + (_cellSize/2));
+			.attr('y1', _cellMargin + (_cellSize / 2))
+			.attr('y2', _cellMargin + (_cellSize / 2));
 
 		/*
 		 * Row Enter + Update
 		 */
+
 		// Transition rows to their new positions
 		var rowEnterUpdate = rowEnter.merge(row);
 		rowEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
 			.attr('transform', function(d, i) {
-				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan*i)) + ')';
+				return 'translate(' + _margin.left + ',' + (_margin.top + (cellSpan * i)) + ')';
 			});
 
 		// Update the series labels in case they changed
 		rowEnterUpdate.select('text.series.label')
-			.text(_fn.seriesLabel);
+			.text(function(d) { return d.label; });
 
 		/*
 		 * Row Exit
@@ -856,8 +902,13 @@ function matrix() {
 		/*
 		 * Cell Join - Will be done on row enter + exit
 		 */
-		var rowCell = rowEnterUpdate.selectAll('rect.cell')
-			.data(_fn.seriesValues, _fn.key);
+		var rowCell = rowEnterUpdate
+			.selectAll('rect.cell')
+			.data(function(s) {
+				return _data.map((function(d, i) {
+					return { key: _fn.key(d, i), value: s.getValue(d, i) };
+				}));
+			}, _fn.key);
 
 		/*
 		 * Cell Update Only
@@ -869,14 +920,14 @@ function matrix() {
 		var rowCellEnter = rowCell.enter().append('rect')
 			.attr('class', 'cell')
 			.style('opacity', '0.1')
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); })
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); })
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
 			.attr('y', _cellMargin)
 			.attr('height', _cellSize)
 			.attr('width', _cellSize)
-			.on('mouseover', _fn.cellMouseover)
-			.on('mouseout', _fn.cellMouseout)
-			.on('click', _fn.cellClick);
+			.on('mouseover', cellMouseover)
+			.on('mouseout', cellMouseout)
+			.on('click', cellClick);
 
 		/*
 		 * Cell Enter + Update
@@ -885,8 +936,8 @@ function matrix() {
 		var rowCellEnterUpdate = rowCellEnter.merge(rowCell);
 		rowCellEnterUpdate.transition().duration(_duration)
 			.style('opacity', '1')
-			.attr('x', function(d, i) { return _scale.x(_fn.key(d, i)) + _cellMargin; })
-			.style('fill', function(d, i) { return _scale.color(_fn.value(d, i)); });
+			.attr('x', function(d, i) { return _scale.x(d.key) + _cellMargin; })
+			.style('fill', function(d, i) { return _scale.color(d.value); });
 
 		/*
 		 * Cell Remove
@@ -899,6 +950,22 @@ function matrix() {
 		return _instance;
 	};
 
+
+	_instance.data = function(v) {
+		if (!arguments.length) {
+			return _data;
+		}
+		_data = (null != v)? v : [];
+		return _instance;
+	};
+
+	_instance.series = function(v) {
+		if (!arguments.length) {
+			return _series;
+		}
+		_series = (null != v)? v : [];
+		return _instance;
+	};
 
 	_instance.cellSize = function(v) {
 		if(!arguments.length) { return _cellSize; }
@@ -922,29 +989,9 @@ function matrix() {
 		return _instance;
 	};
 
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
 		_fn.key = v;
-		return _instance;
-	};
-	_instance.value = function(v) {
-		if(!arguments.length) { return _fn.value; }
-		_fn.value = v;
 		return _instance;
 	};
 
@@ -974,7 +1021,6 @@ function matrix() {
 	_instance.valueExtent = function(v) {
 		if(!arguments.length) { return _extent.value; }
 		_extent.value = v;
-		_extent.value.getValue(function(d, i) { return v(d, i); });
 		return _instance;
 	};
 
@@ -998,7 +1044,7 @@ function timelineBrush(config) {
 	var _scale;
 
 	// Event dispatcher
-	var _dispatch = d3.dispatch('brush', 'start', 'end');
+	var _dispatch = d3Dispatch.dispatch('brush', 'start', 'end');
 
 	// The current state of the brush selection
 	var _selection = undefined;
@@ -1058,7 +1104,7 @@ function timelineBrush(config) {
 	function eventFilter(eventType) {
 		return function(args) {
 
-			var n = (null != d3.event.selection)? convertSelection(d3.event.selection.map(_scale.invert)) : undefined;
+			var n = (null != d3Selection.event.selection)? convertSelection(d3Selection.event.selection.map(_scale.invert)) : undefined;
 			var o = _selection;
 
 			// Fire the event if the extents are different
@@ -1085,7 +1131,7 @@ function timelineBrush(config) {
 		var selection = undefined;
 
 		if(_enabled && null != node && null != _scale) {
-			selection = d3.brushSelection(node);
+			selection = d3Brush.brushSelection(node);
 
 			if (null != selection && Array.isArray(selection)) {
 				selection = convertSelection(selection.map(_scale.invert));
@@ -1167,6 +1213,10 @@ function timelineBrush(config) {
 		return _instance;
 	};
 
+	_instance.getBrushSelection = function(node) {
+		return d3Brush.brushSelection(node);
+	};
+
 	_instance.getSelection = function(node) {
 		return getSelection(node);
 	};
@@ -1181,9 +1231,19 @@ function timelineBrush(config) {
 	return _instance;
 }
 
+/**
+ *
+ *  data: []
+ *  series: [ {label, x, y} ]
+ *
+ */
 function timeline() {
 
 	var _id = 'timeline_line_' + Date.now();
+
+	/**
+	 * Style stuff
+	 */
 
 	// Margin between the main plot group and the svg border
 	var _margin = { top: 10, right: 10, bottom: 20, left: 40 };
@@ -1191,85 +1251,258 @@ function timeline() {
 	// Height and width of the SVG element
 	var _height = 100, _width = 600;
 
+	// Render the grid?
+	var _displayOptions = {
+		xGrid: false,
+		yGrid: false,
+		pointEvents: false // value, values, series, custom (falsey is off)
+	};
+
+
+	/**
+	 * Configuration of accessors to data
+	 */
+
+	// Various configuration functions
 	var _fn = {
 		valueX: function(d) { return d[0]; },
-		valueY: function(d) { return d[1]; },
 
 		markerValueX: function(d) { return d[0]; },
 		markerLabel: function(d) { return d[1]; },
 
-		seriesKey: function(d) { return d.key; },
-		seriesValues: function(d) { return d.values; },
-		seriesLabel: function(d) { return d.label; }
+		pointRadius: function() { return 2; }
 	};
+
+
+	/**
+	 * Extents, Axes, and Scales
+	 */
 
 	// Extent configuration for x and y dimensions of plot
 	var now = Date.now();
 	var _extent = {
 		x: extent({
-			defaultValue: [ now - 60000*5, now ],
+			defaultValue: [ now - 60000 * 5, now ],
 			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
-		y: extent({
-			getValue: function(d, i) { return _fn.valueY(d, i); }
-		})
+		y: extent()
 	};
-	var _multiExtent = multiExtent().values(function(d, i) { return _fn.seriesValues(d, i); });
+	var _multiExtent = multiExtent();
+
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.scaleTime(),
-		y: d3.scaleLinear()
+		x: d3Scale.scaleTime(),
+		y: d3Scale.scaleLinear()
 	};
 
 	// Default Axis definitions
 	var _axis = {
-		x: d3.axisBottom().scale(_scale.x),
-		y: d3.axisLeft().scale(_scale.y).ticks(3)
+		x: d3Axis.axisBottom().scale(_scale.x),
+		y: d3Axis.axisLeft().ticks(3).scale(_scale.y),
+
+		xGrid: d3Axis.axisBottom().tickFormat('').tickSizeOuter(0).scale(_scale.x),
+		yGrid: d3Axis.axisLeft().tickFormat('').tickSizeOuter(0).ticks(3).scale(_scale.y)
 	};
+
+
+	/**
+	 * Generators
+	 */
+
+	var _line = d3Shape.line()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	var _area = d3Shape.area()
+		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
+
+	// Voronoi that we'll use for hovers
+	var _voronoi = d3Voronoi.voronoi()
+		.x(function(d, i) {
+			return _scale.x(d.x, i);
+		})
+		.y(function(d, i) {
+			return _scale.y(d.y, i);
+		});
+
+
+	/**
+	 * Brush and Events
+	 */
+
+	// Brush Management
+	var _brush = timelineBrush({ brush: d3Brush.brushX(), scale: _scale.x });
+	_brush.dispatch()
+		.on('end', function() {
+			updateBrush();
+			_dispatch.call('brushEnd', this, getBrush());
+		})
+		.on('start', function() {
+			updateBrush();
+			_dispatch.call('brushStart', this, getBrush());
+		})
+		.on('brush', function() {
+			updateBrush();
+			_dispatch.call('brush', this, getBrush());
+		});
+
+	// The dispatch object and all events
+	var _dispatch = d3Dispatch.dispatch(
+		'brush', 'brushStart', 'brushEnd',
+		'markerClick', 'markerMouseover', 'markerMouseout',
+		'pointMouseover', 'pointMouseout', 'pointClick');
+
+
+	/**
+	 * Keep track of commonly access DOM elements
+	 */
 
 	// Storage for commonly used DOM elements
 	var _element = {
 		svg: undefined,
+
 		g: {
 			container: undefined,
 			plots: undefined,
+			plotBrushes: undefined,
+			points: undefined,
+			voronoi: undefined,
+
 			xAxis: undefined,
 			yAxis: undefined,
+			xAxisGrid: undefined,
+			yAxisGrid: undefined,
+
 			markers: undefined,
 			brush: undefined
 		},
+
 		plotClipPath: undefined,
+		plotBrushClipPath: undefined,
 		markerClipPath: undefined
 	};
 
-	// Line generator for the plot
-	var _line = d3.line();
-	_line.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_line.y(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
 
-	// Area generator for the plot
-	var _area = d3.area();
-	_area.x(function(d, i) {
-		return _scale.x(_fn.valueX(d, i));
-	});
-	_area.y1(function(d, i) {
-		return _scale.y(_fn.valueY(d, i));
-	});
+	/**
+	 * Data and Series and Markers
+	 */
+
+	// The main data array
+	var _data = [];
+
+	// The definition of the series to draw
+	var _series = [];
+
+	// Markers data
+	var _markers = [];
+
+	/**
+	 * Explodes the data into an array with one point per unique point
+	 * in the data (according to the series).
+	 *
+	 * I.e.,
+	 *
+	 * data: [{ x: 0, y1: 1, y2: 2}]
+	 * series: [
+	 *     { key: 's1', getValue: function(d) { return d.y1; } },
+	 *     { key: 's2', getValue: function(d) { return d.y2; } }
+	 * ]
+	 *
+	 * ==>
+	 *
+	 * [
+	 *     { x: 0, y: 1, series: { key: 's1', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 *     { x: 0, y: 2, series: { key: 's2', ... }, data: { x: 0, y1: 1, y2: 2 },
+	 * ]
+	 *
+	 * @param series
+	 * @param data
+	 */
+	function getVoronoiData(series, data, getXValue) {
+		var toReturn = [];
+
+		// Loop over each series
+		series.forEach(function(s, i) {
+
+			// Convert the data to x/y series
+			toReturn = toReturn.concat(data.map(function(d, ii) {
+				return {
+					x: getXValue(d, ii),
+					y: s.getValue(d, ii),
+					series: s,
+					data: d
+				};
+			}));
+
+		});
+
+		return toReturn;
+	}
+
+	function highlightValues(hovered) {
+		if (null != hovered) {
+
+			var join = _element.g.points.selectAll('circle')
+				.data(_series.map(function(d) {
+					return {
+						x: _fn.valueX(hovered.data),
+						y: d.getValue(hovered.data),
+						category: d.category
+					};
+				}));
+			var enter = join.enter().append('circle');
+			var update = join.selectAll('circle');
+
+			enter.merge(update)
+				.attr('class', function(d, i) { return d.category; })
+				.attr('cx', function(d, i) { return _scale.x(d.x); })
+				.attr('cy', function(d, i) { return _scale.y(d.y); })
+				.attr('r', 3);
+		}
+		else {
+			_element.g.points.selectAll('circle').remove();
+		}
+	}
+
+	function highlightValue(hovered) {}
+	function highlightSeries(hovered) {}
 
 
-	// Brush Management
-	var _brush = timelineBrush({ brush: d3.brushX(), scale: _scale.x });
-	_brush.dispatch()
-		.on('end', function() { _dispatch.call('filterend', this, getBrush()); })
-		.on('start', function() { _dispatch.call('filterstart', this, getBrush()); })
-		.on('brush', function() { _dispatch.call('filter', this, getBrush()); });
+	function onPointMouseover(d, i) {
 
+		var pointAction = _displayOptions.pointEvents;
+		if('value' === pointAction) {
+			highlightValue(d.data);
+		}
+		else if('values' === pointAction) {
+			highlightValues(d.data);
+		}
+		else if('series' === pointAction) {
+			highlightSeries(d.data);
+		}
 
+		_dispatch.call('pointMouseover', this, d.data, i);
+	}
+
+	function onPointMouseout(d, i) {
+
+		var pointAction = _displayOptions.pointEvents;
+		if('value' === pointAction) {
+			
+		}
+		else if('values' === pointAction) {
+			highlightValues();
+		}
+		else if('series' === pointAction) {
+			
+		}
+
+		_dispatch.call('pointMouseout', this, d.data, i);
+	}
+
+	function onPointClick(d, i) {
+		_dispatch.call('pointClick', this, d.data, i);
+	}
 
 	/**
 	 * Get the current brush state in terms of the x data domain, in ms epoch time
@@ -1284,6 +1517,23 @@ function timeline() {
 
 	}
 
+	function getBrushSelection() {
+
+		// Try to get the node from the brush group selection
+		var node = (null != _element.g.brush)? _element.g.brush.node() : null;
+
+		// Get the current brush selection
+		return _brush.getBrushSelection(node);
+
+	}
+
+	function getBrushHandlePath(d) {
+		var w = 8, h = 12, ch = 4;
+		var y = (_scale.y.range()[0] / 2) + (h / 2);
+
+		return 'M' + (w / 2) + ' ' + y + ' c 0 ' + ch + ', ' + (-w) + ' ' + ch + ', ' + (-w) + ' 0 v0 ' + (-h) + ' c 0 ' + (-ch) + ', ' + w + ' ' + (-ch) + ', ' + w + ' 0 Z M0' + ' ' + y + ' v' + (-h);
+	}
+
 	/**
 	 * Set the current brush state in terms of the x data domain
 	 * @param v The new value of the brush
@@ -1292,6 +1542,7 @@ function timeline() {
 	function setBrush(v) {
 		_brush.setSelection(_element.g.brush, v);
 	}
+
 
 	/**
 	 * Update the state of the brush (as part of redrawing everything)
@@ -1302,7 +1553,7 @@ function timeline() {
 	 * we are only updating the drawn position of the brush, so the brushSelection doesn't
 	 * actually change. However, if the change results in the brush extending partially or
 	 * wholly outside of the x extent, we might have to clip or clear the brush, which will
-	 * result in filter change events being propagated.
+	 * result in brush change events being propagated.
 	 *
 	 * @param previousExtent The previous state of the brush extent. Must be provided to
 	 *        accurately determine the extent of the brush in terms of the x data domain
@@ -1313,7 +1564,7 @@ function timeline() {
 		if (null != previousExtent) {
 
 			// Derive the overall plot extent from the collection of series
-			var plotExtent = _multiExtent.extent(_extent.x).getExtent(_data);
+			var plotExtent = _extent.x.getExtent(_data);
 
 			if(null != plotExtent && Array.isArray(plotExtent) && plotExtent.length == 2) {
 
@@ -1323,7 +1574,7 @@ function timeline() {
 
 			}
 			else {
-				// There is no plot/data so just clear the filter
+				// There is no plot/data so just clear the brush
 				setBrush(undefined);
 			}
 		}
@@ -1331,180 +1582,169 @@ function timeline() {
 		_element.g.brush
 			.style('display', (_brush.enabled())? 'unset' : 'none')
 			.call(_brush.brush());
+
+
+		/*
+		 * Update the clip path for the brush plot
+		 */
+		var brushExtent = getBrushSelection();
+		if (null != brushExtent) {
+
+			var height = _scale.y.range()[0];
+
+			// Update the brush clip path
+			_element.plotBrushClipPath
+				.attr('transform', 'translate(' + brushExtent[0] + ', -1)')
+				.attr('width', Math.max(0, brushExtent[1] - brushExtent[0]))
+				.attr('height', Math.max(0, height) + 2);
+
+			// Create/Update the handles
+			var handleJoin = _element.g.brush
+				.selectAll('.handle-grip').data([ { type: 'w' }, { type: 'e' } ]);
+
+			var handleEnter = handleJoin.enter().append('g')
+				.attr('class', 'handle-grip')
+				.attr('cursor', 'ew-resize');
+
+			handleEnter
+				.append('path')
+				.attr('d', 'M0 ' + height + ' v' + (-height));
+
+			handleEnter
+				.append('path')
+				.attr('d', getBrushHandlePath);
+
+			handleEnter.merge(handleJoin)
+				.attr('transform', function(d, i) { return 'translate(' + brushExtent[i] + ', 0)'; });
+
+
+		}
+		else {
+
+			// Empty the clip path
+			_element.plotBrushClipPath
+				.attr('transform', 'translate(-1, -1)')
+				.attr('width', 0)
+				.attr('height', 0);
+
+			// Remove the handles
+			_element.g.brush.selectAll('.handle-grip')
+				.remove();
+
+		}
+
 	}
 
-
-	// The dispatch object and all events
-	var _dispatch = d3.dispatch('filter', 'filterstart', 'filterend', 'markerClick', 'markerMouseover', 'markerMouseout');
-
-	// The main data array
-	var _data = [];
-
-	// Markers data
-	var _markers = {
-		values: []
-	};
-
-	// Chart create/init method
-	function _instance() {}
-
-
-	/**
-	 * Initialize the chart (only called once). Performs all initial chart creation/setup
-	 *
-	 * @param container The container element to which to apply the chart
-	 * @returns {_instance} Instance of the chart
-	 */
-	_instance.init = function(container) {
-		// Create a container div
-		_element.div = container.append('div').attr('class', 'sentio timeline');
-
-		// Create the SVG element
-		_element.svg = _element.div.append('svg');
-
-		// Add the defs and add the clip path definition
-		_element.plotClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'plot_' + _id).append('rect');
-		_element.markerClipPath = _element.svg.append('defs').append('clipPath').attr('id', 'marker_' + _id).append('rect');
-
-		// Append a container for everything
-		_element.g.container = _element.svg.append('g');
-
-		// Append the path group (which will have the clip path and the line path
-		_element.g.plots = _element.g.container.append('g').attr('class', 'plots').attr('clip-path', 'url(#plot_' + _id + ')');
-
-		// Add the filter brush element
-		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append a group for the markers
-		_element.g.markers = _element.g.container.append('g').attr('class', 'markers').attr('clip-path', 'url(#marker_' + _id + ')');
-
-		// Append groups for the axes
-		_element.g.xAxis = _element.g.container.append('g').attr('class', 'x axis');
-		_element.g.yAxis = _element.g.container.append('g').attr('class', 'y axis');
-
-		_instance.resize();
-
-		return _instance;
-	};
-
-	/*
-	 * Set the _instance data
-	 */
-	_instance.data = function(v) {
-		if (!arguments.length) { return _data; }
-		_data = (null != v)? v : [];
-
-		return _instance;
-	};
-
-	/*
-	 * Set the markers data
-	 */
-	_instance.markers = function(v) {
-		if (!arguments.length) { return _markers.values; }
-		_markers.values = (null != v)? v : [];
-		return _instance;
-	};
-
-	/*
-	 * Updates all the elements that depend on the size of the various components
-	 */
-	_instance.resize = function() {
-
-		// Need to grab the brush extent before we change anything
-		var brushSelection$$1 = getBrush();
-
-		// Set up the scales
-		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
-		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
-
-		// Append the clip path
-		_element.plotClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-		_element.markerClipPath
-			.attr('transform', 'translate(0, -' + _margin.top + ')')
-			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
-			.attr('height', Math.max(0, _height - _margin.bottom));
-
-		// Now update the size of the svg pane
-		_element.svg.attr('width', _width).attr('height', _height);
-
-		// Update the positions of the axes
-		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
-		_element.g.yAxis.attr('class', 'y axis');
-
-		// update the margins on the main draw group
-		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
-
-		// Update the size of the brush
-		_element.g.brush
-			.selectAll('rect')
-			.attr('y', 0).attr('x', 0)
-			.attr('height', _width - _margin.left - _margin.right)
-			.attr('height', _height - _margin.top - _margin.bottom + 4);
-
-		_brush.brush()
-			.extent([ [ 0, 0 ], [ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ] ]);
-
-		updateBrush(brushSelection$$1);
-
-		return _instance;
-	};
-
-	/*
-	 * Redraw the graphic
-	 */
-	_instance.redraw = function() {
-
-		// Need to grab the brush extent before we change anything
-		var brushSelection$$1 = getBrush();
-
-		// Update the x domain (to the latest time window)
-		_scale.x.domain(_multiExtent.extent(_extent.x).getExtent(_data));
-
-		// Update the y domain (based on configuration and data)
-		_scale.y.domain(_multiExtent.extent(_extent.y).getExtent(_data));
-
-		// Update the plot elements
-		updateAxes();
-		updateLine();
-		updateMarkers();
-		updateBrush(brushSelection$$1);
-
-		return _instance;
-	};
 
 	function updateAxes() {
 		if (null != _axis.x) {
 			_element.g.xAxis.call(_axis.x);
 		}
+		if (null != _axis.xGrid && _displayOptions.xGrid) {
+			_element.g.xAxisGrid.call(_axis.xGrid);
+		}
 		if (null != _axis.y) {
 			_element.g.yAxis.call(_axis.y);
 		}
+		if (null != _axis.yGrid && _displayOptions.yGrid) {
+			_element.g.yAxisGrid.call(_axis.yGrid);
+		}
 	}
 
-	function updateLine() {
+
+	function updatePlots() {
 
 		// Join
 		var plotJoin = _element.g.plots
 			.selectAll('.plot')
-			.data(_data, _fn.seriesKey);
+			.data(_series, function(d) { return d.key; });
 
 		// Enter
-		var plotEnter = plotJoin.enter().append('g')
-			.attr('class', 'plot');
+		var plotEnter = plotJoin.enter().append('g').attr('class', 'plot');
 
-		var lineEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' line'; });
-		var areaEnter = plotEnter.append('g').append('path').attr('class', function(d) { return ((d.cssClass)? d.cssClass : '') + ' area'; });
+		var lineEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' area'; });
 
 		var lineUpdate = plotJoin.select('.line');
 		var areaUpdate = plotJoin.select('.area');
 
 		// Enter + Update
-		lineEnter.merge(lineUpdate).datum(_fn.seriesValues).attr('d', _line);
-		areaEnter.merge(areaUpdate).datum(_fn.seriesValues).attr('d', _area.y0(_scale.y.range()[0]));
+		lineEnter.merge(lineUpdate)
+			.attr('d', function(series) {
+				return _line.y(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		areaEnter.merge(areaUpdate)
+			.attr('d', function(series) {
+				return _area
+					.y0(_scale.y.range()[0])
+					.y1(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+
+		// Remove the previous voronoi
+		_element.g.voronoi.selectAll('path').remove();
+
+		if (_displayOptions.pointEvents) {
+
+			// check range against width
+			var extent$$1 = _scale.x.domain();
+			var voronoiData = getVoronoiData(_series, _data, _fn.valueX)
+				.filter(function(d) {
+					// Filter out points that are outside of the extent
+					return (extent$$1[0] <= d.x && d.x <= extent$$1[1]);
+				});
+
+			// Filter out paths that are null
+			voronoiData  = _voronoi.polygons(voronoiData)
+				.filter(function (d) { return (null != d); });
+
+			// Draw the voronoi overlay polygons
+			_element.g.voronoi.selectAll('path').data(voronoiData).enter().append('path')
+				.attr('d', function (d) { return (null != d) ? 'M' + d.join('L') + 'Z' : null; })
+				.on('mouseover', onPointMouseover)
+				.on('mouseout', onPointMouseout)
+				.on('click', onPointClick);
+
+		}
+
+		// Exit
+		var plotExit = plotJoin.exit();
+		plotExit.remove();
+	}
+
+	function updatePlotBrushes() {
+
+		// Join
+		var plotJoin = _element.g.plotBrushes
+			.selectAll('.plot-brush')
+			.data((_brush.enabled())? _series : [], function(d) { return d.key; });
+
+		// Enter
+		var plotEnter = plotJoin.enter().append('g').attr('class', 'plot plot-brush');
+
+		var lineEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' line'; });
+		var areaEnter = plotEnter.append('g').append('path')
+			.attr('class', function(d) { return ((d.category)? d.category : '') + ' area'; });
+
+		var lineUpdate = plotJoin.select('.line');
+		var areaUpdate = plotJoin.select('.area');
+
+		// Enter + Update
+		lineEnter.merge(lineUpdate)
+			.attr('d', function(series) {
+				return _line.y(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
+
+		areaEnter.merge(areaUpdate)
+			.attr('d', function(series) {
+				return _area
+					.y0(_scale.y.range()[0])
+					.y1(function (d, i) { return _scale.y(series.getValue(d, i)); })(_data);
+			});
 
 		// Exit
 		var plotExit = plotJoin.exit();
@@ -1517,7 +1757,7 @@ function timeline() {
 		// Join
 		var markerJoin = _element.g.markers
 			.selectAll('.marker')
-			.data(_markers.values, _fn.markerValueX);
+			.data(_markers, _fn.markerValueX);
 
 		// Enter
 		var markerEnter = markerJoin.enter().append('g')
@@ -1537,7 +1777,7 @@ function timeline() {
 			.attr('dy', '0em')
 			.attr('y', -3)
 			.attr('text-anchor', 'middle')
-			.text(_fn.markerValueLabel);
+			.text(_fn.markerLabel);
 
 		// Enter + Update
 		var lineUpdate = markerJoin.select('line');
@@ -1556,6 +1796,221 @@ function timeline() {
 	}
 
 
+	// Chart create/init method
+	function _instance() {}
+
+
+	/**
+	 * Initialize the chart (only called once). Performs all initial chart creation/setup
+	 *
+	 * @param container The container element to which to apply the chart
+	 * @returns {_instance} Instance of the chart
+	 */
+	_instance.init = function(container) {
+
+		// Create a container div
+		_element.div = container.append('div').attr('class', 'sentio timeline');
+
+		// Create the SVG element
+		_element.svg = _element.div.append('svg');
+
+		// Add the defs and add the clip path definition
+		var defs = _element.svg.append('defs');
+		_element.plotBrushClipPath = defs.append('clipPath').attr('id', 'plotBrush_' + _id).append('rect');
+		_element.plotClipPath = defs.append('clipPath').attr('id', 'plot_' + _id).append('rect');
+		_element.markerClipPath = defs.append('clipPath').attr('id', 'marker_' + _id).append('rect');
+
+		// Append a container for everything
+		_element.g.container = _element.svg.append('g');
+
+		// Append the grid
+		_element.g.grid = _element.g.container.append('g').attr('class', 'grid');
+		_element.g.xAxisGrid = _element.g.grid.append('g').attr('class', 'x');
+		_element.g.yAxisGrid = _element.g.grid.append('g').attr('class', 'y');
+
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plots = _element.g.container.append('g').attr('class', 'plots');
+		_element.g.plots.attr('clip-path', 'url(#plot_' + _id + ')');
+
+		// Append the path group (which will have the clip path and the line path
+		_element.g.plotBrushes = _element.g.container.append('g').attr('class', 'plot-brushes');
+		_element.g.plotBrushes.attr('clip-path', 'url(#plotBrush_' + _id + ')');
+		_element.g.plotBrushHandles = _element.g.container.append('g').attr('class', 'plot-brush-handles');
+
+		// Append groups for the axes
+		_element.g.axes = _element.g.container.append('g').attr('class', 'axis');
+		_element.g.xAxis = _element.g.axes.append('g').attr('class', 'x');
+		_element.g.yAxis = _element.g.axes.append('g').attr('class', 'y');
+
+		// Append a group for the voronoi and the points
+		_element.g.points = _element.g.container.append('g').attr('class', 'points');
+		_element.g.points.attr('clip-path', 'url(#marker_' + _id + ')');
+		_element.g.voronoi = _element.g.container.append('g').attr('class', 'voronoi');
+
+
+		// Append a group for the markers
+		_element.g.markers = _element.g.container.append('g').attr('class', 'markers');
+		_element.g.markers.attr('clip-path', 'url(#marker_' + _id + ')');
+
+		// Add the brush element
+		_element.g.brush = _element.g.container.append('g').attr('class', 'x brush');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+	/*
+	 * Set the data to drive the chart
+	 */
+	_instance.data = function(v) {
+		if (!arguments.length) { return _data; }
+		_data = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
+	 * Define the series to show on the chart
+	 */
+	_instance.series = function(v) {
+		if (!arguments.length) { return _series; }
+		_series = (null != v)? v : [];
+
+		return _instance;
+	};
+
+	/*
+	 * Set the markers data
+	 */
+	_instance.markers = function(v) {
+		if (!arguments.length) { return _markers; }
+		_markers = (null != v)? v : [];
+		return _instance;
+	};
+
+	/*
+	 * Updates all the elements that depend on the size of the various components
+	 */
+	_instance.resize = function() {
+
+		// Need to grab the brush extent before we change anything
+		var brushSelection$$1 = getBrush();
+
+
+		// Resize the SVG Pane
+		_element.svg.attr('width', _width).attr('height', _height);
+
+		// Update the margins on the main draw group
+		_element.g.container.attr('transform', 'translate(' + _margin.left + ',' + _margin.top + ')');
+
+
+		// Resize Scales
+		_scale.x.range([ 0, Math.max(0, _width - _margin.left - _margin.right) ]);
+		_scale.y.range([ Math.max(0, _height - _margin.top - _margin.bottom), 0 ]);
+
+
+		/**
+		 * Resize clip paths
+		 */
+
+		// Plot Brush clip path is only the plot pane
+		_element.plotBrushClipPath
+			.attr('transform', 'translate(-1, -1)')
+			.attr('width', Math.max(0, _scale.x.range()[1]) + 2)
+			.attr('height', Math.max(0, _scale.y.range()[0]) + 2);
+
+		// Plot clip path is only the plot pane
+		_element.plotClipPath
+			.attr('transform', 'translate(-1, -1)')
+			.attr('width', Math.max(0, _scale.x.range()[1]) + 2)
+			.attr('height', Math.max(0, _scale.y.range()[0]) + 2);
+
+		// Marker clip path includes top margin by default
+		_element.markerClipPath
+			.attr('transform', 'translate(0, -' + _margin.top + ')')
+			.attr('width', Math.max(0, _width - _margin.left - _margin.right))
+			.attr('height', Math.max(0, _height - _margin.bottom));
+
+		// Resize the clip extent of the plot
+		_voronoi.extent([
+			[ 0, 0 ],
+			[ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ]
+		]);
+
+
+		/**
+		 * Update axis and grids
+		 */
+
+		// Reset axis and grid positions
+		_element.g.xAxis.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
+		_element.g.xAxisGrid.attr('transform', 'translate(0,' + _scale.y.range()[0] + ')');
+
+
+		// Resize the x grid ticks
+		if (_displayOptions.xGrid) {
+			_axis.xGrid.tickSizeInner(-(_height - _margin.top - _margin.bottom));
+		}
+		else {
+			_axis.xGrid.tickSizeInner(0);
+		}
+
+		// Resize the y grid ticks
+		if (_displayOptions.yGrid) {
+			_axis.yGrid.tickSizeInner(-(_width - _margin.left - _margin.right));
+		}
+		else {
+			_axis.yGrid.tickSizeInner(0);
+		}
+
+
+		/**
+		 * Update the brush
+		 */
+
+		// Resize and position the brush g element
+		_element.g.brush.selectAll('rect')
+			.attr('y', -1).attr('x', 0)
+			.attr('width', _scale.x.range()[1])
+			.attr('height', _scale.y.range()[0] + 2);
+
+		// Resize the brush
+		_brush.brush()
+			.extent([ [ 0, 0 ], [ _scale.x.range()[1], _scale.y.range()[0] + 2 ] ]);
+
+		updateBrush(brushSelection$$1);
+
+
+		return _instance;
+	};
+
+
+	/*
+	 * Redraw the graphic
+	 */
+	_instance.redraw = function() {
+
+		// Need to grab the brush extent before we change anything
+		var brushSelection$$1 = getBrush();
+
+		// Update the x domain (to the latest time window)
+		_scale.x.domain(_extent.x.getExtent(_data));
+
+		// Update the y domain (based on configuration and data)
+		_scale.y.domain(_multiExtent.extent(_extent.y).series(_series).getExtent(_data));
+
+		// Update the plot elements
+		updateAxes();
+		updatePlots();
+		updatePlotBrushes();
+		updateMarkers();
+		updateBrush(brushSelection$$1);
+
+		return _instance;
+	};
+
+
 	// Basic Getters/Setters
 	_instance.width = function(v) {
 		if (!arguments.length) { return _width; }
@@ -1572,15 +2027,41 @@ function timeline() {
 		_margin = v;
 		return _instance;
 	};
+	_instance.showXGrid = function(v) {
+		if (!arguments.length) { return _displayOptions.xGrid; }
+		_displayOptions.xGrid = v;
+		return _instance;
+	};
+	_instance.showYGrid = function(v) {
+		if (!arguments.length) { return _displayOptions.yGrid; }
+		_displayOptions.yGrid = v;
+		return _instance;
+	};
+	_instance.showGrid = function(v) {
+		_displayOptions.xGrid = _displayOptions.yGrid = v;
+		return _instance;
+	};
+	_instance.pointEvents = function(v) {
+		if (!arguments.length) { return _displayOptions.pointEvents; }
+		_displayOptions.pointEvents = v;
+		return _instance;
+	};
+
 	_instance.curve = function(v) {
 		if (!arguments.length) { return _line.curve(); }
 		_line.curve(v);
 		_area.curve(v);
 		return _instance;
 	};
+
 	_instance.xAxis = function(v) {
 		if (!arguments.length) { return _axis.x; }
 		_axis.x = v;
+		return _instance;
+	};
+	_instance.xGridAxis = function(v) {
+		if (!arguments.length) { return _axis.xGrid; }
+		_axis.xGrid = v;
 		return _instance;
 	};
 	_instance.yAxis = function(v) {
@@ -1588,11 +2069,19 @@ function timeline() {
 		_axis.y = v;
 		return _instance;
 	};
+	_instance.yGridAxis = function(v) {
+		if (!arguments.length) { return _axis.yGrid; }
+		_axis.yGrid = v;
+		return _instance;
+	};
 	_instance.xScale = function(v) {
 		if (!arguments.length) { return _scale.x; }
 		_scale.x = v;
 		if (null != _axis.x) {
 			_axis.x.scale(v);
+		}
+		if (null != _axis.xGrid) {
+			_axis.xGrid.scale(v);
 		}
 		if (null != _brush) {
 			_brush.scale(v);
@@ -1605,16 +2094,14 @@ function timeline() {
 		if (null != _axis.y) {
 			_axis.y.scale(v);
 		}
+		if (null != _axis.yGrid) {
+			_axis.yGrid.scale(v);
+		}
 		return _instance;
 	};
 	_instance.xValue = function(v) {
 		if (!arguments.length) { return _fn.valueX; }
 		_fn.valueX = v;
-		return _instance;
-	};
-	_instance.yValue = function(v) {
-		if (!arguments.length) { return _fn.valueY; }
-		_fn.valueY = v;
 		return _instance;
 	};
 	_instance.yExtent = function(v) {
@@ -1627,46 +2114,457 @@ function timeline() {
 		_extent.x = v;
 		return _instance;
 	};
-	_instance.seriesKey = function(v) {
-		if(!arguments.length) { return _fn.seriesKey; }
-		_fn.seriesKey = v;
-		return _instance;
-	};
-	_instance.seriesLabel = function(v) {
-		if(!arguments.length) { return _fn.seriesLabel; }
-		_fn.seriesLabel = v;
-		return _instance;
-	};
-	_instance.seriesValues = function(v) {
-		if(!arguments.length) { return _fn.seriesValues; }
-		_fn.seriesValues = v;
-		return _instance;
-	};
+
 	_instance.markerXValue = function(v) {
 		if (!arguments.length) { return _fn.markerValueX; }
 		_fn.markerValueX = v;
 		return _instance;
 	};
 	_instance.markerLabel = function(v) {
-		if (!arguments.length) { return _fn.markerValueLabel; }
-		_fn.markerValueLabel = v;
+		if (!arguments.length) { return _fn.markerLabel; }
+		_fn.markerLabel = v;
 		return _instance;
 	};
+
 	_instance.dispatch = function(v) {
 		if (!arguments.length) { return _dispatch; }
 		return _instance;
 	};
-	_instance.filter = function(v) {
+
+	_instance.brush = function(v) {
 		if (!arguments.length) { return _brush.enabled(); }
 		_brush.enabled(v);
 		return _instance;
 	};
-	_instance.setFilter = function(v) {
+	_instance.setBrush = function(v) {
 		setBrush(v);
 		return _instance;
 	};
-	_instance.getFilter = function() {
+	_instance.getBrush = function() {
 		return getBrush();
+	};
+
+	return _instance;
+}
+
+function autoBrushTimeline() {
+
+	var _id = 'autobrush_timeline_' + Date.now();
+
+	/**
+	 * Auto brush configuration
+	 */
+	var _now = Date.now();
+
+	var _config = {
+		edgeTrigger: 0.01,
+		zoomInTrigger: 0.05,
+		zoomOutTrigger: 0.8,
+		zoomTarget: 0.2
+	};
+
+	var _minExtent = 24 * 60 * 60 * 1000;
+	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
+
+	var _minBrush = 60 * 60 * 1000;
+	var _maxBrush = undefined;
+	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
+
+	var _brush;
+	var _dispatch = d3Dispatch.dispatch('extentChange', 'brushChange');
+
+
+	/**
+	 * Set up the timeline instance
+	 */
+
+	var _instance = timeline();
+
+	// Turn on brushing and register for brush events
+	_instance.brush(true);
+	_instance.dispatch().on('brushEnd.internal', function(d) {
+		updateBrush(d);
+		_instance.redraw();
+	});
+
+	// Turn off pointer events by default
+	_instance.pointEvents(false);
+
+
+	var _timeline = {
+		element: {
+			g: {
+				container: undefined
+			},
+
+			axisClipPath: undefined
+		},
+
+		brush: _instance.brush,
+		dispatch: _instance.dispatch,
+
+		init: _instance.init,
+		resize: _instance.resize,
+		redraw: _instance.redraw,
+		setBrush: _instance.setBrush,
+
+		xAxis: _instance.xAxis
+	};
+
+	// Set up default look and feel
+	_instance.margin({ top: 2, right: 10, bottom: 2, left: 10 });
+	_instance.xAxis().ticks(5);
+	_instance.yAxis(null);
+
+
+	// Initialization of the timeline and auto brush
+	_instance.init = function(container) {
+
+		// Store the container
+		_timeline.element.g.container = container;
+
+		// Initialize the timeline
+		_timeline.init(container);
+
+		// Set the initial brush
+		if (null == _brush) {
+			updateBrush(_initialBrush);
+		}
+
+		// Add a clip path for the axis
+		_timeline.element.axisClipPath = container.select('svg defs').append('clipPath')
+			.attr('id', 'axis_' + _id).append('rect');
+
+		// Attach the clip path to the axis
+		_timeline.element.g.container.select('div.sentio.timeline')
+			.select('g.axis .x').attr('clip-path', 'url(#axis_' + _id + ')');
+
+		_instance.resize();
+
+		return _instance;
+	};
+
+
+	// Redraw the auto brush
+	_instance.redraw = function() {
+
+		// Let the timeline redraw like normal
+		_timeline.redraw();
+
+		/*
+		 * Update the X Axis
+		 */
+
+		// Set the x Axis ticks to be full height
+		_instance.xAxis()
+			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
+
+		// Update text position to be on the chart
+		var xAxis = _timeline.element.g.container.select('div.sentio.timeline')
+			.select('g.axis .x')
+				.attr('pointer-events', 'none');
+
+		xAxis.selectAll('g.tick text')
+			.attr('y', '3')
+			.attr('dy', '-0.71em')
+			.attr('dx', '0.35em')
+			.attr('text-anchor', 'start');
+
+		// Set the x Axis ticks to be full height
+		_instance.xAxis()
+			.tickSize(-_instance.height() + _instance.margin().top + _instance.margin().bottom);
+
+		// Call it to redraw
+		if (null != _instance.xAxis()) {
+			xAxis.call(_instance.xAxis());
+		}
+
+		return _instance;
+	};
+
+	// Resize
+	_instance.resize = function() {
+
+		_timeline.resize();
+
+		// Need to be defensive here since parent init calls resize
+		if (null != _timeline.element.axisClipPath) {
+
+			var margin = _instance.margin();
+			var width = _instance.width();
+			var height = _instance.height();
+
+			// Update the size of the xAxis clip path
+			_timeline.element.axisClipPath
+				.attr('transform', 'translate(0, -' + (height + margin.top) + ')')
+				.attr('width', Math.max(0, width - margin.left - margin.right + 2))
+				.attr('height', Math.max(0, height + margin.bottom + margin.top));
+
+		}
+
+	};
+
+	function cropBrush(brush) {
+
+		var newBrush = brush;
+
+		// Crop the brush to max extent
+		if (null != newBrush) {
+
+			// Make a new copy
+			newBrush = brush.slice();
+
+			// Crop the brush using the max extent
+			newBrush[0] = Math.max(newBrush[0], _maxExtent[0]);
+			newBrush[1] = Math.min(newBrush[1], _maxExtent[1]);
+
+
+			// What brush width do we need to obtain
+			var delta = newBrush[1] - newBrush[0];
+			var newWidth = delta;
+
+			if (null != _maxBrush) { newWidth = Math.min(delta, _maxBrush); }
+			if (null != _minBrush) { newWidth = Math.max(newWidth, _minBrush); }
+
+			// If the width has to change
+			if (newWidth != delta) {
+				if (newBrush[0] === _brush[0]) {
+					// We should move the upper bound
+					newBrush[1] = newBrush[0] + newWidth;
+
+				}
+				else if (newBrush[1] === _brush[1]) {
+					// We should move the lower bound
+					newBrush[0] = newBrush[1] - newWidth;
+				}
+			}
+
+		}
+
+		return newBrush;
+	}
+
+	function validateBrush(brush) {
+		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush));
+	}
+
+	/**
+	 * Handle a change to the brush (whether from the timeline or manual)
+	 * - Crop the brush if necessary based on maxExtent
+	 * - Ensure the brush is valid.
+	 * - Update the brush and recalculate the extent.
+	 *
+	 * @param newBrush
+	 */
+	function updateBrush(newBrush) {
+
+		newBrush = cropBrush(newBrush);
+
+		// Ensure the brush is valid
+		if (validateBrush(newBrush)) {
+
+			var didBrushChange = (null == _brush || _brush[0] != newBrush[0] || _brush[1] != newBrush[1]);
+
+			// Update the brush
+			_brush = newBrush;
+			_timeline.setBrush(_brush);
+
+			// Update the extent as necessary
+			updateExtent();
+
+			// Only fire the brush event if it actually changed
+			if (didBrushChange) {
+				_dispatch.call('brushChange', this, _brush);
+			}
+
+		}
+		else {
+
+			// Don't allow them to apply an invalid brush
+			_timeline.setBrush(_brush);
+		}
+
+	}
+
+	/**
+	 * Update the extent
+	 */
+	function updateExtent() {
+
+		var brushChange = checkBrush(_brush);
+
+		if (brushChange.pan || brushChange.zoom) {
+
+			// Update the Extent and fire the event
+			var newExtent = calculateXExtent(_brush, brushChange);
+			_instance.xExtent().overrideValue(newExtent);
+			_dispatch.call('extentChange', this, newExtent);
+
+		}
+
+	}
+
+	/**
+	 * Check to see if the extent needs to change
+	 * - Checks boundaries and zoom level
+	 * - Returns a status to indicate how the extent needs to change
+	 *
+	 * @param brush
+	 * @returns { pan: boolean, zoom: boolean }
+	 */
+	function checkBrush(brush) {
+
+		var toReturn = { pan: false, zoom: false };
+
+		if (null != brush) {
+
+			var xScale = _instance.xScale();
+
+			/**
+			 *
+			 * |  |\\\\\|      |
+			 * a  b     c      d
+			 *
+			 * a - lower boundary of the chart
+			 * b - lower boundary of the brush
+			 * c - upper boundary of the brush
+			 * d - upper boundary of the chart
+			 *
+			 */
+			var a = xScale.domain()[0];
+			var b = brush[0];
+			var c = brush[1];
+			var d = xScale.domain()[1];
+
+			var widthE = d - a;
+			var widthB = c - b;
+			var ratio = widthB / widthE;
+
+			// Detect edge collisions
+			var lowerCollision = ((b - a) / widthE <= _config.edgeTrigger && b > _maxExtent[0]);
+			var upperCollision = ((d - c) / widthE <= _config.edgeTrigger && c < _maxExtent[1]);
+
+			// Should we resize and/or recenter?
+			toReturn.zoom = (ratio >= _config.zoomOutTrigger || ratio <= _config.zoomInTrigger);
+			toReturn.pan = (lowerCollision || upperCollision);
+
+		}
+
+		return toReturn;
+	}
+
+	/**
+	 * Given the brush, determine the new xExtent that should be applied
+	 * @param brush The brush for which to determine the extent
+	 * @param transform What kind of transform we should apply (whether zoom or pan)
+	 * @returns {[*,*]}
+	 */
+	function calculateXExtent(brush, transform) {
+
+		var a = _instance.xScale().domain()[0];
+		var b = brush[0];
+		var c = brush[1];
+		var d = _instance.xScale().domain()[1];
+
+		// Start with the width we currently have as the target width
+		var newWidthE = d - a;
+
+		// If we're zooming, change the target width
+		if (transform.zoom) {
+
+			// Calculate the new width of the extent (and make sure it isn't smaller than the max zoom)
+			newWidthE = Math.max((c - b) / _config.zoomTarget, _minExtent);
+
+		}
+
+
+		// Determine the current center of the brush
+		var centerB = b + (c - b) / 2;
+
+		// Calculate the new lower bound as half the new width from the center
+		var newA = Math.max(centerB - (newWidthE) / 2, _maxExtent[0]);
+
+		// Track how much of the width we successfully applied to the new lower bound
+		newWidthE -= centerB - newA;
+
+		// Determine the new upper bound as as much of the width as we can apply above the center
+		var newD = Math.min(centerB + newWidthE, _maxExtent[1]);
+
+		// Track how much of the width we applied to the upper bound
+		newWidthE -= newD - centerB;
+
+		// If newWidthE is greater than zero, it means that clipping kept us from applying
+		// all of the width, so we should try to apply the rest to the lower bound
+		newA = Math.max(newA - newWidthE, _maxExtent[0]);
+
+		return [ newA, newD ];
+
+	}
+
+
+	// Basic Getters/Setters
+	_instance.edgeTrigger = function(v) {
+		if (!arguments.length) { return _config.edgeTrigger; }
+		_config.edgeTrigger = v;
+		return _instance;
+	};
+	_instance.zoomInTrigger = function(v) {
+		if (!arguments.length) { return _config.zoomInTrigger; }
+		_config.zoomInTrigger = v;
+		return _instance;
+	};
+	_instance.zoomOutTrigger = function(v) {
+		if (!arguments.length) { return _config.zoomOutTrigger; }
+		_config.zoomOutTrigger = v;
+		return _instance;
+	};
+	_instance.zoomTarget = function(v) {
+		if (!arguments.length) { return _config.zoomTarget; }
+		_config.zoomTarget = v;
+		return _instance;
+	};
+
+	_instance.maxExtent = function(v) {
+		if (!arguments.length) { return _maxExtent; }
+		_maxExtent = v;
+
+		return _instance;
+	};
+	_instance.minExtent = function(v) {
+		if (!arguments.length) { return _minExtent; }
+		_minExtent = v;
+
+		return _instance;
+	};
+	_instance.minBrush = function(v) {
+		if (!arguments.length) { return _minBrush; }
+		_minBrush = v;
+
+		return _instance;
+	};
+	_instance.maxBrush = function(v) {
+		if (!arguments.length) { return _maxBrush; }
+		_maxBrush = v;
+
+		return _instance;
+	};
+
+	_instance.setBrush = function(v) {
+		updateBrush(v);
+		return _instance;
+	};
+
+	_instance.dispatch = function() {
+		return _dispatch;
+	};
+
+	_instance.timelineDispatch = function() {
+		return _timeline.dispatch;
+	};
+
+	// Cannot disable the brush
+	_instance.brush = function() {
+		return true;
 	};
 
 	return _instance;
@@ -1693,6 +2591,10 @@ function realtimeTimeline() {
 		var xExtent = _instance.xExtent().getExtent();
 		return (x < xExtent[1] && x > xExtent[0]);
 	});
+
+	_instance.brush(false);
+	_instance.pointEvents(false);
+
 
 	/*
 	 * This is the main update loop function. It is called every time the
@@ -1765,6 +2667,10 @@ function realtimeTimeline() {
 		return _instance;
 	};
 
+	_instance.brush = function(v) {
+		return false;
+	};
+
 	return _instance;
 }
 
@@ -1774,20 +2680,12 @@ function verticalBars() {
 	var _width = 100;
 	var _barHeight = 24;
 	var _barPadding = 2;
+	var _barWidthMinRatio = 0.1;
 	var _duration = 500;
 
 	// d3 dispatcher for handling events
-	var _dispatch = d3.dispatch('mouseover', 'mouseout', 'click');
+	var _dispatch = d3Dispatch.dispatch('mouseover', 'mouseout', 'click');
 	var _fn = {
-		mouseover: function(d, i) {
-			_dispatch.call('mouseover', this, d, i);
-		},
-		mouseout: function(d, i) {
-			_dispatch.call('mouseout', this, d, i);
-		},
-		click: function(d, i) {
-			_dispatch.call('click', this, d, i);
-		},
 		key: function(d) { return d.key; },
 		value: function(d) { return d.value; },
 		label: function(d) { return d.key + ' (' + d.value + ')'; }
@@ -1796,8 +2694,8 @@ function verticalBars() {
 
 	// Default scales for x and y dimensions
 	var _scale = {
-		x: d3.scaleLinear(),
-		y: d3.scaleLinear()
+		x: d3Scale.scaleLinear(),
+		y: d3Scale.scaleLinear()
 	};
 
 	// Extents
@@ -1814,6 +2712,19 @@ function verticalBars() {
 	};
 
 	var _data = [];
+
+	function mouseover(d, i) {
+		_dispatch.call('mouseover', this, d, i);
+	}
+
+	function mouseout(d, i) {
+		_dispatch.call('mouseout', this, d, i);
+	}
+
+	function click(d, i) {
+		_dispatch.call('click', this, d, i);
+	}
+
 
 	// Chart create/init method
 	function _instance(selection) { }
@@ -1845,7 +2756,7 @@ function verticalBars() {
 	 */
 	_instance.resize = function() {
 		// Set up the x scale (y is fixed)
-		_scale.x.range([ 0, _width ]);
+		_scale.x.range([ _width * _barWidthMinRatio, _width ]);
 
 		return _instance;
 	};
@@ -1873,9 +2784,9 @@ function verticalBars() {
 			.attr('class', 'bar')
 			.style('top', (_scale.y.range()[1] - _barHeight) + 'px')
 			.style('height', _barHeight + 'px')
-			.on('mouseover', _fn.mouseover)
-			.on('mouseout', _fn.mouseout)
-			.on('click', _fn.click)
+			.on('mouseover', mouseover)
+			.on('mouseout', mouseout)
+			.on('click', click)
 			.style('opacity', '0.01');
 
 		var barLabel = barEnter.append('div')
@@ -1913,6 +2824,11 @@ function verticalBars() {
 		_width = v;
 		return _instance;
 	};
+	_instance.barWidthMinRatio = function(v) {
+		if(!arguments.length) { return _barWidthMinRatio; }
+		_barWidthMinRatio = v;
+		return _instance;
+	};
 	_instance.barHeight = function(v) {
 		if(!arguments.length) { return _barHeight; }
 		_barHeight = v;
@@ -1923,6 +2839,7 @@ function verticalBars() {
 		_barPadding = v;
 		return _instance;
 	};
+
 	_instance.key = function(v) {
 		if(!arguments.length) { return _fn.key; }
 		_fn.key = v;
@@ -1938,12 +2855,14 @@ function verticalBars() {
 		_fn.label = v;
 		return _instance;
 	};
+
 	_instance.widthExtent = function(v) {
 		if(!arguments.length) { return _extent.width; }
 		_extent.width = v;
 		_extent.width.getValue(function(d, i) { return _fn.value(d, i); });
 		return _instance;
 	};
+
 	_instance.dispatch = function(v) {
 		if(!arguments.length) { return _dispatch; }
 		return _instance;
@@ -1957,14 +2876,13 @@ function verticalBars() {
 	return _instance;
 }
 
-var chart = {
-	donut: donut,
-	matrix: matrix,
-	realtimeTimeline: realtimeTimeline,
-	timeline: timeline,
-	verticalBars: verticalBars
-};
-
+/**
+ * Binning model for timelines
+ *
+ * This data model is responsible for subdiving a period of time into an array of sequential bins.
+ * As data objects are added to the model, they are aggregated into the bins.
+ *
+ */
 function bins(config) {
 
 	/**
@@ -1972,6 +2890,7 @@ function bins(config) {
 	 */
 	// Configuration
 	var _config = {
+
 		// The number of bins in our model
 		count: 1,
 
@@ -1981,9 +2900,11 @@ function bins(config) {
 		// The min and max bins
 		lwm: undefined,
 		hwm: undefined
+
 	};
 
 	var _fn = {
+
 		// The default function for creating the seed value for a bin
 		createSeed: function() { return []; },
 
@@ -2501,20 +3422,125 @@ function realtimeBins(config) {
 	return controller;
 }
 
-var controller = {
-	realtimeBins: realtimeBins,
-	timelineBrush: timelineBrush
-};
+/**
+ *
+ */
+function responsiveUnits(config) {
 
-var model = {
-	bins: bins,
-	extent: extent,
-	multiExtent: multiExtent
-};
+	/**
+	 * Private variables
+	 */
 
-exports.chart = chart;
-exports.controller = controller;
-exports.model = model;
+	// Configuration
+	var _config = {
+		minTrigger: 30,
+		maxTrigger: 400
+	};
+
+	// var _fn = {};
+
+	// The data (an array of object containers)
+	var _units = [
+		{ key: 'second', value: 1000 },
+		{ key: 'minute', value: 60 * 1000 },
+		{ key: 'hour', value: 60 * 60 * 1000 },
+		{ key: 'day', value: 24 * 60 * 60 * 1000 },
+		{ key: 'month', value: 30 * 24 * 60 * 60 * 1000 },
+		{ key: 'year', value: 365 * 24 * 60 * 60 * 1000 }
+	];
+	var _currentUnit = _units[0];
+
+
+	/**
+	 * Private Functions
+	 */
+
+	function checkUnit(v, u) {
+		var delta = v[1] - v[0];
+		var points = delta / u.value;
+
+		return (points >= _config.maxTrigger) ? 1 : (points <= _config.minTrigger) ? -1 : 0;
+	}
+
+	/*
+	 * Constructor/initialization method
+	 */
+	function model(unitConfig) {
+		if (null == unitConfig) { unitConfig = {}; }
+
+		if (null != unitConfig.minTrigger) { _config.minTrigger = unitConfig.minTrigger; }
+		if (null != unitConfig.maxTrigger) { _config.maxTrigger = unitConfig.maxTrigger; }
+	}
+
+
+	/**
+	 * Public API
+	 */
+
+	model.getUnit = function(v) {
+
+		// If we're good, just return the current unit
+		var unit = _currentUnit;
+		if (0 === checkUnit(v, unit)) {
+			return _currentUnit;
+		}
+
+		// We weren't good, so find a new unit by searching smallest to largest
+		var unitIndex = 0;
+
+		// Loop while there's too many points
+		while (unitIndex < _units.length && 0 < checkUnit(v, _units[unitIndex])) {
+			unitIndex++;
+		}
+
+		_currentUnit = _units[Math.min(unitIndex, _units.length - 1)];
+
+		return _currentUnit;
+
+	};
+
+	model.units = function(v) {
+		if (!arguments.length) { return _units; }
+		_units = v;
+		return model;
+	};
+
+	model.currentUnit = function(v) {
+		if (!arguments.length) { return _currentUnit; }
+		_currentUnit = v;
+		return model;
+	};
+
+	model.minTrigger = function(v) {
+		if (!arguments.length) { return _config.minTrigger; }
+		_config.minTrigger = v;
+		return model;
+	};
+
+	model.maxTrigger = function(v) {
+		if (!arguments.length) { return _config.maxTrigger; }
+		_config.maxTrigger = v;
+		return model;
+	};
+
+	// Initialize the model
+	model(config);
+
+	return model;
+}
+
+exports.chartDonut = donut;
+exports.chartMatrix = matrix;
+exports.chartTimeline = timeline;
+exports.chartAutoBrushTimeline = autoBrushTimeline;
+exports.chartRealtimeTimeline = realtimeTimeline;
+exports.chartVerticalBars = verticalBars;
+exports.controllerRealtimeBins = realtimeBins;
+exports.controllerResponsiveUnits = responsiveUnits;
+exports.timelineBrush = timelineBrush;
+exports.modelBins = bins;
+exports.modelExtent = extent;
+exports.modelMultiExtent = multiExtent;
 
 Object.defineProperty(exports, '__esModule', { value: true });
 

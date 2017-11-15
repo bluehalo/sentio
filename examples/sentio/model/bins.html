@@ -23,7 +23,7 @@
 	<div id="chart"></div>
 
 	<script type="text/javascript">
-		var layout = sentio.model.bins({
+		var layout = sentio.modelBins({
 			count: 5,
 			size: 10,
 			lwm: 100
@@ -33,8 +33,10 @@
 		function redraw() {
 			var chart = d3.select('#chart');
 			var join = chart.selectAll('div').data(layout.bins(), function(d) { return d[0]; } );
-			join.enter().append('div').attr('background-color', 'light-gray');
-			join.text(function(d) { return d[0] + " : " + d[1].length; } );
+			join.enter()
+				.append('div').attr('background-color', 'light-gray')
+				.merge(join)
+					.text(function(d) { return d[0] + " : " + d[1].length; } );
 			join.exit().remove();
 		}
 

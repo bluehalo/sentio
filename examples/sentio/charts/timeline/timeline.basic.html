@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Static timeline with filter. Basic Example.</title>
+	<title>Static timeline with brush. Basic Example.</title>
 
 	<link rel="stylesheet" href="../../../../dist/sentio.css" />
 
@@ -14,40 +14,72 @@
 </head>
 <body>
 	<div id="chart"></div>
-	<button onclick="updateData()">Update Data</button>
+	<button onclick="addSeries()">Add Series</button>
+	<button onclick="addMarker()">Add Marker</button>
 
 	<script type="text/javascript">
+		var samples = 60;
+		var period = 10000;
+		var now = Date.now();
+
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.chart.timeline()
+		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
-			.filter(true);
+			.brush(true);
 
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
-			.on('filter', function(val) { console.log(val); })
-			.on('filterstart', function(val) { console.log(val); })
-			.on('filterend', function(val) { console.log(val); });
+			.on('brush', function(val) { console.log(val); })
+			.on('brushStart', function(val) { console.log(val); })
+			.on('brushEnd', function(val) { console.log(val); });
 
-		var hwm = Date.now();
-		var data = [];
-		var series = 0;
-		data.push({ key: 'series' + series++, values: generateData(hwm - 1000*15, 15) });
+		var data = createData(now - samples * period, samples, period);
+		var series = [];
+		var seriesCount = 0;
+		var markers = [];
 
-		timeline.init(timelineDiv).data(data).redraw();
+		timeline.init(timelineDiv)
+			.data(data)
+			.series(series)
+			.markers(markers)
+			.markerXValue(function(d) { return d.x; })
+			.markerLabel(function(d) { return d.label; })
+			.xValue(function(d) { return d.x; })
+			.redraw();
 
-		function generateData(start, samples){
-			var toReturn = [];
-			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+		function createData(start, samples, period) {
+		    var toReturn = [];
+			for(var i = 0; i < samples; i++){
+				toReturn.push({ x: start + (i * period) });
 			}
 			return toReturn;
 		}
 
-		function updateData() {
-			data.push({ key: 'series' + series++, values: generateData(hwm - 1000*15, 15) });
-			timeline.redraw();
+		function addSeries() {
+		    var id = seriesCount++;
+
+		    series.push({
+		        key: 'series' + id,
+				label: 'Series ' + id,
+				getValue: function(d) { return d['y' + id]; }
+			});
+
+		    data.forEach(function(d) {
+		        d['y' + id] = Math.random() * 10;
+			});
+
+		    timeline.redraw();
+		}
+
+		function addMarker() {
+		    markers.push({
+		        x: now - Math.random() * period * samples,
+				label: 'Marker!'
+			});
+
+		    timeline.redraw();
 		}
 
 	</script>

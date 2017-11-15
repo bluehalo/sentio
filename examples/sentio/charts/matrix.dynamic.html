@@ -23,9 +23,8 @@
 
 	<script>
 		var chartDiv = d3.select('#chart');
-		var chart = sentio.chart.matrix()
+		var chart = sentio.chartMatrix()
 			.key(function(d, i) { return i; })
-			.value(function(d) { return d; })
 			.margin({ top: 20, right: 2, bottom: 2, left: 80 });
 
 		chart.init(chartDiv);
@@ -37,20 +36,19 @@
 			arr[i] = t;
 		}
 
-		function updateData(){
+		function updateData() {
 
-			var data = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-			var series = [];
-
-			series.push({ key: 'increasing', label: 'Increasing', values: data.map(function(d, i) { return i; }) });
-			series.push({ key: 'decreasing', label: 'Decreasing', values: data.map(function(d, i, arr) { return arr.length - i - 1; }) });
-			series.push({ key: 'upAndDown', label: 'Up and Down', values: data.map(function(d, i, arr) { return arr.length/2 - Math.abs(-i + arr.length/2); }) });
-			series.push({ key: 'flatHigh', label: 'Flat High', values: data.map(function(d, i) { return 19; })});
-			series.push({ key: 'flatLow', label: 'Flat Low', values: data.map(function(d, i) { return 0; }) });
-			series.push({ key: 'flatMid', label: 'Flat Mid', values: data.map(function(d, i) { return 10; }) });
-			series.push({ key: 'spikeHigh', label: 'Spike High', values: data.map(function(d, i) { return (Math.random() > 0.1)? 1 : 19; }) });
-			series.push({ key: 'spikeLow', label: 'Spike Low', values:data.map(function(d, i) { return (Math.random() > 0.1)? 19 : 1; }) });
-			series.push({ key: 'random', label: 'random', values: data.map(function(d, i) { return Math.random() * 19; }) });
+			var series = [
+				{ key: 'increasing', label: 'Increasing', value: function(i) { return i; } },
+				{ key: 'decreasing', label: 'Decreasing', value: function(i, size) { return size - i - 1; } },
+				{ key: 'upAndDown', label: 'Up and Down', value: function(i, size) { return size/2 - Math.abs(-i + size/2); } },
+				{ key: 'flatHigh', label: 'Flat High', value: function() { return 19; } },
+				{ key: 'flatLow', label: 'Flat Low', value: function() { return 0; } },
+				{ key: 'flatMid', label: 'Flat Mid', value: function() { return 10; } },
+				{ key: 'spikeHigh', label: 'Spike High', value: function() { return (Math.random() > 0.1)? 1 : 19; } },
+				{ key: 'spikeLow', label: 'Spike Low', value: function() { return (Math.random() > 0.1)? 19 : 1; } },
+				{ key: 'random', label: 'random', value: function() { return Math.random() * 19; } }
+			];
 
 			// Remove a couple things
 			series.splice(Math.floor(Math.random() * series.length), 1);
@@ -60,7 +58,18 @@
 			swap(Math.floor(Math.random() * series.length), Math.floor(Math.random() * series.length), series);
 			swap(Math.floor(Math.random() * series.length), Math.floor(Math.random() * series.length), series);
 
-			chart.data(series).redraw();
+			// Create the data
+			var data = [];
+			for (var i = 0; i < 24; i++) {
+			    var entry = { key: i };
+			    series.forEach(function(s) {
+			        entry[s.key] = s.value(i, 24);
+			        s.getValue = function(d) { return d[s.key]; }
+				});
+			    data.push(entry);
+			}
+
+			chart.series(series).data(data).redraw();
 		}
 
 	</script>

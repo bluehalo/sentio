@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Static timeline with filter. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../../../../dist/sentio.css" />
+
+	<script src="../../../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
+	<script src="../../../../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+		.timeline-controls {
+			font: 11px sans-serif;
+			padding-left: 40px;
+		}
+		.quick-links {}
+		.context-info .value {
+			padding-top: 4px;
+			color: rgba(0, 54, 168, 1);
+		}
+		.auto-brush-timeline .sentio.timeline .line,
+		.auto-brush-brush .sentio.timeline .plot-brush .line {
+			stroke: rgba(0, 54, 168, 1);
+			stroke-width: 2px;
+		}
+		.auto-brush-timeline .sentio.timeline .area,
+		.auto-brush-brush .sentio.timeline .plot-brush .area{
+			fill: rgba(0, 54, 168, 0.1);
+		}
+		.auto-brush-timeline .sentio.timeline .points circle {
+			fill: rgba(0, 54, 168, 1);
+			stroke: none;
+		}
+		.sentio.timeline .grid .tick line {
+			stroke: #eee;
+		}
+
+		.auto-brush-brush .sentio.timeline .line {
+			stroke: #aaa;
+			stroke-width: 2px;
+		}
+		.auto-brush-brush .sentio.timeline .area {
+			fill: #f6f6f6;
+		}
+
+		.x.brush .selection {
+			stroke-opacity: 0;
+			fill-opacity: 0;
+		}
+
+	</style>
+
+</head>
+<body>
+
+	<div class="timeline-controls">
+		<div class="quick-links">
+			<strong>Zoom:</strong>
+			<a href="#" onclick="zoom(24*60*60*1000)">1d</a> |
+			<a href="#" onclick="zoom(7*24*60*60*1000)">1w</a> |
+			<a href="#" onclick="zoom(30*24*60*60*1000)">1m</a> |
+			<a href="#" onclick="zoom(180*24*60*60*1000)">6m</a> |
+			<a href="#" onclick="zoom(365*24*60*60*1000)">1y</a> |
+			<a href="#" onclick="zoom(5*365*24*60*60*1000)">5y</a> |
+			<a href="#" onclick="zoom(9999999*24*60*60*1000)">all</a>
+		</div>
+		<div class="context-info">
+			<span class="date"></span>
+			<span class="value"></span>
+		</div>
+		<div class="context-info">
+			<strong>Units: </strong>
+			<span class="units"></span>
+		</div>
+	</div>
+	<div id="timeline" class="auto-brush-timeline"></div>
+	<div id="brush" class="auto-brush-brush"></div>
+
+	<script type="text/javascript">
+
+		var months = [ 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec' ];
+		var hwm = 0;
+
+		// Timeline
+		var timelineData = [];
+		var timelineSeries = [ { key: 'series', getValue: function(d) { return d[1]; } } ];
+		var timelineDiv = d3.select('#timeline');
+
+		var timeline = sentio.chartTimeline()
+			.height(200).width(800)
+			.showGrid(true)
+			.pointEvents('values')
+			.brush(false);
+
+		timeline.yExtent().overrideValue([ 0, undefined ]);
+		timeline.xAxis().ticks(6);
+		timeline.xGridAxis().ticks(6);
+
+		timeline.init(timelineDiv).data(timelineData).redraw();
+		timeline.dispatch()
+			.on('pointMouseover', updateContextPoint)
+			.on('pointMouseout', updateContextNoPoint);
+
+		var responsiveUnits = sentio.controllerResponsiveUnits();
+
+		function setTimelineBrush(newBrush) {
+			// This is where we would trigger a load of the new chart data
+			timeline.xExtent().overrideValue(newBrush);
+			timeline.redraw();
+
+			// Update the units
+			var newUnits = responsiveUnits.getUnit(newBrush);
+			d3.select('.context-info .units').text(newUnits.key + ' - ' + (newBrush[1] - newBrush[0]) / newUnits.value);
+		}
+
+
+		// Brush
+		var brushData = [];
+		var brushSeries = [ { key: 'series', getValue: function(d) { return d[1]; } } ];
+		var brushDiv = d3.select('#brush');
+
+		var brush = sentio.chartAutoBrushTimeline()
+			.height(40).width(800)
+			.margin({ top: 2, right: 10, bottom: 2, left: 40 })
+			.maxBrush(365 * 24 * 60 * 60 * 1000);
+
+		brush.yExtent().overrideValue([ 0, undefined ]);
+		brush.dispatch()
+			.on('extentChange', onExtentChange)
+			.on('brushChange', onBrushChange);
+
+		brush.init(brushDiv).data(brushData).redraw();
+
+		function setBrush(newBrush) {
+			// Quick brush to the specified time span
+			brush.setBrush(newBrush);
+			brush.redraw();
+		}
+
+		function onBrushChange(newBrush) {
+			console.log('brush change: ' + newBrush);
+
+			setTimelineBrush(newBrush);
+			updateContextNoPoint();
+		}
+
+		function onExtentChange(newExtent) {
+			console.log('extent change: ' + newExtent);
+
+			// This is where we would trigger a load of the new brush data
+		}
+
+		function getDateString(d) {
+		    var toReturn = null;
+
+		    if (null != d) {
+				d = new Date(d);
+				toReturn = months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+			}
+
+		    return toReturn;
+		}
+
+
+		// Load data and initialize the views
+		setTimelineBrush(brush.getBrush());
+
+		function updateContextPoint(d) {
+			// Update the date string
+			var dtgStr = getDateString(d.data[0]);
+			d3.select('.context-info .date').text(dtgStr);
+
+			// Update the value string
+			var value = '$' + d.data[1];
+			d3.select('.context-info .value').text(value);
+		}
+
+		function updateContextNoPoint() {
+			// Update to a date range
+			var extent = timeline.xScale().domain();
+			if (null != extent) {
+				var fromStr = getDateString(extent[0]), toStr = getDateString(extent[1]);
+				d3.select('.context-info .date').text(fromStr + ' - ' + toStr);
+				d3.select('.context-info .value').text('');
+			}
+		}
+
+		function zoom(v) {
+			setBrush([ hwm - v, hwm ]);
+		}
+
+		d3.tsv('./data.tsv', function(d) {
+
+		    // Parse data out of the tsv file
+		    d.date = new Date(d.date);
+			d.close = +d.close;
+			return d;
+
+		}, function(error, data) {
+
+		    if (null == error) {
+				data = data.map(function (d) {
+					return [ d.date, d.close ];
+				});
+
+				var ts = data.map(function(d) { return d[0].getTime(); });
+				var tsExtent = d3.extent(ts);
+				hwm = tsExtent[1];
+
+				brush.maxExtent(tsExtent);
+				setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
+
+				timelineData = data;
+				brushData = data;
+
+				timeline.series(timelineSeries).data(timelineData).redraw();
+				brush.series(timelineSeries).data(timelineData).redraw();
+
+			}
+			else {
+		        console.error(error);
+			}
+
+		});
+
+
+	</script>
+
+</body>
+</html>
+

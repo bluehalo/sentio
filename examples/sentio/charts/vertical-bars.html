@@ -22,7 +22,7 @@
 
 	<script type="text/javascript">
 		var chartDiv = d3.select('#chart');
-		var chart = sentio.chart.verticalBars()
+		var chart = sentio.chartVerticalBars()
 			.width(300);
 
 		chart.widthExtent().overrideValue([0, undefined]);
@@ -41,10 +41,10 @@
 
 		function generateData(samples){
 			var toReturn = [];
-			for(var i=0; i<samples; i++){
+			for (var i = 0; i < samples; i++){
 				toReturn.push({
 					key: 'key' + i,
-					value: Math.floor(Math.random() * samples)
+					value: Math.floor(Math.random() * 100 * samples)
 				});
 			}
 			return toReturn;
@@ -55,7 +55,7 @@
 
 			data = data.sort(function(a, b) {
 				return b.value - a.value;
-			}).slice(0, 12);
+			});
 
 			chart.data(data).redraw();
 		}

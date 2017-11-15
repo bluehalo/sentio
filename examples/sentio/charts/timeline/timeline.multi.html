@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Static timeline with filter. Basic Example.</title>
+	<title>Static timeline with brush. Basic Example.</title>
 
 	<link rel="stylesheet" href="../../../../dist/sentio.css" />
 
@@ -26,38 +26,45 @@
 
 	<script type="text/javascript">
 		var timelineDiv = d3.select('#chart');
-		var timeline = sentio.chart.timeline()
+		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
-			.filter(true);
+			.brush(true)
+			.xValue(function(d) { return d.x; });
 
 		timeline.yExtent().overrideValue([0, undefined]);
 
 		timeline.dispatch()
-			.on('filter', function(val) { console.log(val); })
-			.on('filterstart', function(val) { console.log(val); })
-			.on('filterend', function(val) { console.log(val); });
+			.on('brush', function(val) { console.log(val); })
+			.on('brushStart', function(val) { console.log(val); })
+			.on('brushEnd', function(val) { console.log(val); });
 
 		var hwm = Date.now();
 		var data = [];
+		var series = [
+			{ key: 'series1', category: 'series1', getValue: function(d) { return d.y0; }},
+			{ key: 'series2', category: 'series2', getValue: function(d) { return d.y1; }},
+			{ key: 'series3', category: 'series3', getValue: function(d) { return d.y2; }},
+		];
 
-		timeline.init(timelineDiv).data(data).redraw();
+		timeline.init(timelineDiv).series(series).data(data).redraw();
 		updateData();
 
 		function generateData(start, samples){
 			var toReturn = [];
-			for(var i=0; i<samples; i++){
-				toReturn.push([start + i*1000, Math.random() * 10]);
+			for(var i = 0; i < samples; i++){
+				toReturn.push({
+				    x: start + i * 1000,
+					y0: Math.random() * 10,
+					y1: Math.random() * 6,
+					y2: Math.random() * 15
+				});
 			}
 			return toReturn;
 		}
 
 		function updateData(){
-			data.length = 0;
-			data.push({ key: 'series1', cssClass: 'series1', values: generateData(hwm - 1000*15, 15) });
-			data.push({ key: 'series2', cssClass: 'series2', values: generateData(hwm - 1000*15, 15) });
-			data.push({ key: 'series3', cssClass: 'series3', values: generateData(hwm - 1000*15, 15) });
-			timeline.redraw();
+			timeline.data(generateData(hwm - 1000 * 15, 15)).redraw();
 		}
 
 	</script>

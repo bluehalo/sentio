@@ -23,16 +23,16 @@ let assets = {
 	},
 
 	// Test files
-	tests: {
-		js: [ 'test/js/**/*.js' ]
+	test: {
+		js: 'test/**/*.js'
 	},
 
 	// Source files and directories
 	src: {
-		entry: 'src/js/index.js',
-		js: 'src/js/**/*.js',
+		entry: 'src/index.js',
+		js: 'src/**/*.js',
 		sass: [
-			'src/sass/**/*.scss'
+			'src/**/*.scss'
 		]
 	},
 
@@ -49,7 +49,7 @@ let assets = {
 
 gulp.task('validate-js', () => {
 
-	return gulp.src([ assets.src.js, assets.build.js ])
+	return gulp.src([ assets.src.js, assets.test.js, assets.build.js ])
 
 		// ESLint
 		.pipe(plugins.eslint())
@@ -77,21 +77,38 @@ gulp.task('build-js', [ 'rollup-js' ], () => {
 gulp.task('rollup-js', () => {
 
 	return rollup.rollup({
-			input: assets.src.entry,
-			external: [
-				'd3'
-			]
+		input: assets.src.entry,
+		external: [
+			'd3-axis',
+			'd3-brush',
+			'd3-dispatch',
+			'd3-interpolate',
+			'd3-scale',
+			'd3-selection',
+			'd3-shape',
+			'd3-voronoi'
+		]
 		})
 		.then((bundle) => {
 			return bundle.write({
 				file: path.join(assets.dist.dir, `${pkg.artifactName}.js`),
 				format: 'umd',
 				name: pkg.moduleName,
-				sourcemap: true,
-				banner: bannerString,
+
 				globals: {
-					'd3': 'd3'
-				}
+					'd3': 'd3',
+					'd3-axis': 'd3',
+					'd3-brush': 'd3',
+					'd3-dispatch': 'd3',
+					'd3-interpolate': 'd3',
+					'd3-scale': 'd3',
+					'd3-selection': 'd3',
+					'd3-shape': 'd3',
+					'd3-voronoi': 'd3'
+				},
+
+				banner: bannerString,
+				sourcemap: true
 			});
 		});
 
@@ -135,23 +152,16 @@ gulp.task('build-css', () => {
 gulp.task('build-tests', () => {
 
 	// Generate a list of the test sources in a deterministic manner
-	let sourceArr = [ ];
-	assets.tests.js.forEach((f) => {
-		sourceArr = sourceArr.concat(glob.sync(f).sort());
-	});
+	let sourceArr = glob.sync(assets.test.js);
 
 	return gulp.src(sourceArr)
-
-		// ESLint
-		.pipe(plugins.eslint())
-		.pipe(plugins.eslint.format())
-		.pipe(plugins.eslint.failAfterError())
 
 		// Concat
 		.pipe(plugins.concat(`${pkg.artifactName}-tests.js`))
 		.pipe(gulp.dest(assets.dist.dir));
 
 });
+
 
 // Run Tests
 gulp.task('run-tests', () => {
@@ -168,6 +178,9 @@ gulp.task('run-tests', () => {
 
 gulp.task('build', (done) => { runSequence('validate-js', [ 'build-css', 'build-tests', 'build-js' ], done); } );
 gulp.task('test', (done) => { runSequence('build', 'run-tests', done); } );
+gulp.task('watch', [ 'build' ], () => {
+	return gulp.watch('src/**/*', [ 'build' ]);
+});
 
 // Default task builds and tests
 gulp.task('default', [ 'test' ]);

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Static timeline with filter. Basic Example.</title>
+
+	<link rel="stylesheet" href="../../../../../dist/sentio.css" />
+
+	<script src="../../../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
+	<script src="../../../../../dist/sentio.js" charset="utf-8"></script>
+
+	<style>
+	</style>
+
+</head>
+<body>
+	<div id="brush"></div>
+
+	<script type="text/javascript">
+		var brushDiv = d3.select('#brush');
+		var brush = sentio.chartAutoBrushTimeline()
+			.height(30)
+			.width(600);
+
+		brush.yExtent().overrideValue([0, undefined]);
+		brush.dispatch().on('extentChange', function(newExtent) {
+			console.log('extentChange: ' + newExtent);
+		});
+		brush.dispatch().on('brushChange', function(newBrush) {
+			console.log('brushChange: ' + newBrush);
+		});
+
+		var data = [];
+		brush.init(brushDiv).data(data).redraw();
+
+
+	</script>
+
+</body>
+</html>
+
