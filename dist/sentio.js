@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.16 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.17 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
@@ -2162,7 +2162,7 @@ function autoBrushTimeline() {
 	};
 
 	var _minExtent = 1 * 60 * 1000;
-	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
+	var _maxExtent = [ _now - (1000 * 365 * 24 * 60 * 60 * 1000), _now ];
 
 	var _minBrush = 1 * 1000;
 	var _maxBrush = undefined;
@@ -2365,10 +2365,12 @@ function autoBrushTimeline() {
 
 			// Update the brush
 			_brush = newBrush;
-			_timeline.setBrush(_brush);
 
 			// Update the extent as necessary
 			updateExtent();
+
+			// Set the brush on the base timeline
+			_timeline.setBrush(_brush);
 
 			// Only fire the brush event if it actually changed
 			if (didBrushChange) {
@@ -2438,8 +2440,8 @@ function autoBrushTimeline() {
 			var ratio = widthB / widthE;
 
 			// Detect edge collisions
-			var lowerCollision = ((b - a) / widthE <= _config.edgeTrigger && b > _maxExtent[0]);
-			var upperCollision = ((d - c) / widthE <= _config.edgeTrigger && c < _maxExtent[1]);
+			var lowerCollision = (b < a) || ((b - a) / widthE <= _config.edgeTrigger && b > _maxExtent[0]);
+			var upperCollision = (c > d) || ((d - c) / widthE <= _config.edgeTrigger && c < _maxExtent[1]);
 
 			// Should we resize and/or recenter?
 			toReturn.zoom = (ratio >= _config.zoomOutTrigger || ratio <= _config.zoomInTrigger);

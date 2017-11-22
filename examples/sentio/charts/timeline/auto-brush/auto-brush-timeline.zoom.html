@@ -121,8 +121,7 @@
 
 		var brush = sentio.chartAutoBrushTimeline()
 			.height(40).width(800)
-			.margin({ top: 2, right: 10, bottom: 2, left: 40 })
-			.maxBrush(365 * 24 * 60 * 60 * 1000);
+			.margin({ top: 2, right: 10, bottom: 2, left: 40 });
 
 		brush.yExtent().overrideValue([ 0, undefined ]);
 		brush.dispatch()
