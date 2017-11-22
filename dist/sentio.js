@@ -1,4 +1,4 @@
-/*! @asymmetrik/sentio - 5.0.0-alpha.15 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
+/*! @asymmetrik/sentio - 5.0.0-alpha.16 - Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved. */
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('d3-dispatch'), require('d3-interpolate'), require('d3-scale'), require('d3-shape'), require('d3-axis'), require('d3-brush'), require('d3-voronoi'), require('d3-selection')) :
 	typeof define === 'function' && define.amd ? define(['exports', 'd3-dispatch', 'd3-interpolate', 'd3-scale', 'd3-shape', 'd3-axis', 'd3-brush', 'd3-voronoi', 'd3-selection'], factory) :
@@ -1626,7 +1626,7 @@ function timeline() {
 				.attr('height', 0);
 
 			// Remove the handles
-			_element.g.brush.selectAll('.handle-grip')
+			_element.g.brush.selectAll('.resize-handle')
 				.remove();
 
 		}
@@ -2161,10 +2161,10 @@ function autoBrushTimeline() {
 		zoomTarget: 0.2
 	};
 
-	var _minExtent = 24 * 60 * 60 * 1000;
+	var _minExtent = 1 * 60 * 1000;
 	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
 
-	var _minBrush = 60 * 60 * 1000;
+	var _minBrush = 1 * 1000;
 	var _maxBrush = undefined;
 	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
 
@@ -2343,7 +2343,7 @@ function autoBrushTimeline() {
 	}
 
 	function validateBrush(brush) {
-		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush));
+		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush) && (null == _minBrush || (brush[1] - brush[0]) >= _minBrush));
 	}
 
 	/**

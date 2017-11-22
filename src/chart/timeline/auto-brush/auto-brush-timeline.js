@@ -18,10 +18,10 @@ export default function autoBrushTimeline() {
 		zoomTarget: 0.2
 	};
 
-	var _minExtent = 24 * 60 * 60 * 1000;
+	var _minExtent = 1 * 60 * 1000;
 	var _maxExtent = [ _now - (10 * 365 * 24 * 60 * 60 * 1000), _now ];
 
-	var _minBrush = 60 * 60 * 1000;
+	var _minBrush = 1 * 1000;
 	var _maxBrush = undefined;
 	var _initialBrush = [ _now - (180 * 24 * 60 * 60 * 1000), _now ];
 
@@ -200,7 +200,7 @@ export default function autoBrushTimeline() {
 	}
 
 	function validateBrush(brush) {
-		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush));
+		return (null != brush && (null == _maxBrush || (brush[1] - brush[0]) <= _maxBrush) && (null == _minBrush || (brush[1] - brush[0]) >= _minBrush));
 	}
 
 	/**

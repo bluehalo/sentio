@@ -405,7 +405,7 @@ export default function timeline() {
 				.attr('height', 0);
 
 			// Remove the handles
-			_element.g.brush.selectAll('.handle-grip')
+			_element.g.brush.selectAll('.resize-handle')
 				.remove();
 
 		}
