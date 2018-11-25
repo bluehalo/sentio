@@ -188,38 +188,25 @@
 			setBrush([ hwm - v, hwm ]);
 		}
 
-		d3.tsv('./data.tsv', function(d) {
+		d3.tsv('./data.tsv').then(function(data) {
 
-		    // Parse data out of the tsv file
-		    d.date = new Date(d.date);
-			d.close = +d.close;
-			return d;
+			data = data.map(function(row) { return [ new Date(row.date), +row.close ]; });
 
-		}, function(error, data) {
+			var ts = data.map(function(d) { return d[0].getTime(); });
+			var tsExtent = d3.extent(ts);
+			hwm = tsExtent[1];
 
-		    if (null == error) {
-				data = data.map(function (d) {
-					return [ d.date, d.close ];
-				});
+			brush.maxExtent(tsExtent);
+			setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
 
-				var ts = data.map(function(d) { return d[0].getTime(); });
-				var tsExtent = d3.extent(ts);
-				hwm = tsExtent[1];
+			timelineData = data;
+			brushData = data;
 
-				brush.maxExtent(tsExtent);
-				setBrush([ tsExtent[1] - 30*24*60*60*1000, tsExtent[1] ]);
+			timeline.series(timelineSeries).data(timelineData).redraw();
+			brush.series(timelineSeries).data(timelineData).redraw();
 
-				timelineData = data;
-				brushData = data;
-
-				timeline.series(timelineSeries).data(timelineData).redraw();
-				brush.series(timelineSeries).data(timelineData).redraw();
-
-			}
-			else {
-		        console.error(error);
-			}
-
+		}).catch(function(error) {
+			console.error(error);
 		});
 
 
