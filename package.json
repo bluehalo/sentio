@@ -5,46 +5,44 @@
 	"description": "Custom d3 data visualizations",
 	"version": "5.0.0-alpha.18",
 	"author": "Asymmetrik, Ltd.",
-	"copyright": "Copyright Asymmetrik, Ltd. 2007-2017 - All Rights Reserved.",
+	"copyright": "Copyright Asymmetrik, Ltd. 2007-2018 - All Rights Reserved.",
 	"license": "UNLICENSED",
-
+	"scripts": {
+		"build": "npm run bundle",
+		"prebuild": "npm run lint",
+		"bundle": "npm run rollup && npm run uglify",
+		"lint": "npm run eslint && npm run stylelint",
+		"eslint": "eslint 'src/**/*.js'",
+		"stylelint": "stylelint './src/**/*.scss'",
+		"rollup": "rollup -c rollup.config.js",
+		"test": "karma start --single-run --browsers ChromeHeadless karma.conf.js",
+		"uglify": "uglifyjs --comments 'license' -o ./dist/sentio.min.js -- ./dist/sentio.js",
+		"watch": " watch 'npm run build' ./src"
+	},
 	"main": "dist/sentio.js",
 	"module": "index.js",
 	"typings": "index.d.ts",
-
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Asymmetrik/sentio.git"
 	},
-
 	"peerDependencies": {
-		"d3": "4"
+		"d3": "5"
 	},
-
 	"devDependencies": {
-		"d3": "4.11",
-		"@types/d3": "4.11",
-
-		"rollup": "0.51",
-
-		"mocha": "3.5",
-		"should": "13.1",
-
-		"gulp": "3.9",
-		"gulp-clean-css": "3.9",
-		"gulp-concat": "2.6",
-		"gulp-eslint": "4.0",
-		"gulp-filter": "5.0",
-		"gulp-insert": "0.5",
-		"gulp-load-plugins": "1.5",
-		"gulp-mocha-phantomjs": "0.12",
-		"gulp-rename": "1.2",
-		"gulp-sass": "3.1",
-		"gulp-sass-lint": "1.3",
-		"gulp-sourcemaps": "2.6",
-		"gulp-uglify": "3.0",
-		"gulp-util": "3.0",
-		"run-sequence": "2.2",
-		"node-sass": "4.6"
+		"@types/d3": "5",
+		"d3": "5",
+		"eslint": "5",
+		"karma": "^3.1.1",
+		"karma-chrome-launcher": "^2.2.0",
+		"karma-mocha": "^1.3.0",
+		"karma-should": "^1.0.0",
+		"mocha": "5",
+		"rollup": "0.67",
+		"should": "13.2",
+		"stylelint": "^9.8.0",
+		"stylelint-config-standard": "^18.2.0",
+		"uglify-js": "3.4",
+		"watch": "1"
 	}
 }
