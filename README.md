@@ -3,8 +3,9 @@
 [![Build Status][travis-image]][travis-url]
 
 > Sentio JS
-> Provides a JavaScript library for visualizing and analyzing data. Sentio leverages several existing technologies, including [D3.js](http://d3js.org).
-> Now supports D3 v4
+> Provides a JavaScript library for visualizing and analyzing data.
+> Sentio leverages several existing technologies, including [D3.js](http://d3js.org).
+> Now supports D3 v5
 
 
 ## Table of Contents
@@ -18,8 +19,7 @@
 ## Install 
 Install the package and its peer dependencies via npm:
 ```
-npm install d3
-npm install @asymmetrik/sentio
+npm install d3 @asymmetrik/sentio
 ```
 
 ## Usage
