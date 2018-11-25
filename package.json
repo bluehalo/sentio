@@ -10,7 +10,9 @@
 	"scripts": {
 		"build": "npm run test && npm run bundle",
 		"prebuild": "npm run lint",
-		"bundle": "npm run rollup && npm run uglify",
+		"bundle": "npm run bundle:style && npm run bundle:code",
+		"bundle:code": "npm run rollup && npm run uglify",
+		"bundle:style": "",
 		"lint": "npm run eslint && npm run stylelint",
 		"eslint": "eslint 'src/**/*.js'",
 		"stylelint": "stylelint './src/**/*.scss'",
