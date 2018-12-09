@@ -5,7 +5,7 @@
 
 	<link rel="stylesheet" href="../../../../../dist/sentio.css" />
 
-	<script src="../../../../../node_modules/d3/build/d3.js" charset="utf-8"></script>
+	<script src="../../../../../node_modules/d3/dist/d3.js" charset="utf-8"></script>
 	<script src="../../../../../dist/sentio.js" charset="utf-8"></script>
 
 	<style>
@@ -39,9 +39,9 @@
 			window.setTimeout(addData, 1000);
 		}
 
-		function generateData(start, samples){
+		function generateData(start, samples) {
 			var toReturn = [];
-			for(var i = 0; i < samples; i++){
+			for (var i = 0; i < samples; i++) {
 				toReturn.push([ start + i*1000, Math.random() * 10 ]);
 			}
 			return toReturn;

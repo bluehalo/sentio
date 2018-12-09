@@ -64,7 +64,12 @@ export default function timeline() {
 			defaultValue: [ now - 60000 * 5, now ],
 			getValue: function(d, i) { return _fn.valueX(d, i); }
 		}),
-		y: extent()
+		y: extent({
+			filter: function(d, i) {
+				var x = _fn.valueX(d, i);
+				return x >= _scale.x.domain()[0] && x <= _scale.x.domain()[1];
+			}
+		})
 	};
 	var _multiExtent = multiExtent();
 
@@ -405,7 +410,7 @@ export default function timeline() {
 				.attr('height', 0);
 
 			// Remove the handles
-			_element.g.brush.selectAll('.handle-grip')
+			_element.g.brush.selectAll('.resize-handle')
 				.remove();
 
 		}

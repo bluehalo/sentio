@@ -1,3 +1,12 @@
+# 5.0 (November 2018)
+
+## D3 v5
+Complete migration to D3 v5
+
+## Modernizing Build System
+Removed gulp, removed `dist` dir from Git, migrated to `stylelint`, migrated to Karma for tests. 
+
+
 # 3.0 (January 2017)
 
 ## New package structure
