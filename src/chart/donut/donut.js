@@ -1,6 +1,7 @@
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { interpolate as d3_interpolate } from 'd3-interpolate';
-import { scaleOrdinal as d3_scaleOrdinal, schemeCategory10 as d3_schemeCategory10} from 'd3-scale';
+import { scaleOrdinal as d3_scaleOrdinal } from 'd3-scale';
+import { schemeCategory10 as d3_schemeCategory10 } from 'd3-scale-chromatic';
 import { arc as d3_arc, pie as d3_pie } from 'd3-shape';
 
 export default function donut() {
