@@ -10,6 +10,7 @@ export default {
 		'd3-dispatch',
 		'd3-interpolate',
 		'd3-scale',
+		'd3-scale-chromatic',
 		'd3-selection',
 		'd3-shape',
 		'd3-voronoi'
@@ -25,6 +26,7 @@ export default {
 			'd3-dispatch': 'd3',
 			'd3-interpolate': 'd3',
 			'd3-scale': 'd3',
+			'd3-scale-chromatic': 'd3',
 			'd3-selection': 'd3',
 			'd3-shape': 'd3',
 			'd3-voronoi': 'd3'
