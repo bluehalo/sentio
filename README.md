@@ -22,6 +22,16 @@ Install the package and its peer dependencies via npm:
 npm install d3 @asymmetrik/sentio
 ```
 
+To build from source:
+```
+git clone git@github.com:Asymmetrik/sentio.git
+cd sentio
+npm install
+npm run build
+```
+
+The artifacts will be located in the ./dist dir.
+
 ## Usage
 Sentio is built for consumption using module systems or through global import.
  
