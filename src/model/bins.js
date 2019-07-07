@@ -46,7 +46,7 @@ export default function bins(config) {
 				return bin[1];
 			}
 			// If the bin contains an array of data, return the number of items
-			if (bin[1].hasOwnProperty('length')) {
+			if (Object.prototype.hasOwnProperty.call(bin[1], 'length')) {
 				return bin[1].length;
 			}
 			return 0;
