@@ -35,19 +35,19 @@
 	"devDependencies": {
 		"@types/d3": "5",
 		"d3": "5",
-		"eslint": "5",
-		"karma": "3",
+		"eslint": "6",
+		"karma": "4",
 		"karma-chrome-launcher": "2",
 		"karma-mocha": "1",
 		"karma-should": "1",
-		"mocha": "5",
+		"mocha": "6",
 		"node-sass": "4",
-		"rollup": "0.67",
+		"rollup": "1",
 		"should": "13.2",
-		"stylelint": "9",
+		"stylelint": "10",
 		"stylelint-config-recommended-scss": "3",
 		"stylelint-scss": "3",
-		"uglify-js": "3.4",
+		"uglify-js": "3.6",
 		"watch": "1"
 	}
 }
