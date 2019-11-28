@@ -1,10 +1,11 @@
 import { default as timeline } from '../timeline';
 
 import { dispatch as d3_dispatch } from 'd3-dispatch';
+import { default as uuid } from '../../../util/uuid';
 
 export default function autoBrushTimeline() {
 
-	var _id = 'autobrush_timeline_' + Date.now();
+	var _id = 'autobrush_timeline_' + uuid();
 
 	/**
 	 * Auto brush configuration

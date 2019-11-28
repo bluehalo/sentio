@@ -8,7 +8,7 @@ import { voronoi as d3_voronoi } from 'd3-voronoi';
 import { default as extent } from '../../model/extent';
 import { default as multiExtent } from '../../model/multi-extent';
 import { default as timelineBrush } from '../../controller/timeline-brush';
-
+import { default as uuid } from '../../util/uuid';
 
 /**
  *
@@ -18,7 +18,7 @@ import { default as timelineBrush } from '../../controller/timeline-brush';
  */
 export default function timeline() {
 
-	var _id = 'timeline_line_' + Date.now();
+	var _id = 'timeline_line_' + uuid();
 
 	/**
 	 * Style stuff
