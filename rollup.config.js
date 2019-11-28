@@ -16,7 +16,7 @@ export default {
 		'd3-voronoi'
 	],
 	output: {
-		banner: `/*! ${pkg.name} - ${pkg.version} - ${pkg.copyright} + */`,
+		banner: `/* @license ${pkg.name} - ${pkg.version} - ${pkg.copyright} + */`,
 		file: path.posix.join('./dist', `${pkg.artifactName}.js`),
 		format: 'umd',
 		globals: {
