@@ -1,6 +1,5 @@
 import { brushSelection } from 'd3-brush';
 import { dispatch } from 'd3-dispatch';
-import { event as d3_event } from 'd3-selection';
 
 export default function timelineBrush(config) {
 
@@ -75,7 +74,7 @@ export default function timelineBrush(config) {
 	function eventFilter(eventType) {
 		return function(args) {
 
-			var n = (null != d3_event.selection)? convertSelection(d3_event.selection.map(_scale.invert)) : undefined;
+			var n = (null != args.selection)? convertSelection(args.selection.map(_scale.invert)) : undefined;
 			var o = _selection;
 
 			// Fire the event if the extents are different

@@ -24,10 +24,6 @@
 			.height(100)
 			.width(600)
 			.interval(60000)
-			.yExtent(sentio.modelExtent({
-				overrideValue: [0, undefined],
-				getValue: function(d) { return d[1]; }
-			}))
 			.curve(d3.curveBasis)
 			.delay(0);
 
@@ -41,7 +37,11 @@
 			.updateBin(function(bin, d) { bin[1] += d; })
 			.createSeed(function() { return 0; });
 
-		timeline.init(timelineDiv).data([{ key: 'series1', values: controller.bins() }]).redraw();
+		timeline.init(timelineDiv)
+				.data(controller.bins())
+				.series([{ key: 'series1', getValue: function(d) { return d[1]; } }])
+				.redraw();
+
 		timeline.start();
 
 		function doSetCount() {

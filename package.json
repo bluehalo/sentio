@@ -3,9 +3,9 @@
 	"artifactName": "sentio",
 	"moduleName": "sentio",
 	"description": "Custom d3 data visualizations",
-	"version": "5.0.4",
+	"version": "6.0.0",
 	"author": "Asymmetrik, Ltd.",
-	"copyright": "Copyright Asymmetrik, Ltd. 2007-2020 - All Rights Reserved.",
+	"copyright": "Copyright Asymmetrik, Ltd. 2007-2021 - All Rights Reserved.",
 	"license": "UNLICENSED",
 	"scripts": {
 		"build": "npm run bundle && npm run test",
@@ -30,24 +30,24 @@
 		"url": "https://github.com/Asymmetrik/sentio.git"
 	},
 	"peerDependencies": {
-		"d3": "5"
+		"d3": "7"
 	},
 	"devDependencies": {
-		"@types/d3": "5",
-		"d3": "5",
-		"eslint": "6",
-		"karma": "4",
+		"@types/d3": "7",
+		"d3": "7",
+		"eslint": "8",
+		"karma": "6",
 		"karma-chrome-launcher": "3",
-		"karma-mocha": "1",
+		"karma-mocha": "2",
 		"karma-should": "1",
-		"mocha": "6",
-		"node-sass": "4",
-		"rollup": "1",
+		"mocha": "9",
+		"node-sass": "7",
+		"rollup": "2",
 		"should": "13.2",
-		"stylelint": "12",
-		"stylelint-config-recommended-scss": "4",
-		"stylelint-scss": "3",
-		"uglify-js": "3.7",
+		"stylelint": "14",
+		"stylelint-config-recommended-scss": "5",
+		"stylelint-scss": "4",
+		"uglify-js": "3.14",
 		"watch": "1"
 	}
 }

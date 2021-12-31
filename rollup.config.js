@@ -11,9 +11,8 @@ export default {
 		'd3-interpolate',
 		'd3-scale',
 		'd3-scale-chromatic',
-		'd3-selection',
 		'd3-shape',
-		'd3-voronoi'
+		'd3-delaunay'
 	],
 	output: {
 		banner: `/* @license ${pkg.name} - ${pkg.version} - ${pkg.copyright} + */`,
@@ -27,9 +26,8 @@ export default {
 			'd3-interpolate': 'd3',
 			'd3-scale': 'd3',
 			'd3-scale-chromatic': 'd3',
-			'd3-selection': 'd3',
 			'd3-shape': 'd3',
-			'd3-voronoi': 'd3'
+			'd3-delaunay': 'd3'
 		},
 		name: pkg.moduleName,
 		sourcemap: true

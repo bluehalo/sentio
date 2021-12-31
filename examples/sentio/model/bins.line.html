@@ -21,16 +21,12 @@
 		var timeline = sentio.chartTimeline()
 			.height(100)
 			.width(600)
-			.filter(true)
-			.yExtent(sentio.modelExtent({
-				overrideValue: [0, undefined],
-				getValue: function(d) { return d[1]; }
-			}));
+			.brush(true);
 
 		timeline.dispatch()
-			.on('filter', function(val) { console.log(val); })
-			.on('filterstart', function(val) { console.log(val); })
-			.on('filterend', function(val) { console.log(val); });
+			.on('brush', function(val) { console.log(val); })
+			.on('brushStart', function(val) { console.log(val); })
+			.on('brushEnd', function(val) { console.log(val); });
 
 		var layout = sentio.modelBins({
 				count: 300,
@@ -40,10 +36,10 @@
 			.updateBin(function(bin, d) { bin[1] += 1; })
 			.createSeed(function() { return 0; });
 
-		timeline
-			.xValue(function(d) { return d[0]; })
-			.yValue(function(d) { return d[1]; })
-			.init(timelineDiv).data([{ key: 'series1', values: layout.bins() }]).redraw();
+		timeline.init(timelineDiv)
+			.data(layout.bins())
+			.series([{ key: 'series1', getValue: function(d) { return d[1]; } }])
+			.redraw();
 
 		function generateData(range, samples) {
 			var toReturn = [];
