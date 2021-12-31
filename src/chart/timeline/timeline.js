@@ -3,7 +3,7 @@ import { brushX as d3_brushX } from 'd3-brush';
 import { dispatch as d3_dispatch } from 'd3-dispatch';
 import { scaleTime as d3_scaleTime, scaleLinear as d3_scaleLinear } from 'd3-scale';
 import { line as d3_line, area as d3_area } from 'd3-shape';
-import { voronoi as d3_voronoi } from 'd3-voronoi';
+import { Delaunay as d3_delaunay } from 'd3-delaunay';
 
 import { default as extent } from '../../model/extent';
 import { default as multiExtent } from '../../model/multi-extent';
@@ -99,16 +99,6 @@ export default function timeline() {
 
 	var _area = d3_area()
 		.x(function(d, i) { return _scale.x(_fn.valueX(d, i)); });
-
-	// Voronoi that we'll use for hovers
-	var _voronoi = d3_voronoi()
-		.x(function(d, i) {
-			return _scale.x(d.x, i);
-		})
-		.y(function(d, i) {
-			return _scale.y(d.y, i);
-		});
-
 
 	/**
 	 * Brush and Events
@@ -252,7 +242,7 @@ export default function timeline() {
 	function highlightSeries(hovered) {}
 
 
-	function onPointMouseover(d, i) {
+	function onPointMouseover(event, d) {
 
 		var pointAction = _displayOptions.pointEvents;
 		if('value' === pointAction) {
@@ -265,10 +255,10 @@ export default function timeline() {
 			highlightSeries(d.data);
 		}
 
-		_dispatch.call('pointMouseover', this, d.data, i);
+		_dispatch.call('pointMouseover', this, d.data);
 	}
 
-	function onPointMouseout(d, i) {
+	function onPointMouseout(event, d) {
 
 		var pointAction = _displayOptions.pointEvents;
 		if('value' === pointAction) {
@@ -281,11 +271,11 @@ export default function timeline() {
 			highlightSeries();
 		}
 
-		_dispatch.call('pointMouseout', this, d.data, i);
+		_dispatch.call('pointMouseout', this, d.data);
 	}
 
-	function onPointClick(d, i) {
-		_dispatch.call('pointClick', this, d.data, i);
+	function onPointClick(event, d) {
+		_dispatch.call('pointClick', this, d.data);
 	}
 
 	/**
@@ -472,23 +462,35 @@ export default function timeline() {
 		if (_displayOptions.pointEvents) {
 
 			// check range against width
-			var extent = _scale.x.domain();
-			var voronoiData = getVoronoiData(_series, _data, _fn.valueX)
-				.filter(function(d) {
-					// Filter out points that are outside of the extent
-					return (extent[0] <= d.x && d.x <= extent[1]);
-				});
+			var voronoiData = getVoronoiData(_series, _data, _fn.valueX);
 
-			// Filter out paths that are null
-			voronoiData  = _voronoi.polygons(voronoiData)
-				.filter(function (d) { return (null != d); });
+			var delaunay = d3_delaunay.from( voronoiData,
+				function(d, i) { return _scale.x(d.x, i); },
+				function(d, i) { return _scale.y(d.y, i); });
+
+			// Generate the voronoi polygons and then add the data back into the array of elements
+			var voronoi = delaunay.voronoi([
+				0, 0,
+				_width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom
+			]);
+
+			voronoiData = voronoiData.map(function(d, i) {
+				return {
+					data: d,
+					polygon: voronoi.cellPolygon(i),
+					i: i
+				};
+			});
 
 			// Draw the voronoi overlay polygons
-			_element.g.voronoi.selectAll('path').data(voronoiData).enter().append('path')
-				.attr('d', function (d) { return (null != d) ? 'M' + d.join('L') + 'Z' : null; })
-				.on('mouseover', onPointMouseover)
-				.on('mouseout', onPointMouseout)
-				.on('click', onPointClick);
+			_element.g.voronoi.selectAll('path')
+				.data(voronoiData).enter().append('path')
+					.attr('d', function (d) {
+						return (null != d && null != d.polygon) ? 'M' + d.polygon.join('L') + 'Z' : null;
+					})
+					.on('mouseover', onPointMouseover)
+					.on('mouseout', onPointMouseout)
+					.on('click', onPointClick);
 
 		}
 
@@ -715,10 +717,10 @@ export default function timeline() {
 			.attr('height', Math.max(0, _height - _margin.bottom));
 
 		// Resize the clip extent of the plot
-		_voronoi.extent([
-			[ 0, 0 ],
-			[ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ]
-		]);
+		// _voronoi.extent([
+		// 	[ 0, 0 ],
+		// 	[ _width - _margin.left - _margin.right, _height - _margin.top - _margin.bottom ]
+		// ]);
 
 
 		/**
